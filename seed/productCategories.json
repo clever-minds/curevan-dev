@@ -1,0 +1,24 @@
+
+{
+  "physiotherapy": {
+    "id": "physiotherapy",
+    "name": "Physiotherapy",
+    "description": "Equipment for physical therapy and rehabilitation.",
+    "image": "https://placehold.co/600x400.png",
+    "isActive": true
+  },
+  "nursing-care": {
+    "id": "nursing-care",
+    "name": "Nursing Care",
+    "description": "Supplies and tools for nursing staff.",
+    "image": "https://placehold.co/600x400.png",
+    "isActive": true
+  },
+  "geri-care-therapy": {
+    "id": "geri-care-therapy",
+    "name": "Geri care Therapy",
+    "description": "Products to assist in elderly care.",
+    "image": "https://placehold.co/600x400.png",
+    "isActive": true
+  }
+}

@@ -1,0 +1,192 @@
+
+{
+  "ORD-001": {
+    "id": "ORD-001",
+    "userId": "patient-01",
+    "customerName": "Patient User",
+    "customerPhone": "9876543214",
+    "items": [
+      {
+        "sku": "CV-TENS-01",
+        "name": "TENS Unit",
+        "qty": 1,
+        "price": 750000,
+        "mrp": 850000,
+        "hsnCode": "901910",
+        "taxRatePct": 18,
+        "featuredImage": "https://placehold.co/400x400.png"
+      }
+    ],
+    "shippingAddress": {
+      "line1": "456 Health St",
+      "city": "Vadodara",
+      "state": "Gujarat",
+      "pin": "390007",
+      "country": "India"
+    },
+    "billingAddress": {
+      "line1": "456 Health St",
+      "city": "Vadodara",
+      "state": "Gujarat",
+      "pin": "390007",
+      "country": "India"
+    },
+    "subtotal": 750000,
+    "couponDiscount": 37500,
+    "taxableValue": 603814,
+    "cgst": 54343,
+    "sgst": 54343,
+    "igst": 0,
+    "totalTax": 108686,
+    "total": 712500,
+    "commissionAmount": 71250,
+    "commissionState": "paid",
+    "status": "Delivered",
+    "paymentStatus": "Paid",
+    "paymentTxnId": "pay_xyz123",
+    "couponCode": "DREVELYN25",
+    "couponId": "1",
+    "referredTherapistId": "therapist-01",
+    "createdAt": { "_seconds": 1722000000, "_nanoseconds": 0 },
+    "deliveredAt": { "_seconds": 1722259200, "_nanoseconds": 0 }
+  },
+  "ORD-002": {
+    "id": "ORD-002",
+    "userId": "patient-02",
+    "customerName": "Audit Patient",
+    "customerPhone": "9876543217",
+    "items": [
+      {
+        "sku": "CV-WLK-01",
+        "name": "Curevan Foldable Walker",
+        "qty": 1,
+        "price": 280000,
+        "mrp": 350000,
+        "hsnCode": "902110",
+        "taxRatePct": 12,
+        "featuredImage": "https://placehold.co/400x400.png"
+      }
+    ],
+    "shippingAddress": {
+      "line1": "101 Audit Ave",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pin": "560001",
+      "country": "India"
+    },
+    "billingAddress": {
+      "line1": "101 Audit Ave",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pin": "560001",
+      "country": "India"
+    },
+    "subtotal": 280000,
+    "couponDiscount": 0,
+    "taxableValue": 250000,
+    "cgst": 0,
+    "sgst": 0,
+    "igst": 30000,
+    "totalTax": 30000,
+    "total": 280000,
+    "commissionAmount": 0,
+    "commissionState": "na",
+    "status": "Packed",
+    "paymentStatus": "Paid",
+    "paymentTxnId": "pay_def789",
+    "couponCode": null,
+    "couponId": null,
+    "referredTherapistId": null,
+    "createdAt": { "_seconds": 1724490000, "_nanoseconds": 0 },
+    "deliveredAt": null
+  },
+  "ORD-003": {
+    "id": "ORD-003",
+    "userId": "patient-01",
+    "customerName": "Patient User",
+    "customerPhone": "9876543214",
+    "items": [
+      {
+        "sku": "CF-RB-SET5",
+        "name": "CureFlex Pro Resistance Bands (Set of 5)",
+        "qty": 2,
+        "price": 129900,
+        "mrp": 199900,
+        "hsnCode": "950691",
+        "taxRatePct": 18,
+        "featuredImage": "https://placehold.co/400x400.png"
+      }
+    ],
+    "shippingAddress": {
+      "line1": "456 Health St",
+      "city": "Vadodara",
+      "state": "Gujarat",
+      "pin": "390007",
+      "country": "India"
+    },
+    "billingAddress": {
+      "line1": "456 Health St",
+      "city": "Vadodara",
+      "state": "Gujarat",
+      "pin": "390007",
+      "country": "India"
+    },
+    "subtotal": 259800,
+    "couponDiscount": 0,
+    "taxableValue": 220169,
+    "cgst": 19815,
+    "sgst": 19815,
+    "igst": 0,
+    "totalTax": 39630,
+    "total": 259800,
+    "commissionAmount": 0,
+    "commissionState": "na",
+    "status": "Cancelled",
+    "paymentStatus": "Refunded",
+    "paymentTxnId": "pay_ghi101",
+    "createdAt": { "_seconds": 1724673600, "_nanoseconds": 0 },
+    "deliveredAt": null
+  },
+  "ORD-004": {
+    "id": "ORD-004",
+    "userId": "patient-01",
+    "customerName": "Patient User",
+    "items": [
+      {
+        "sku": "P4",
+        "name": "Hot & Cold Gel Pack",
+        "qty": 1,
+        "price": 49900,
+        "mrp": 75000,
+        "hsnCode": "300510",
+        "taxRatePct": 12,
+        "featuredImage": "https://placehold.co/400x400.png"
+      }
+    ],
+    "shippingAddress": { "line1": "456 Health St", "city": "Vadodara", "state": "Gujarat", "pin": "390007", "country": "India" },
+    "billingAddress": { "line1": "456 Health St", "city": "Vadodara", "state": "Gujarat", "pin": "390007", "country": "India" },
+    "subtotal": 49900, "couponDiscount": 0, "total": 49900, "status": "Delivered",
+    "paymentStatus": "Paid", "createdAt": { "_seconds": 1720000000, "_nanoseconds": 0 }, "deliveredAt": { "_seconds": 1720259200, "_nanoseconds": 0 }
+  },
+  "ORD-005": {
+    "id": "ORD-005",
+    "userId": "patient-02",
+    "customerName": "Audit Patient",
+    "items": [
+      {
+        "sku": "N2",
+        "name": "Fingertip Pulse Oximeter",
+        "qty": 1,
+        "price": 180000,
+        "mrp": 250000,
+        "hsnCode": "901890",
+        "taxRatePct": 18,
+        "featuredImage": "https://placehold.co/400x400.png"
+      }
+    ],
+    "shippingAddress": { "line1": "101 Audit Ave", "city": "Bengaluru", "state": "Karnataka", "pin": "560001", "country": "India" },
+    "billingAddress": { "line1": "101 Audit Ave", "city": "Bengaluru", "state": "Karnataka", "pin": "560001", "country": "India" },
+    "subtotal": 180000, "couponDiscount": 18000, "total": 162000, "status": "Shipped", "couponCode": "SAVE10",
+    "paymentStatus": "Paid", "createdAt": { "_seconds": 1721000000, "_nanoseconds": 0 }
+  }
+}

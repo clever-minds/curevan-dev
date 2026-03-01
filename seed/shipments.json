@@ -1,0 +1,52 @@
+
+{
+  "SHP-001": {
+    "id": "SHP-001",
+    "orderId": "ORD-001",
+    "awb": "DTDC987654321",
+    "carrier": "DTDC",
+    "createdAt": "2024-07-28T14:00:00.000Z",
+    "customerName": "Patient User",
+    "cityState": "Vadodara, Gujarat",
+    "status": "In Transit",
+    "eta": "2024-07-30T18:00:00.000Z",
+    "slaBreached": false
+  },
+  "SHP-002": {
+    "id": "SHP-002",
+    "orderId": "ORD-002",
+    "awb": "DLVRY123456789",
+    "carrier": "Delhivery",
+    "createdAt": "2024-08-25T11:00:00.000Z",
+    "customerName": "Audit Patient",
+    "cityState": "Bengaluru, Karnataka",
+    "status": "Pending Pickup",
+    "eta": "2024-08-28T18:00:00.000Z",
+    "slaBreached": false
+  },
+  "SHP-003": {
+    "id": "SHP-003",
+    "orderId": "ORD-004",
+    "awb": "BLUEDART456789",
+    "carrier": "Blue Dart",
+    "createdAt": "2024-07-01T10:00:00.000Z",
+    "customerName": "Patient User",
+    "cityState": "Vadodara, Gujarat",
+    "status": "Delivered",
+    "eta": "2024-07-03T18:00:00.000Z",
+    "deliveredAt": "2024-07-03T15:00:00.000Z",
+    "slaBreached": false
+  },
+  "SHP-004": {
+    "id": "SHP-004",
+    "orderId": "ORD-005",
+    "awb": "EKART987654",
+    "carrier": "EKart",
+    "createdAt": "2024-07-12T09:00:00.000Z",
+    "customerName": "Audit Patient",
+    "cityState": "Bengaluru, Karnataka",
+    "status": "RTO",
+    "eta": "2024-07-15T18:00:00.000Z",
+    "slaBreached": true
+  }
+}

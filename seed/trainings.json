@@ -1,0 +1,51 @@
+
+{
+  "T1": {
+    "id": "T1",
+    "title": "Home Visit Safety Basics",
+    "slug": "home-visit-safety-basics",
+    "status": "published",
+    "categoryIds": ["Operations"],
+    "difficulty": "beginner",
+    "durationMin": 12,
+    "excerpt": "Learn the essential safety protocols for conducting home visits.",
+    "content": "Detailed content about safety protocols...",
+    "coverImageUrl": "https://placehold.co/600x400.png",
+    "authorId": "admin-super-01",
+    "createdAt": { "_seconds": 1722854400, "_nanoseconds": 0 },
+    "updatedAt": { "_seconds": 1722854400, "_nanoseconds": 0 },
+    "publishedAt": { "_seconds": 1722854400, "_nanoseconds": 0 }
+  },
+  "T2": {
+    "id": "T2",
+    "title": "Using Your Referral Code to Boost Earnings",
+    "slug": "using-your-referral-code",
+    "status": "published",
+    "categoryIds": ["Earnings"],
+    "difficulty": "beginner",
+    "durationMin": 8,
+    "excerpt": "A guide on how to effectively use your referral code.",
+    "content": "Detailed content about referral codes...",
+    "coverImageUrl": "https://placehold.co/600x400.png",
+    "authorId": "admin-super-01",
+    "createdAt": { "_seconds": 1722854400, "_nanoseconds": 0 },
+    "updatedAt": { "_seconds": 1722854400, "_nanoseconds": 0 },
+    "publishedAt": { "_seconds": 1722854400, "_nanoseconds": 0 }
+  },
+  "T3": {
+    "id": "T3",
+    "title": "Post-Surgery Rehab Protocol: Knee (Overview)",
+    "slug": "post-surgery-rehab-protocol-knee",
+    "status": "published",
+    "categoryIds": ["Clinical"],
+    "difficulty": "intermediate",
+    "durationMin": 20,
+    "excerpt": "An overview of the standard protocol for post-surgery knee rehabilitation.",
+    "content": "Detailed content about knee rehab protocols...",
+    "coverImageUrl": "https://placehold.co/600x400.png",
+    "authorId": "admin-therapy-01",
+    "createdAt": { "_seconds": 1722854400, "_nanoseconds": 0 },
+    "updatedAt": { "_seconds": 1722854400, "_nanoseconds": 0 },
+    "publishedAt": { "_seconds": 1722854400, "_nanoseconds": 0 }
+  }
+}

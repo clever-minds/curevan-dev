@@ -1,0 +1,133 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).roles.hasAny(['admin.super']);
+    }
+
+    function isTherapyAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).roles.hasAny(['admin.therapy', 'admin.super']);
+    }
+    
+    function isEcomAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).roles.hasAny(['admin.ecom', 'admin.super']);
+    }
+
+    function isTherapist() {
+      return isSignedIn() && getUserData(request.auth.uid).role == 'therapist';
+    }
+
+    function isPatient() {
+      return isSignedIn() && getUserData(request.auth.uid).role == 'patient';
+    }
+
+    // --- Users & Profiles ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId)
+                    && 'name' in request.resource.data
+                    && 'email' in request.resource.data
+                    && 'role' in request.resource.data
+                    && request.resource.data.role in ['patient', 'therapist']
+                    && request.resource.data.uid == userId;
+      allow update: if isOwner(userId)
+                    && request.resource.data.uid == resource.data.uid // Cannot change UID
+                    && request.resource.data.email == resource.data.email // Cannot change email
+                    && request.resource.data.role == resource.data.role; // Cannot change role
+      allow delete: if isSuperAdmin();
+    }
+    
+    match /patientProfiles/{patientId} {
+      allow read, write: if isOwner(patientId) || isTherapyAdmin();
+    }
+    
+    match /therapistProfiles/{therapistId} {
+        allow read: if true;
+        allow write: if isOwner(therapistId) || isTherapyAdmin();
+    }
+
+    // --- Core Operations ---
+    match /appointments/{bookingId} {
+        allow read: if isSignedIn() && (
+            isOwner(resource.data.patientId) || 
+            isOwner(resource.data.therapistId) ||
+            isTherapyAdmin()
+        );
+        allow create: if isPatient();
+        allow update: if isOwner(resource.data.patientId) || isOwner(resource.data.therapistId) || isTherapyAdmin();
+    }
+    
+    match /pcr/{bookingId} {
+        allow read: if isSignedIn() && (
+            isOwner(get(/databases/$(database)/documents/appointments/$(bookingId)).data.patientId) || 
+            isOwner(get(/databases/$(database)/documents/appointments/$(bookingId)).data.therapistId) ||
+            isTherapyAdmin()
+        );
+        allow create, update: if isOwner(get(/databases/$(database)/documents/appointments/$(bookingId)).data.therapistId) || isTherapyAdmin();
+    }
+
+    // --- E-Commerce ---
+    match /productCategories/{categoryId} {
+        allow read: if true;
+        allow write: if isEcomAdmin();
+    }
+    
+    match /products/{productId} {
+        allow read: if true;
+        allow write: if isEcomAdmin();
+    }
+    
+    match /orders/{orderId} {
+        allow read, write: if isSignedIn() && (isOwner(resource.data.userId) || isEcomAdmin());
+    }
+
+    match /invoices/{invoiceId} {
+        allow read: if isSignedIn() && (isOwner(resource.data.userId) || isEcomAdmin() || isTherapyAdmin());
+    }
+
+    // --- Content (Public Read, Admin Write) ---
+    match /blogPosts/{postId} {
+        allow read: if true;
+        allow write: if isTherapyAdmin();
+    }
+    
+    match /documentation/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isTherapyAdmin();
+    }
+    
+    match /trainings/{trainingId} {
+        allow read: if isSignedIn();
+        allow write: if isTherapyAdmin();
+    }
+    
+    // --- System & Support (Admin/Owner only) ---
+    match /supportTickets/{ticketId} {
+      allow read, write: if isSignedIn() && (isOwner(resource.data.userId) || isTherapyAdmin());
+    }
+
+    match /profileChangeRequests/{reqId} {
+       allow read, write: if isSignedIn();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isTherapyAdmin();
+    }
+
+  }
+}

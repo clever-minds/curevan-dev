@@ -1,0 +1,39 @@
+
+{
+  "INV-ORD-001": {
+    "id": "INV-ORD-001",
+    "invoiceNumber": "INV-ORD-001",
+    "status": "issued",
+    "userId": "patient-01",
+    "source": { "orderId": "ORD-001" },
+    "issuedAt": { "_seconds": 1722086400, "_nanoseconds": 0 },
+    "totalAmountPaise": 715000
+  },
+  "INV-BK-001": {
+    "id": "INV-BK-001",
+    "invoiceNumber": "INV-BK-001",
+    "status": "issued",
+    "userId": "patient-01",
+    "source": { "bookingId": "BK-001" },
+    "issuedAt": { "_seconds": 1722930000, "_nanoseconds": 0 },
+    "totalAmountPaise": 110000
+  },
+  "INV-ORD-002": {
+    "id": "INV-ORD-002",
+    "invoiceNumber": "INV-ORD-002",
+    "status": "issued",
+    "userId": "patient-02",
+    "source": { "orderId": "ORD-002" },
+    "issuedAt": { "_seconds": 1724500000, "_nanoseconds": 0 },
+    "totalAmountPaise": 280000
+  },
+  "INV-ORD-003": {
+    "id": "INV-ORD-003",
+    "invoiceNumber": "INV-ORD-003",
+    "status": "cancelled",
+    "userId": "patient-01",
+    "source": { "orderId": "ORD-003" },
+    "issuedAt": { "_seconds": 1724673600, "_nanoseconds": 0 },
+    "totalAmountPaise": 259800
+  }
+}
