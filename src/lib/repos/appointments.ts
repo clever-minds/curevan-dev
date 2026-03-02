@@ -82,27 +82,50 @@ export async function getAppointmentById(id: string): Promise<Appointment | null
 /**
  * List appointments for a specific user (patient or therapist)
  */
-export async function listAppointmentsForUser(userId: number, role: 'patient' | 'therapist'): Promise<Appointment[]> {
-    try {
-        const { data: response } = await serverApi.get<ApiResponse<Appointment[]>>(`/api/appointments/user/${userId}/appointments`, {
-            params: { role },
-            withCredentials: true,
-        });
-        if (response.status === 304) {
-            // cached data use करो या empty array return करो
-            return [];
-        }
-        const appointmentsData = response?.data ?? [];
+export async function listAppointmentsForUser(
+  userId: number,
+  role: 'patient' | 'therapist'
+): Promise<Appointment[]> {
+  try {
+    const { data: response } = await serverApi.get<ApiResponse<Appointment[]>>(
+      `/api/appointments/user/${userId}/appointments`,
+      {
+        params: { role },
+        withCredentials: true,
+      }
+    )
 
-        return appointmentsData.map(appt => ({
-            ...appt,
-            date: appt.date,
-             createdAt: appt.createdAt, // Firestore Timestamp
-            startTime: appt.startTime, // Firestore Timestamp
-            endTime: appt.endTime,     // Firestore Timestamp
-        }));
-    } catch (err) {
-        console.error('Error fetching user appointments:', err);
-        return [];
+    // 🔹 Check success field, not status
+    if (response?.success === false) {
+      return []
     }
+
+    const appointmentsData = response?.data ?? []
+
+    return appointmentsData.map((appt) => ({
+      ...appt,
+      date: appt.date,
+      createdAt: appt.createdAt, // Firestore Timestamp
+      startTime: appt.startTime, // Firestore Timestamp
+      endTime: appt.endTime,     // Firestore Timestamp
+    }))
+  } catch (err) {
+    console.error('Error fetching user appointments:', err)
+    return []
+  }
+}
+export async function cancelAppointments(appointmentId: number): Promise<boolean> {
+  try {
+    const { data: response } = await serverApi.patch<ApiResponse<Appointment>>(
+      `/api/appointments/${appointmentId}/cancel`,
+      {},
+      { withCredentials: true }
+    )
+
+    // 🔹 response.success use karo, status nahi
+    return response?.success === true
+  } catch (err) {
+    console.error('Error cancelling appointment:', err)
+    return false
+  }
 }
