@@ -1,4 +1,4 @@
-// src/lib/server/auth.ts
+'use server'
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import type { UserProfile } from '@/lib/types'
@@ -6,7 +6,8 @@ import { getUserById } from './repos/users'
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
   try {
-    const cookieStore = cookies() // ✅ synchronous
+    // ✅ Remove 'await'
+    const cookieStore = await cookies() // synchronous
     const token = cookieStore.get('token')?.value
 
     if (!token) return null

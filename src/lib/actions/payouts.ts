@@ -1,16 +1,9 @@
-
-'use server';
-
-import { db } from '@/lib/db';
-import { FieldValue } from 'firebase-admin/firestore';
-import { addAuditLog } from '../repos/logs';
-import { getCurrentUser } from '../auth';
+import serverApi from "@/lib/repos/axios.server";
+import { getCurrentUser } from "../auth";
 
 /**
- * Updates the status of a payout batch.
- * This action is protected and should only be callable by authorized admins.
- * @param batchId - The ID of the payout batch to update.
- * @param newStatus - The new status to set ('onHold' or 'processing').
+ * Updates the status of a payout batch via backend API.
+ * Maintains admin permission checks before calling API.
  */
 export async function updatePayoutBatchStatus(
   batchId: string,
@@ -27,34 +20,30 @@ export async function updatePayoutBatchStatus(
     return { success: false, error: 'Invalid batch ID or status provided.' };
   }
 
-  const batchRef = db.collection('payoutBatches').doc(batchId);
-  const doc = await batchRef.get();
-
-  if (!doc.exists) {
-    return { success: false, error: 'Payout batch not found.' };
-  }
-
   try {
-    // Update the document
-    await batchRef.update({
-      status: newStatus,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    // Call backend API to update payout batch
+    const { data: response } = await serverApi.post(
+      '/api/payout-batches/update-status',
+      {
+        batchId,
+        newStatus,
+        actorId: user.uid, // pass current user ID for audit logging
+      },
+      {
+        headers: {
+          withCredentials: true, // maintain session/cookies
+        },
+      }
+    );
 
-    // Create an audit log entry
-    await addAuditLog({
-      actorId: user.uid,
-      action: newStatus === 'onHold' ? 'payout.batch.hold' : 'payout.batch.release',
-      entityType: 'payoutBatch',
-      entityId: batchId,
-      details: { previousStatus: doc.data()?.status, newStatus },
-      timestamp: FieldValue.serverTimestamp(),
-    });
-
-    console.log(`Payout batch ${batchId} status updated to ${newStatus} by ${user.email}`);
-    return { success: true };
-  } catch (error) {
-    console.error(`Failed to update payout batch ${batchId}:`, error);
+    if (response?.success) {
+      console.log(`Payout batch ${batchId} status updated to ${newStatus} by ${user.email}`);
+      return { success: true };
+    } else {
+      return { success: false, error: response?.error || 'Failed to update payout batch status.' };
+    }
+  } catch (error: any) {
+    console.error(`Failed to update payout batch ${batchId}:`, error?.response || error?.message);
     return { success: false, error: 'An unexpected error occurred while updating the payout status.' };
   }
 }

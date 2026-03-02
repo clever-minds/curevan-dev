@@ -1,53 +1,59 @@
+import serverApi from "@/lib/repos/axios.server";
+import type { SOSAlert } from "../types";
+import { getSafeDate } from "../utils";
+import { getCurrentUser } from "../auth";
 
-'use server';
-
-import { db } from '@/lib/db';
-import type { SOSAlert } from '../types';
-import { getSafeDate } from '../utils';
-import { addAuditLog } from './logs';
-import { getCurrentUser } from '../auth';
-import { FieldValue } from 'firebase-admin/firestore';
-
+/**
+ * Fetches the list of SOS alerts via backend API
+ * Function name unchanged: listSosAlerts
+ */
 export async function listSosAlerts(): Promise<SOSAlert[]> {
-    const snapshot = await db.collection('sosAlerts').orderBy('timestamp', 'desc').get();
-    if (snapshot.empty) {
-        return [];
-    }
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            timestamp: getSafeDate(data.timestamp)?.toISOString() || new Date().toISOString(),
-            resolvedAt: getSafeDate(data.resolvedAt)?.toISOString(),
-        } as SOSAlert;
+  try {
+    const { data: response } = await serverApi.get("/api/sos/list", {
+      headers: { withCredentials: true },
     });
+
+    if (!response?.data || !Array.isArray(response.data)) return [];
+
+    return response.data.map((alert: any) => ({
+      id: alert.id,
+      ...alert,
+      timestamp: getSafeDate(alert.timestamp)?.toISOString() || new Date().toISOString(),
+      resolvedAt: getSafeDate(alert.resolvedAt)?.toISOString(),
+    }));
+  } catch (error: any) {
+    console.error("Failed to fetch SOS alerts via API:", error?.response || error?.message);
+    return [];
+  }
 }
 
-export async function resolveSosAlert(alertId: string): Promise<{ success: boolean; error?: string }> {
-    const user = await getCurrentUser();
-    if (!user || (!user.roles?.includes('admin.super') && !user.roles?.includes('admin.therapy'))) {
-        return { success: false, error: 'Permission denied.' };
+/**
+ * Resolves an SOS alert via backend API
+ * Function name unchanged: resolveSosAlert
+ */
+export async function resolveSosAlert(
+  alertId: string
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getCurrentUser();
+  if (!user || (!user.roles?.includes("admin.super") && !user.roles?.includes("admin.therapy"))) {
+    return { success: false, error: "Permission denied." };
+  }
+
+  try {
+    const { data: response } = await serverApi.post(
+      `/api/sos/resolve`,
+      { alertId, actorId: user.uid },
+      { headers: { withCredentials: true } }
+    );
+
+    if (response?.success) {
+      console.log(`SOS alert ${alertId} resolved by ${user.uid} via API`);
+      return { success: true };
+    } else {
+      return { success: false, error: response?.error || "Failed to resolve SOS alert." };
     }
-
-    const alertRef = db.collection('sosAlerts').doc(alertId);
-    try {
-        await alertRef.update({
-            status: 'resolved',
-            resolvedAt: FieldValue.serverTimestamp(),
-            resolvedBy: user.uid,
-        });
-
-        await addAuditLog({
-            actorId: user.uid,
-            action: 'sos.alert.resolved',
-            entityType: 'sosAlert',
-            entityId: alertId,
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error("Failed to resolve SOS alert:", error);
-        return { success: false, error: 'Failed to update alert status in the database.' };
-    }
+  } catch (error: any) {
+    console.error("Error resolving SOS alert via API:", error?.response || error?.message);
+    return { success: false, error: "An unexpected error occurred while resolving the alert." };
+  }
 }

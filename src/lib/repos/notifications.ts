@@ -1,32 +1,32 @@
+import serverApi from "@/lib/repos/axios.server";
+import type { Notification } from "../types";
+import { getCurrentUser } from "../auth";
 
-'use server';
-
-import { db } from '@/lib/db';
-import type { Notification } from '../types';
-import { getCurrentUser } from '../auth';
-
+/**
+ * Fetches notifications for the current user via backend API
+ * Function name unchanged: listNotifications
+ */
 export async function listNotifications(): Promise<Notification[]> {
-    const user = await getCurrentUser();
-    if (!user) {
-        console.warn("Attempted to list notifications without a logged-in user.");
-        return [];
-    }
+  const user = await getCurrentUser();
+  if (!user) {
+    console.warn("Attempted to list notifications without a logged-in user.");
+    return [];
+  }
 
-    const snapshot = await db.collection('notifications')
-        .where('userId', '==', user.uid)
-        .orderBy('createdAt', 'desc')
-        .get();
-        
-    if (snapshot.empty) {
-        return [];
-    }
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            // Convert Firestore Timestamp to ISO string if necessary
-            createdAt: data.createdAt.toDate().toISOString(),
-        } as Notification;
+  try {
+    const { data: response } = await serverApi.get(`/api/notifications/list/${user.uid}`, {
+      headers: { withCredentials: true },
     });
+
+    if (!response?.data || !Array.isArray(response.data)) return [];
+
+    return response.data.map((item: any) => ({
+      id: item.id,
+      ...item,
+      createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
+    })) as Notification[];
+  } catch (error: any) {
+    console.error("Failed to fetch notifications via API:", error?.response || error?.message);
+    return [];
+  }
 }

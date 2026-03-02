@@ -21,19 +21,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
   const checkAuth = async () => {
+          console.log("CheckAuth started 2"); // ✅ ye print ho raha hai ya nahi
+
     try {
       // 1️⃣ Instant UI load
-     
-
+        setIsLoading(true);
       // 2️⃣ Backend verification
       const res = await api.get('/api/auth/me', {
         withCredentials: true,
       });
+      console.log("Auth check response:", res.data);
 
       if (res.data?.user) {
         setUser(res.data.user);
       }
     } catch (error) {
+      console.log("CheckAuth started error",error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -45,9 +48,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const login = async (userData: UserProfile) => {
+          console.log("CheckAuth started 1"); // ✅ ye print ho raha hai ya nahi
+
   const res = await api.get('/api/auth/me', {
     withCredentials: true
   });
+        console.log("Auth check response:", res.data);
+
     setUser(res.data);
   };
 

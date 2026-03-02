@@ -1,57 +1,38 @@
-
 'use server';
 
-import { db } from '@/lib/db';
+import serverApi from "@/lib/repos/axios.server";
 
 /**
- * Fetches public-facing statistics using efficient aggregate queries.
- * This function is designed to be called from Server Components or API routes.
- * 
- * In a high-traffic production app, these values should ideally be pre-computed
- * and stored in a dedicated document (e.g., 'publicMetrics/totals') which is
- * updated by Cloud Functions listening to writes on the respective collections.
- * For this implementation, we use aggregate queries for simplicity and efficiency.
- * 
- * @returns An object containing key statistics about the platform.
+ * Fetches public-facing statistics via backend API.
+ * This replaces direct Firestore queries with an API call.
  */
-export async function getPublicStats() {
-    try {
-        const usersQuery = db.collection('users').where('role', '==', 'patient');
-        const therapistsQuery = db.collection('therapistProfiles'); // No status field on this collection in seed data
-        const productsQuery = db.collection('products').where('isActive', '==', true);
-        const patientsServedQuery = db.collection('appointments').where('status', '==', 'Completed');
-        const productsDeliveredQuery = db.collection('orders').where('status', '==', 'Delivered');
+export async function getPublicStats(): Promise<{
+  usersTotal: number;
+  therapistsTotal: number;
+  productsTotal: number;
+  patientsServedTotal: number;
+  productsDeliveredTotal: number;
+}> {
+  try {
+    const { data } = await serverApi.get('/api/stats/public', {
+      headers: { withCredentials: true },
+    });
 
-        const [
-            usersSnapshot,
-            therapistsSnapshot,
-            productsSnapshot,
-            patientsServedSnapshot,
-            productsDeliveredSnapshot
-        ] = await Promise.all([
-            usersQuery.count().get(),
-            therapistsQuery.count().get(),
-            productsQuery.count().get(),
-            patientsServedQuery.count().get(),
-            productsDeliveredQuery.count().get()
-        ]);
-
-        return {
-            usersTotal: usersSnapshot.data().count,
-            therapistsTotal: therapistsSnapshot.data().count,
-            productsTotal: productsSnapshot.data().count,
-            patientsServedTotal: patientsServedSnapshot.data().count,
-            productsDeliveredTotal: productsDeliveredSnapshot.data().count,
-        };
-    } catch (error) {
-        console.error("Error fetching public stats:", error);
-        // Return a default or cached state in case of error
-        return {
-            usersTotal: 0,
-            therapistsTotal: 0,
-            productsTotal: 0,
-            patientsServedTotal: 0,
-            productsDeliveredTotal: 0,
-        };
-    }
+    return {
+      usersTotal: data.usersTotal ?? 0,
+      therapistsTotal: data.therapistsTotal ?? 0,
+      productsTotal: data.productsTotal ?? 0,
+      patientsServedTotal: data.patientsServedTotal ?? 0,
+      productsDeliveredTotal: data.productsDeliveredTotal ?? 0,
+    };
+  } catch (error: any) {
+    console.error("Error fetching public stats via API:", error?.response || error?.message);
+    return {
+      usersTotal: 0,
+      therapistsTotal: 0,
+      productsTotal: 0,
+      patientsServedTotal: 0,
+      productsDeliveredTotal: 0,
+    };
+  }
 }

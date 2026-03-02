@@ -1,47 +1,34 @@
+import serverApi from "@/lib/repos/axios.server";
 
-'use server';
-
-import { db } from '@/lib/db';
-import { getAuth } from 'firebase-admin/auth';
-import type { ConsentLog } from '../types';
-import { FieldValue } from 'firebase-admin/firestore';
-import { getCurrentUser } from '@/lib/auth';
-
-interface LogConsentArgs {
+export interface LogConsentPayload {
+  userId: number;
   consentType: 'terms' | 'privacy' | 'medical' | 'marketing';
   version: string;
 }
 
-export async function logConsent(args: LogConsentArgs): Promise<{ success: boolean; error?: string }> {
-  const session = await getCurrentUser();
-
-  if (!session?.uid) {
-    return { success: false, error: 'User not authenticated.' };
-  }
-
-  const { consentType, version } = args;
-  const userId = session.uid;
-
+/**
+ * Log user consent via backend API
+ */
+export async function logConsent(payload: LogConsentPayload): Promise<{ success: boolean; error?: string }> {
   try {
-    const consentLogRef = db.collection('consentLogs').doc();
+    const { data } = await serverApi.post(
+      '/api/consent/log',
+      {
+        userId: payload.userId,
+        consentType: payload.consentType,
+        version: payload.version,
+      },
+      {
+        headers: {
+          withCredentials: true, // same as your cart API style
+        },
+      }
+    );
 
-    const newLog: Omit<ConsentLog, 'id'> = {
-      userId,
-      consentType,
-      version,
-      status: 'granted',
-      createdAt: FieldValue.serverTimestamp() as any,
-      ipAddress: 'N/A', // IP address should be captured from the request if needed
-      userAgent: 'N/A', // User agent should be captured from request headers if needed
-    };
-
-    await consentLogRef.set({ ...newLog, id: consentLogRef.id });
-
-    return { success: true };
-
-  } catch (error) {
-    console.error('Error logging consent:', error);
-    // In a real app, you might want more sophisticated error handling
+    // Assuming API returns { success: true/false }
+    return data;
+  } catch (error: any) {
+    console.error("CONSENT LOG ERROR:", error?.message);
     return { success: false, error: 'A server error occurred while saving consent.' };
   }
 }

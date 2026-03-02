@@ -1,58 +1,41 @@
-
-
 'use server';
 
+import serverApi from "@/lib/repos/axios.server";
 import type { SupportTicket } from '@/lib/types';
-import { db } from '@/lib/db';
-import { getSafeDate } from '../utils';
-import { FieldValue } from 'firebase-admin/firestore';
 
+/**
+ * Fetches support tickets via backend API.
+ * @param filters Optional filters like { status: 'open' }
+ */
 export async function listSupportTickets(filters?: any): Promise<SupportTicket[]> {
-    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = db.collection('supportTickets');
-
-    if (filters?.status) {
-        query = query.where('status', '==', filters.status);
-    }
-    
-    // Sort on the server if no filter is applied
-    if (!filters || Object.keys(filters).length === 0) {
-        query = query.orderBy('updatedAt', 'desc');
-    }
-
-    const snapshot = await query.get();
-
-    if (snapshot.empty) {
-        return [];
-    }
-    
-    const tickets = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: getSafeDate(data.createdAt)?.toISOString() || new Date().toISOString(),
-            updatedAt: getSafeDate(data.updatedAt)?.toISOString() || new Date().toISOString(),
-        } as SupportTicket;
+  try {
+    const { data } = await serverApi.get('/api/support-tickets/list', {
+      params: filters,
+      headers: { withCredentials: true },
     });
-
-    // If a filter was applied, we sort here because Firestore requires an index for composite queries.
-    if (filters && Object.keys(filters).length > 0) {
-        tickets.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    }
-
-    return tickets;
+    return data?.tickets ?? [];
+  } catch (error: any) {
+    console.error("Error fetching support tickets via API:", error?.response || error?.message);
+    return [];
+  }
 }
 
+/**
+ * Updates a support ticket via backend API.
+ * @param ticketId ID of the ticket to update
+ * @param data Partial fields to update
+ */
 export async function updateSupportTicket(ticketId: string, data: Partial<SupportTicket>): Promise<{ success: boolean; error?: string }> {
-    try {
-        const ticketRef = db.collection('supportTickets').doc(ticketId);
-        await ticketRef.update({
-            ...data,
-            updatedAt: FieldValue.serverTimestamp(),
-        });
-        return { success: true };
-    } catch (error) {
-        console.error("Error updating support ticket:", error);
-        return { success: false, error: 'Failed to update ticket in database.' };
-    }
+  try {
+    const { data: response } = await serverApi.post(
+      `/api/support-tickets/update/${ticketId}`,
+      data,
+      { headers: { withCredentials: true } }
+    );
+
+    return { success: response?.success ?? false, error: response?.error };
+  } catch (error: any) {
+    console.error("Error updating support ticket via API:", error?.response || error?.message);
+    return { success: false, error: 'Failed to update ticket via API.' };
+  }
 }

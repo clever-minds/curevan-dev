@@ -1,6 +1,5 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { UserProfile } from "../types";
-import { getToken } from "@/lib/auth";
 
 /**
  * Fetch Users List
@@ -74,12 +73,12 @@ export async function getUserById(
   try {
     if (!id) return null;
 
-    const token = getToken();
-    if (!token) return null;
+    // const token = getToken();
+    // if (!token) return null;
 
     const { data } = await serverApi.get(`/api/users/${id}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+       withCredentials: true
       },
     });
 
@@ -108,15 +107,15 @@ export async function saveUserProfile(
   payload: Omit<UserProfile, "createdAt">
 ): Promise<UserProfile | null> {
   try {
-    const token = getToken();
-    if (!token) return null;
+    // const token = getToken();
+    // if (!token) return null;
 
     const { data } = await serverApi.post(
       "/api/users/save",
       payload,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+         withCredentials: true
         },
       }
     );
@@ -134,12 +133,12 @@ export async function saveUserProfile(
  */
 export async function deleteUser(id: string): Promise<boolean> {
   try {
-    const token = getToken();
-    if (!token) return false;
+    // const token = getToken();
+    // if (!token) return false;
 
     await serverApi.delete(`/api/users/delete/${id}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        withCredentials: true
       },
     });
 
