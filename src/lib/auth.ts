@@ -6,13 +6,12 @@ import { getUserById } from './repos/users'
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
   try {
-    const cookieStore = await cookies() 
+    const cookieStore = cookies() // ✅ synchronous
     const token = cookieStore.get('token')?.value
 
     if (!token) return null
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string }
-
     if (!decoded?.id) return null
 
     const userProfile = await getUserById(decoded.id)
