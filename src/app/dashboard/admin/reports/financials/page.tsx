@@ -35,20 +35,22 @@ export default function FinancialReportPage() {
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            const [payoutData, therapistData] = await Promise.all([
-                listPayoutItems(filters),
-                listTherapists()
-            ]);
-            setPayoutItems(payoutData);
-            setTherapists(therapistData);
-            setLoading(false);
-        }
-        fetchData();
-    }, [filters]);
+ useEffect(() => {
+    const fetchData = async () => {
+        setLoading(true);
 
+        const [payoutData, therapistData] = await Promise.all([
+            listPayoutItems(filters),
+            listTherapists()
+        ]);
+
+        setPayoutItems(payoutData || []);
+        setTherapists(therapistData || []); // <-- here null becomes []
+        setLoading(false);
+    };
+
+    fetchData();
+}, [filters]);
     const combinedData: CombinedPayoutItem[] = useMemo(() => {
         const therapistMap = new Map(therapists.map(t => [t.id, t]));
         return payoutItems.map(item => ({
