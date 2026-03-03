@@ -71,7 +71,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
         return therapists;
     } catch (error: any) {
         console.log('THERAPISTS LIST ERROR:', error?.message);
-        return null;
+          return [];
     }
     }
 
@@ -232,6 +232,6 @@ export async function listTherapistsByLocation(
     return therapists;
   } catch (error: any) {
     console.log('THERAPISTS BY LOCATION ERROR:', error?.message);
-    return null;
+      return [];
   }
 }
