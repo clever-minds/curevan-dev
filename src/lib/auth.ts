@@ -22,3 +22,14 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     return null
   }
 }
+
+export async function getToken(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies()      // Next.js server-side cookies
+    const token = cookieStore.get('token')?.value
+    return token || null
+  } catch (error) {
+    console.error('Error fetching token:', error)
+    return null
+  }
+}
