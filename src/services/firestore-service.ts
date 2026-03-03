@@ -2,7 +2,7 @@
 
 import type { UserProfile } from '@/lib/types';
 import { listAppointmentsForUser } from '@/lib/repos/appointments';
-import { getUserById as repoGetUserById, addUserProfile } from '@/lib/repos/users';
+import { getUserById as repoGetUserById,saveUserProfile as addUserProfile } from '@/lib/repos/users';
 
 /**
  * Creates a new user profile document in the `users` collection.
@@ -17,8 +17,8 @@ export async function createUserProfile(profileData: Omit<UserProfile, 'createdA
 /**
  * Fetches a user's profile from the `users` collection.
  */
-export async function getUserProfile(uid: number): Promise<UserProfile | null> {
-    return await repoGetUserById(uid);
+export async function getUserProfile(token: string): Promise<UserProfile | null> {
+    return await repoGetUserById(token);
 }
 
 /**
@@ -26,7 +26,7 @@ export async function getUserProfile(uid: number): Promise<UserProfile | null> {
  * Implements role-based access control.
  */
 export async function getAppointmentsForUser(
-  userId: string,
+  userId: number,
   role: 'patient' | 'therapist'
 ): Promise<any[]> {
    return await listAppointmentsForUser(userId, role);
