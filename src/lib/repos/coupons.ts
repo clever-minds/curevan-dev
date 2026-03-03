@@ -8,7 +8,7 @@ import { getToken } from "@/lib/auth";
 ========================= */
 export async function listCoupons(): Promise<Coupon[]> {
   try {
-    const token = getToken(); // ✅ client only
+    const token =await getToken(); // ✅ client only
     const { data } = await serverApi.get<ApiResponse<Coupon[]>>("/api/coupons/list", {
       headers: {
         Authorization: `Bearer ${token}`
@@ -27,7 +27,7 @@ export async function listCoupons(): Promise<Coupon[]> {
 ========================= */
 export async function getCouponById(id: number | string): Promise<Coupon | null> {
   try {
-    const token = getToken();
+    const token =await getToken();
     const { data } = await serverApi.get(`/api/coupons/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -43,7 +43,7 @@ export async function getCouponById(id: number | string): Promise<Coupon | null>
 ========================= */
 export async function getCouponByCode(code: string): Promise<Coupon | null> {
   try {
-    const token = getToken();
+    const token =await getToken();
     const { data } = await serverApi.get(`/api/coupons/${code}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -78,7 +78,7 @@ export async function createCoupon(payload: {
 }): Promise<ApiResponse<Coupon | null>> {
 
   try {
-    const token = getToken();
+    const token =await getToken();
 
     const response = await serverApi.post(
       "/api/coupons/add",
@@ -116,7 +116,7 @@ export async function updateCoupon(
   payload: Partial<Omit<Coupon, "id">>
 ): Promise<ApiResponse<Coupon | null>> {
   try {
-    const token = getToken();
+    const token =await getToken();
 
     const response = await serverApi.put(
       `/api/coupons/edit/${id}`,
@@ -149,7 +149,7 @@ export async function updateCoupon(
 ========================= */
 export async function deleteCoupon(id: string | number): Promise<ApiResponse<Coupon | null>> {
   try {
-    const token = getToken();
+    const token =await getToken();
     const response = await serverApi.delete<ApiResponse<Coupon | null>>(
       `/api/coupons/delete/${id}`,
       {
@@ -191,7 +191,7 @@ export async function applyCoupon(
   payload: ApplyCouponPayload
 ): Promise<ApplyCouponResponse | null> {
   try {
-        const token = getToken();
+        const token =await getToken();
     const { data } = await serverApi.post<ApiResponse<ApplyCouponResponse>>(
       "/api/coupons/apply",
       payload,

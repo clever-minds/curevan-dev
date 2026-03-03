@@ -70,7 +70,7 @@ export async function createProducts(payload: {
    ========================= */
 export async function getProductById(id: number | string) {
   try {
-    const token = getToken(); // ✅ client only
+    const token = await getToken(); // ✅ client only
 
     const { data } = await api.get(`/api/products/${id}`,{
   headers: {

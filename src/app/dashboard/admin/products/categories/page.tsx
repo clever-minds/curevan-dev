@@ -81,7 +81,7 @@ export default function CategoryManager() {
   function onSubmit(data: CategoryFormValues) {
     startTransition(async () => {
       try {
-          const token = getToken();
+          const token =await getToken();
             console.log("CategoryFormValues.......",data);
             if (!token) {
                 throw new Error('Token missing, please login again');
@@ -113,7 +113,7 @@ export default function CategoryManager() {
   if (!confirm(`Delete "${category.name}" ?`)) return;
 
   try {
-    const token = getToken();
+    const token = await getToken();
     if (!token) throw new Error('Token missing');
 
     await deleteProductCategory(category.id, token);
@@ -156,7 +156,7 @@ const handleEditCategory = (category: ProductCategory) => {
 const onEditSubmit = (data: CategoryFormValues) => {
   startTransition(async () => {
     try {
-      const token = getToken();
+      const token = await getToken();
       if (!token || !selectedCategory) {
         throw new Error("Token or category missing");
       }

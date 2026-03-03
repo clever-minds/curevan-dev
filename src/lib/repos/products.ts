@@ -4,7 +4,7 @@
 
   export async function listProducts(): Promise<Product[]> {
     try {
-      const token = getToken(); // ✅ client only
+      const token = await getToken(); // ✅ client only
       const { data } = await serverApi.get("/api/products/list",{
     headers: {
       Authorization: `Bearer ${token}` // typical format for bearer tokens
@@ -20,7 +20,7 @@
 
   export async function listProductCategories(): Promise<ProductCategory[]> {
     try {
-      const token = getToken(); // ✅ client only
+      const token = await getToken(); // ✅ client only
       const { data } = await serverApi.get("/api/category/list",{
         headers: {
           Authorization: `Bearer ${token}` // typical format for bearer tokens

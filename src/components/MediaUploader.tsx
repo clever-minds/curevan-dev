@@ -35,7 +35,7 @@ export default function MediaUploader({
       setFiles((prev) => [...prev, ...previews]);
 
       try {
-        const token = getToken();
+        const token =await getToken();
         await uploadMedia(token as string, acceptedFiles);
         onUploaded();
       } catch (e) {

@@ -6,7 +6,7 @@ const API = process.env.NEXT_PUBLIC_API_URL;
     LIST CATEGORIES
    ========================= */
 export async function listProductCategories() {
-     const token = getToken();
+     const token = await getToken();
     
     if (!token) {
          throw new Error('Token missing, please login again');

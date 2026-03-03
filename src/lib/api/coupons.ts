@@ -20,7 +20,7 @@ export async function listCoupons() {
    ========================= */
 export async function getCouponById(id: number | string) {
   try {
-    const token = getToken(); // client-side only
+    const token = await getToken(); // client-side only
 
     const { data } = await api.get(`/api/coupons/${id}`, {
       headers: {

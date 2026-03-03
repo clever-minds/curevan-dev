@@ -5,7 +5,7 @@ import { getToken } from "@/lib/auth";
 
 export async function listInventory(filters?: any): Promise<Inventory[]> {
     try {
-        const token = getToken(); // ✅ client only
+        const token = await getToken(); // ✅ client only
         console.log("Token:", token);
 
         const { data } = await serverApi.get("/api/products/inventory/list", {

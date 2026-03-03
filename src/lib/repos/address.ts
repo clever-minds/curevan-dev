@@ -8,7 +8,7 @@ import { getToken } from "@/lib/auth";
 ========================= */
 export async function listAddresses(): Promise<Address[]> {
   try {
-    const token = getToken();
+    const token = await getToken();
     const { data } = await serverApi.get<ApiResponse<Address[]>>("/api/addresses/list", {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -25,7 +25,7 @@ export async function listAddresses(): Promise<Address[]> {
 ========================= */
 export async function getAddressById(id: string | number): Promise<Address | null> {
   try {
-    const token = getToken();
+    const token = await getToken();
     const { data } = await serverApi.get<ApiResponse<Address>>(`/api/addresses/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -52,7 +52,7 @@ export async function createAddress(payload: {
   email:string;
 }): Promise<ApiResponse<Address | null>> {
   try {
-    const token = getToken();
+    const token = await getToken();
     const response = await serverApi.post("/api/addresses/add", payload, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -80,7 +80,7 @@ export async function updateAddress(
   payload: Partial<Omit<Address, "id" | "user_id">>
 ): Promise<ApiResponse<Address | null>> {
   try {
-    const token = getToken();
+    const token = await getToken();
     const response = await serverApi.put(`/api/addresses/edit/${id}`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -105,7 +105,7 @@ export async function updateAddress(
 ========================= */
 export async function deleteAddress(id: string | number): Promise<ApiResponse<Address | null>> {
   try {
-    const token = getToken();
+    const token = await getToken();
     const response = await serverApi.delete<ApiResponse<Address | null>>(`/api/addresses/delete/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });

@@ -26,7 +26,7 @@ export default function MediaPicker({
 
   const fetchMedia = async () => {
     try {
-      const token = getToken();
+      const token = await getToken();
       if (!token) return;
 
       setLoading(true);

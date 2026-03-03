@@ -10,8 +10,9 @@ const clientApi = axios.create({
   },
 });
 
-clientApi.interceptors.request.use((config) => {
-  const token = getToken(); // ✅ client only
+// Make the interceptor async
+clientApi.interceptors.request.use(async (config) => {
+  const token = await getToken(); // ✅ now resolved before use
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
