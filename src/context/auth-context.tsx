@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import type { UserProfile } from '@/lib/types';
 import { setCookie, deleteCookie } from 'cookies-next';
 import api from '@/lib/api/axios';
+import { getToken } from '@/lib/auth';
 
 interface AuthContextType {
   user: UserProfile | null;

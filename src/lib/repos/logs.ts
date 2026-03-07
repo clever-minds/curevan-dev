@@ -1,5 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { AuditLog } from "../types";
+import { getToken } from "@/lib/auth";
 
 /**
  * Adds an audit log via backend API instead of Firestore
@@ -7,11 +8,15 @@ import type { AuditLog } from "../types";
  */
 export async function addAuditLog(log: Omit<AuditLog, "id">): Promise<AuditLog | null> {
   try {
+       const token = await getToken();
+        if (!token) {
+            throw new Error('Token missing, please login again');
+        }
     const { data: response } = await serverApi.post(
-      "/api/audit-logs/add",
+      "/api/general/audit-logs/add",
       log,
       {
-        headers: { withCredentials: true },
+        headers: { withCredentials: true, Authorization: `Bearer ${token}`,  },
       }
     );
 

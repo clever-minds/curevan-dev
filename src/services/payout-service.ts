@@ -8,6 +8,7 @@ import { getTherapistById } from '@/lib/repos/therapists';
 import { addPayoutItem, getPayoutItemBySourceId } from '@/lib/repos/payouts';
 import { addAuditLog } from '@/lib/repos/logs';
 
+
 /**
  * This service encapsulates the logic for the weekly payout automation.
  * In a real-world scenario, the `runWeeklyPayout` function would be
@@ -19,7 +20,7 @@ import { addAuditLog } from '@/lib/repos/logs';
  * It creates a `payoutItems` ledger entry for a given booking.
  * @param bookingId The ID of the booking associated with the locked PCR.
  */
-export async function createPayoutItemForBooking(bookingId: string): Promise<{ success: boolean; message: string; payoutItemId?: string; }> {
+export async function createPayoutItemForBooking(bookingId: number): Promise<{ success: boolean; message: string; payoutItemId?: string; }> {
   console.log(`Triggered payout item creation for bookingId: ${bookingId}`);
   
   // Idempotency Check: Has a payout item already been created for this booking?

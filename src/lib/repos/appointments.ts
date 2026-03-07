@@ -1,6 +1,7 @@
 import serverApi from '@/lib/repos/axios.server';
 import type { Appointment, ApiResponse } from '@/lib/types';
 import { getSafeDate } from '@/lib/utils';
+import { getToken } from '@/lib/auth';
 
 /**
  * List all appointments with optional filters
@@ -23,10 +24,20 @@ function parseDate(ts: any): Date | undefined {
 }
 export async function listAppointments(filters?: any): Promise<Appointment[]> {
     try {
-        const { data: response } = await serverApi.get<ApiResponse<Appointment[]>>('/api/appointments', {
-            params: filters,
-        });
-
+       const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
+        const { data: response } =
+          await serverApi.get<ApiResponse<Appointment[]>>(
+            '/api/appointments',
+            {
+              params: filters,
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
         const appointmentsData = response?.data ?? [];
 
        const appointments = appointmentsData.map(appt => ({
@@ -42,7 +53,7 @@ export async function listAppointments(filters?: any): Promise<Appointment[]> {
             return appointments.filter(appt =>
                 appt.patientName.toLowerCase().includes(searchTerm) ||
                 appt.therapist.toLowerCase().includes(searchTerm) ||
-                appt.id.toLowerCase().includes(searchTerm)
+                appt.id.toString().includes(searchTerm)
             );
         }
 
@@ -57,11 +68,20 @@ export async function listAppointments(filters?: any): Promise<Appointment[]> {
 /**
  * Get appointment by ID
  */
-export async function getAppointmentById(id: string): Promise<Appointment | null> {
-    if (!id) return null;
+export async function getAppointmentById(id: number): Promise<Appointment | null> {
+  console.log(`Fetching appointment by ID: ${id}`);
 
+    if (!id) return null;
+    const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     try {
-        const { data: response } = await serverApi.get<ApiResponse<Appointment>>(`/api/appointments/${id}`);
+        const { data: response } = await serverApi.get<ApiResponse<Appointment>>(`/api/appointments/${id}`,{
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
+        });
         const appt = response?.data;
         if (!appt) return null;
 

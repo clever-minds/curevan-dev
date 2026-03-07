@@ -25,6 +25,7 @@ export default function PatientRecordsPage() {
         if (!user) return;
         setLoading(true);
         const allAppointments = await listAppointmentsForUser(user.id, 'patient');
+        console.log("All Appointments:...", allAppointments);
         setLockedPcrs(allAppointments.filter(a => a.pcrStatus === 'locked'));
         setLoading(false);
     };

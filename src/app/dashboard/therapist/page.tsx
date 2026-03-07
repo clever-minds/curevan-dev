@@ -102,7 +102,7 @@ export default function TherapistDashboard() {
         try {
             const [appointmentData, therapistData, therapyCats] = await Promise.all([
                 listAppointmentsForUser(user.id, 'therapist'),
-                getTherapistById(user.uid),
+                getTherapistById(user.id),
                 getTherapyCategories()
             ]);
             setAppointments(appointmentData);

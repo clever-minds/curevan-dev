@@ -106,7 +106,7 @@ export default function EarningsPage() {
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-      const therapistData = await getTherapistById(user.uid);
+      const therapistData = await getTherapistById(user.id);
       setTherapist(therapistData);
       if (therapistData?.referralCode) {
         const orderData = await listOrders({ couponCode: therapistData.referralCode });

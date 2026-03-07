@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -31,7 +30,8 @@ import Link from 'next/link';
 import { getTherapyCategories } from '@/lib/repos/categories';
 import { getPcrById, updatePcr } from '@/lib/repos/pcr';
 import type { PCR } from '@/lib/types';
-
+import MediaPicker from "@/components/MediaPicker";
+import type { MediaItem } from "@/types/media";
 
 const pcrFormSchema = z.object({
   // Patient Demographics (read-only from server)
@@ -79,7 +79,50 @@ const pcrFormSchema = z.object({
 
 type PcrFormValues = z.infer<typeof pcrFormSchema>;
 
-export function PcrForm({ bookingId }: { bookingId: string }) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Maps flat DB record → nested form values.
+ * DB stores bp/hr/rr/temp at the top level; the form nests them under vitalSigns.
+ */
+function dbToForm(pcrData: any): Partial<PcrFormValues> {
+  return {
+    ...pcrData,
+    vitalSigns: {
+      bp:   pcrData.bp   ?? pcrData.vitalSigns?.bp   ?? '',
+      hr:   pcrData.hr   ?? pcrData.vitalSigns?.hr   ?? '',
+      rr:   pcrData.rr   ?? pcrData.vitalSigns?.rr   ?? '',
+      temp: pcrData.temp ?? pcrData.vitalSigns?.temp ?? '',
+    },
+  };
+}
+
+/**
+ * Maps nested form values → flat DB payload.
+ * Flattens vitalSigns back to top-level fields and
+ * converts attachment array → array of ids only.
+ */
+function formToDb(data: PcrFormValues) {
+  const { vitalSigns, attachment, ...rest } = data;
+
+  // Send only the id of the first attachment (upload_attachment_id is a single value)
+  const uploadAttachmentId: number | null = Array.isArray(attachment) && attachment.length > 0
+    ? attachment[0].id
+    : null;
+
+  return {
+    ...rest,
+    bp:   vitalSigns?.bp   ?? '',
+    hr:   vitalSigns?.hr   ?? '',
+    rr:   vitalSigns?.rr   ?? '',
+    temp: vitalSigns?.temp ?? '',
+    upload_attachment_id: uploadAttachmentId,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
+export function PcrForm({ bookingId }: { bookingId: number }) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -92,7 +135,8 @@ export function PcrForm({ bookingId }: { bookingId: string }) {
     defaultValues: {
         status: 'in_progress',
         signatureConfirmation: false,
-        attachment: null,
+        attachment: [],
+        vitalSigns: { bp: '', hr: '', rr: '', temp: '' },
     },
   });
 
@@ -105,7 +149,8 @@ export function PcrForm({ bookingId }: { bookingId: string }) {
         ]);
 
         if (pcrData) {
-            form.reset(pcrData as any);
+            // ✅ FIX: map flat DB fields into nested form shape before reset
+            form.reset(dbToForm(pcrData) as any);
         }
         setTherapyCategories(cats);
         setIsLoading(false);
@@ -115,30 +160,64 @@ export function PcrForm({ bookingId }: { bookingId: string }) {
 
   async function handleSaveDraft() {
     const data = form.getValues();
-    await updatePcr(bookingId, { ...data, status: 'in_progress' });
+    // ✅ FIX: flatten vitalSigns + send only attachment ids
+    await updatePcr(bookingId, { ...formToDb(data), status: 'in_progress' });
     toast({ title: 'PCR Draft Saved' });
   }
 
-  async function handleFinalize() {
-     const result = await form.trigger();
-     if (!result) {
-         toast({ variant: 'destructive', title: 'Validation Failed', description: 'Please fill all required fields and confirm your signature.' });
-         return;
-     }
-     setIsFinalizing(true);
-     const data = form.getValues();
-     await updatePcr(bookingId, { ...data, status: 'locked' });
-     
-     const payoutResult = await createPayoutItemForBooking(bookingId);
+async function handleFinalize() {
+  const result = await form.trigger();
 
-     if (payoutResult.success) {
-         toast({ title: 'PCR Finalized & Locked', description: payoutResult.message });
-         form.reset({ ...data, status: 'locked' });
-     } else {
-         toast({ variant: 'destructive', title: 'Action Failed', description: payoutResult.message });
-     }
-     setIsFinalizing(false);
+  if (!result) {
+    toast({
+      variant: 'destructive',
+      title: 'Validation Failed',
+      description: 'Please fill all required fields and confirm your signature.',
+    });
+    return;
   }
+
+  setIsFinalizing(true);
+
+  try {
+    const data = form.getValues();
+
+    const payoutResult = await createPayoutItemForBooking(bookingId);
+
+    // ✅ Only update PCR if payout successful
+    if (payoutResult.success) {
+
+      await updatePcr(bookingId, {
+        ...formToDb(data),
+        status: 'locked',
+      });
+
+      toast({
+        title: 'PCR Finalized & Locked',
+        description: payoutResult.message,
+      });
+
+      form.reset({ ...data, status: 'locked' });
+
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Action Failed',
+        description: payoutResult.message,
+      });
+    }
+
+  } catch (error) {
+    console.log('Error during finalization:', error);
+    toast({
+      variant: 'destructive',
+      title: 'Something went wrong',
+      description: 'Please try again1.',
+    });
+  }
+
+  setIsFinalizing(false);
+}
   
   async function handleUnlock() {
       await updatePcr(bookingId, { status: 'returned' });
@@ -294,7 +373,7 @@ export function PcrForm({ bookingId }: { bookingId: string }) {
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="diagnosis" render={({ field }) => (
-                    <FormItem><FormLabel>Diagnosis (Optional)</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Therapist's professional diagnosis" context={{ entityType: 'pcr', field: 'diagnosis' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Diagnosis (Optional)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Therapist's professional diagnosis" context={{ entityType: 'pcr', field: 'diagnosis' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <FormField control={form.control} name="vitalSigns.bp" render={({ field }) => (<FormItem><FormLabel>BP</FormLabel><FormControl><Input placeholder="120/80" {...field} disabled={isFinal} /></FormControl></FormItem>)}/>
@@ -325,20 +404,22 @@ export function PcrForm({ bookingId }: { bookingId: string }) {
             {/* Attachments & Signature */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Attachments & Signature</h3>
-                <FormField
+                  <FormField
                     control={form.control}
                     name="attachment"
-                    render={({ field: { onChange, ...fieldProps} }) => (
-                        <FormItem>
-                        <FormLabel>Upload Attachment</FormLabel>
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Images</FormLabel>
                         <FormControl>
-                            <Input type="file" onChange={(e) => onChange(e.target.files)} {...fieldProps} disabled={isFinal} />
+                          <MediaPicker
+                            value={field.value as MediaItem[]}
+                            onChange={(media: MediaItem[]) => field.onChange(media)}
+                          />
                         </FormControl>
-                        <FormDescription>Files such as lab reports, images, or prescriptions.</FormDescription>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                />
+                  />
                 <FormField control={form.control} name="therapistName" render={({ field }) => (
                     <FormItem><FormLabel>Therapist Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
                 )}/>

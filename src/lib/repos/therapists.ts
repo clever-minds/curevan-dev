@@ -7,7 +7,6 @@ import type { Therapist, Address, GeoPoint } from '../types';
  */
 export async function listTherapists(): Promise<Therapist[] | null> {
     try {
-        console.log('Raw therapists data from API:');
 
         const { data } = await serverApi.get('/api/therapists/list', {
         withCredentials: true, // send cookies automatically
@@ -52,11 +51,11 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             distance:item.distance_km,
             lat: item.latitude ? Number(item.latitude) : 0,
             lng: item.longitude ? Number(item.longitude) : 0,
-            tax: item.tax
+            tax: item
               ? {
-                  pan: item.tax.pan || '',
-                  panVerified: item.tax.panVerified,
-                  lastPanUpdatedAt: item.tax.lastPanUpdatedAt ,
+                  pan: item.pan || '',
+                  panVerified: item.panVerified,
+                  lastPanUpdatedAt: item.lastPanUpdatedAt ,
                 }
               : undefined,
         }));
@@ -67,6 +66,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
         if (a.membershipPlan !== 'premium' && b.membershipPlan === 'premium') return 1;
         return 0;
         });
+        console.log('Raw therapists data from API:',therapists);
 
         return therapists;
     } catch (error: any) {
@@ -78,7 +78,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
 /**
  * Get therapist by ID (uses cookies)
  */
-export async function getTherapistById(id: string): Promise<Therapist | null> {
+export async function getTherapistById(id: number): Promise<Therapist | null> {
   try {
     if (!id) return null;
 

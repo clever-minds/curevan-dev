@@ -1,5 +1,6 @@
 import api from "./axios";
 import type { UserProfile } from '../types';
+import { getToken } from '@/lib/auth';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,7 +25,7 @@ console.log(res);
 
   return {
     user: {
-      uid: data.uid,
+      id: data.id,
       token: data.token
     }
   };
@@ -48,15 +49,25 @@ export async function getUserProfile(
   return data;
 }
 export const getUserProfiledata = async () => {
-  const res = await fetch("http://localhost:5000/api/auth/me", {
-    credentials: "include"
-  });
+  try {
+    const token = await getToken();
 
-  if (!res.ok) {
+    if (!token) {
+      throw new Error("Token missing, please login again");
+    }
+
+    const res = await api.get("/api/auth/me", {
+      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return res.data;
+
+  } catch (error) {
     throw new Error("Unauthorized");
   }
-
-  return res.json();
 };
 
 export async function createUserWithEmailAndPassword(
@@ -89,27 +100,39 @@ export async function loginWithOTP(data: {
   otp?: string;
   verifyOtp?: boolean;
 }) {
-  const res = await fetch(`${API}/api/auth/login-with-mobile`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-     credentials: "include", 
-    body: JSON.stringify(data)
-  });
+  try {
+    const res = await api.post(`/api/auth/login-with-mobile`, data, {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  const result = await res.json();
+    return res.data;
 
-  if (!res.ok) {
-    throw new Error(result.message || 'Login failed');
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message || "Login failed"
+    );
   }
-
-  return result;
 }
 export async function getCurrentUser(): Promise<UserProfile | null> {
   try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new Error('Token missing, please login again');
+    }
+
     const res = await api.get('/api/auth/me', {
       withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
+
     return res.data.user;
+
   } catch (error) {
     return null; // not logged in
   }

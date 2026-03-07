@@ -1,11 +1,18 @@
-'use server';
-
 import serverApi from "@/lib/repos/axios.server";
 import type { 
   AIFeedback, Appointment, AuditLog, Coupon, PayoutItem, 
   ProfileChangeRequest, SupportTicket, Therapist 
 } from '@/lib/types';
 import { z } from 'zod';
+
+import { sub, startOfWeek, endOfWeek } from 'date-fns';
+import { listAppointments, getAppointmentById } from '@/lib/repos/appointments';
+import { getTherapistById } from '@/lib/repos/therapists';
+import { addPayoutItem, getPayoutItemBySourceId } from '@/lib/repos/payouts';
+import { addAuditLog } from '@/lib/repos/logs';
+import { getTherapistProfileById } from './repos/therapistProfiles';
+
+import { updatePcr } from './repos/pcr';
 
 /**
  * Upload a file via backend API (server handles Firebase Storage)
@@ -40,16 +47,92 @@ export async function handleGenerateNotes(formData: FormData): Promise<{ objecti
 /**
  * Create payout item for a booking
  */
-export async function createPayoutItemForBooking(bookingId: string) {
-  try {
-    const { data } = await serverApi.post(`/api/payouts/create-item/${bookingId}`, null, {
-      headers: { withCredentials: true },
-    });
-    return data;
-  } catch (error: any) {
-    console.error(`Error creating payout item for booking ${bookingId}:`, error?.response || error?.message);
-    return { success: false, message: 'Failed to create payout item.' };
+export async function createPayoutItemForBooking(bookingId: number): Promise<{ success: boolean; message: string; payoutItemId?: string; }> {
+  console.log(`Triggered payout item creation for bookingId: ${bookingId}`);
+
+  // This should ideally be a transaction, but for simplicity we'll do it step-by-step.
+  // Idempotency Check
+  const existingItem = await getPayoutItemBySourceId(bookingId);
+  if (existingItem) {
+    console.log(`Payout item for booking ${bookingId} already exists. Skipping.`);
+    return { success: true, message: 'Payout item already exists.' };
   }
+
+  // 1. Fetch related documents
+  const appointment = await getAppointmentById(bookingId);
+  if (!appointment) {
+    throw new Error(`Appointment ${bookingId} not found.`);
+  }
+
+  const therapist = await getTherapistProfileById(appointment.therapistId);
+  if (!therapist) {
+    throw new Error(`Therapist ${appointment.therapistId} not found.`);
+  }
+
+  // 2. Validate conditions for payout
+  if (appointment.paymentStatus !== 'Paid') {
+    await updatePcr(bookingId, { status: 'in_progress' }); // Revert lock status
+    return { success: false, message: `Payment not confirmed for booking ${bookingId}. PCR has been unlocked.` };
+  }
+
+  // 3. Compute payout details
+  const grossAmount = appointment.serviceAmount || 0;
+  const membershipPlanSnapshot = therapist.membershipPlan || 'standard';
+  const platformFeePct = membershipPlanSnapshot === 'premium' ? 0.10 : 0.00;
+  const platformFeeAmount = Math.round(grossAmount * platformFeePct);
+
+  // GST is 18% on the platform fee.
+  const gstOnPlatformFee = platformFeeAmount > 0 ? platformFeeAmount * 0.18 : 0;
+  
+  const preTdsPayable = grossAmount - platformFeeAmount;
+  
+  // TDS is 10% on the amount after platform fee deduction.
+  const tdsDeducted = preTdsPayable > 0 ? preTdsPayable * 0.10 : 0;
+
+  const netAmount = preTdsPayable - tdsDeducted;
+  
+  const bookingDate = new Date(appointment.date as any);
+  const weekStart = startOfWeek(bookingDate, { weekStartsOn: 1 }).toISOString();
+
+  // 4. Create the payoutItems document
+  const newPayoutItem: Omit<PayoutItem, 'id'> = {
+    type: 'service',
+    sourceId: bookingId,
+    therapistId: appointment.therapistId,
+    patientId: appointment.patientId,
+    serviceTypeId: appointment.serviceTypeId,
+    grossAmount,
+    platformFeePct,
+    platformFeeAmount,
+    gstOnPlatformFee,
+    preTdsPayable,
+    tdsDeducted,
+    netAmount,
+    currency: 'INR',
+    state: 'onHold', // Default state, to be picked up by weekly batch job
+    weekStart,
+    createdAt: new Date(),
+    membershipPlanSnapshot,
+  };
+  
+  const createdItem = await addPayoutItem(newPayoutItem);
+
+  // 5. Create the audit log entry
+  const auditLog: AuditLog = {
+      actorId: 'system',
+      action: 'payout.item.created',
+      entityType: 'booking',
+      entityId: bookingId,
+      timestamp: new Date(),
+      details: {
+          payoutItemId: createdItem.id,
+          netAmount: netAmount,
+          therapistId: therapist.id,
+      }
+  };
+  await addAuditLog(auditLog);
+  
+  return { success: true, message: 'Payout item created successfully.', payoutItemId: createdItem.id };
 }
 
 /**

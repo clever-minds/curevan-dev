@@ -1,5 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { CartItem, Coupon } from "../types";
+import { getToken } from "@/lib/auth";
 
 interface CartDocument {
   items: CartItem[];
@@ -18,10 +19,11 @@ export interface SaveCartPayload {
  */
 export async function getCart(): Promise<CartItem[] | null> {
   try {
-   
+    const token =await getToken();
     const { data } = await serverApi.get("/api/cart/list", {
       headers: {
        withCredentials: true,
+        Authorization: `Bearer ${token}`
       },
     });
 
@@ -85,6 +87,7 @@ export async function saveCart(
 ): Promise<any | null> {
   try {
    
+    const token =await getToken();
 
     const { data } = await serverApi.post(
       '/api/cart/add-or-update',
@@ -96,6 +99,7 @@ export async function saveCart(
       {
         headers: {
          withCredentials: true,
+         Authorization: `Bearer ${token}`
         },
       }
     );
@@ -114,10 +118,11 @@ export async function saveCart(
 export async function clearCart(): Promise<boolean> {
   try {
    
-
+    const token =await getToken();
     await serverApi.delete("/api/cart/clear", {
       headers: {
         withCredentials: true,
+        Authorization: `Bearer ${token}`
       },
     });
 
@@ -130,11 +135,11 @@ export async function clearCart(): Promise<boolean> {
 
 export async function removeCartItem(cartItemId: number): Promise<boolean> {
   try {
- 
-
+    const token =await getToken();
     await serverApi.delete(`/api/cart/remove/${cartItemId}`, {
-      headers: {
+       headers: {
         withCredentials: true,
+        Authorization: `Bearer ${token}`
       },
     });
 

@@ -31,7 +31,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIRichText } from '@/components/ai/ai-rich-text';
 import { getTherapyCategories } from '@/lib/repos/categories';
-
+import MediaPicker from "@/components/MediaPicker";
+import type { MediaItem } from "@/types/media";
+import  { submitEditorForm,updateJournal } from "@/lib/repos/journal";
+import type { JournalEntry } from "@/lib/types";
+import { useRouter } from 'next/navigation';
+import { getJournalEntryById } from '@/lib/repos/content';
 
 const editorFormSchema = z.object({
   // Common fields
@@ -63,8 +68,7 @@ interface NewPostFormProps {
     contentType: ContentType;
 }
 
-export function NewPostForm({ contentType = 'post' }: NewPostFormProps) {
-  const { toast } = useToast();
+export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) {  const { toast } = useToast();
   const { user } = useAuth();
   const role = user?.role;
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -110,7 +114,39 @@ export function NewPostForm({ contentType = 'post' }: NewPostFormProps) {
       return () => clearTimeout(timer);
     }
   }, [watchedValues, form, contentType]);
+  useEffect(() => {
+    if (!postId) return;
 
+    const loadPost = async () => {
+         try {
+              const post = await getJournalEntryById(postId);
+          if (!post) return;
+        form.reset({
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            content: post.content,
+            status :post.status === "pending_review" ? "review" : post.status,
+            categories: Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [],
+            videoUrl: post.videoUrl || "",
+          coverImageUrl:
+              post.featuredImage && post.featuredImageId
+                ? [
+                    {
+                      id: Number(post.featuredImageId),
+                      url: post.featuredImage,
+                    },
+                  ]
+                : [],
+            metaDescription: (post as any).metaDescription || "",
+          });
+          } catch (error) {
+            console.error("Post load error:", error);
+          }
+    };
+
+    loadPost();
+  }, [postId]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,15 +172,56 @@ export function NewPostForm({ contentType = 'post' }: NewPostFormProps) {
   };
   
 
-  function onSubmit(data: EditorFormValues) {
-    console.log(data);
+  const router = useRouter();
+
+ async function onSubmit(data: EditorFormValues) {
+
+  const coverImageId = Array.isArray(data.coverImageUrl)
+    ? data.coverImageUrl[0]?.id ?? null
+    : data.coverImageUrl;
+
+  const payload: Partial<JournalEntry> = {
+    title: data.title,
+    excerpt: data.excerpt,
+    content: data.content,
+    slug: data.slug,
+    status: data.status === "review" ? "pending_review" : data.status,
+    tags: data.categories,
+    featuredImage:coverImageId,
+    videoUrl: data.videoUrl,
+    metaDescription: data.metaDescription,
+    difficulty: data.difficulty,
+    durationMin: data.durationMin,
+    sopVersion: data.sopVersion,
+  };
+
+  try {
+
+    // ✅ EDIT MODE
+    if (postId) {
+      await updateJournal(postId, payload);
+    }
+
+    // ✅ CREATE MODE
+    else {
+      await submitEditorForm(payload, contentType, setImagePreview);
+    }
+
     toast({
-      title: `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Saved!`,
-      description: `Your ${contentType} has been saved.`,
+      title: "Journal Saved!",
+      description: "Your journal has been saved successfully.",
     });
-    form.reset();
-    setImagePreview(null);
+
+    router.push('/dashboard/my-journal');
+
+  } catch (err) {
+    toast({
+      variant: 'destructive',
+      title: 'Error Saving',
+      description: 'Something went wrong.',
+    });
   }
+}
 
   // A simple slug generation utility
   const generateSlug = (title: string) => {
@@ -187,23 +264,9 @@ export function NewPostForm({ contentType = 'post' }: NewPostFormProps) {
                     <FormLabel>Featured Image</FormLabel>
                     <FormControl>
                     <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <label htmlFor="coverImageUrl-upload" className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                                <Upload className="w-4 h-4" />
-                                Upload Image
-                            </label>
-                            <Input id="coverImageUrl-upload" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                            <span className="text-sm text-muted-foreground">or</span>
-                            <Input placeholder="Paste image URL" onChange={(e) => form.setValue('coverImageUrl', e.target.value)} />
-                        </div>
-                        {imagePreview && (
-                            <div className="mt-2 relative w-fit">
-                                <Image src={imagePreview} alt="Preview" width={200} height={105} className="max-h-40 w-auto rounded-md border" />
-                                <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={removeImage}>
-                                    <XIcon className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        )}
+                         <MediaPicker value={field.value as MediaItem[]}
+                                                   onChange={(media: MediaItem[]) => field.onChange(media)}
+                                                 />
                         <p className="text-xs text-muted-foreground">Recommended size: 1200x630px. Max file size: 2MB.</p>
                     </div>
                     </FormControl>

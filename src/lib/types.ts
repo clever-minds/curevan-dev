@@ -126,7 +126,7 @@ export interface TherapistAvailability {
 }
 
 export interface Appointment {
-  id: string;
+  id: number;
   patientId: number;
   dateofBirth:string;
   patientName: string;
@@ -334,7 +334,7 @@ export interface Return {
 export interface PayoutItem {
   id?: string;
   type: 'service' | 'product';
-  sourceId: string;
+  sourceId: number;
   therapistId: number;
   patientId: number;
   serviceTypeId: string;
@@ -350,6 +350,8 @@ export interface PayoutItem {
   weekStart: string; // ISO string of the Monday of the week
   createdAt: Date;
   membershipPlanSnapshot: 'standard' | 'premium';
+  therapistName?: string; // Added for easier reporting
+  therapistPan?: string; // Added for easier reporting
 }
 
 
@@ -405,20 +407,27 @@ export interface PCR { // Patient Care Report
   id: string; // bookingId
   patientId: string;
   therapistId: string;
-  patientFullName:string;
+  patientFullName: string;
   serviceTypeId: string;
   chiefComplaint: string;
   assessment: string;
   diagnosis?: string;
   treatmentProvided: string;
   planOfCare: string;
-  vitals?: Record<string, string>;
+  vitals?: Record<string, string>; // bp, hr, rr, temp
   status: 'not_started' | 'in_progress' | 'submitted' | 'locked' | 'returned';
   lockedAt?: Date;
   lockedBy?: string;
   version: number;
   history: any[];
   createdAt: Date;
+  incidentDate?: string;
+  incidentLocation?: string;
+  therapyType?: string;
+  nextTreatmentDate?: string;
+  attachment?: number[]; // array of attachment IDs
+  therapistName?: string;
+  signatureConfirmation?: boolean;
 }
 
 export interface Session {
@@ -509,11 +518,11 @@ export interface PaymentTransaction {
 }
 
 export interface AuditLog {
-    id?: string;
+    id?: number;
     actorId: string; // "system" or a user UID
     action: string; // e.g., "payout.item.created"
     entityType: "booking" | "pcr" | "user" | "order" | "invoice" | "payoutBatch" | "profileChangeRequest" | "sosAlert";
-    entityId: string;
+    entityId: number;
     timestamp?: Date;
     details?: Record<string, any>;
 }
@@ -566,7 +575,7 @@ export interface ProfileChangeRequest {
     id: string;
     number: string;
     role: 'therapist' | 'patient';
-    entityId: string;
+    entityId: number;
     section: string;
     changes: { fieldPath: string; old: any; new: any }[];
     status: 'pending' | 'approved' | 'rejected';
@@ -580,22 +589,26 @@ export interface ProfileChangeRequest {
 
 // --- Content Types ---
 export interface JournalEntry {
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string;
-    content: string;
-    featuredImage: string;
-    aiHint?: string;
-    authorId: string;
-    authorName: string;
-    status: "draft" | "pending_review" | "published" | "archived";
-    tags?: string[];
-    videoUrl?: string;
-    publishedAt?: string;
-    createdAt: Date;
-    updatedAt: string;
-    stats?: { totalViews?: number; uniqueViews?: number; };
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImage: string;
+  aiHint?: string;
+  authorId: string;
+  authorName: string;
+  status: "draft" | "pending_review" | "published" | "archived";
+  tags?: string[];
+  videoUrl?: string;
+  metaDescription?: string;   // ✅ add this
+  publishedAt?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  categories: string;
+  featuredImageId?: number;
+  difficulty?: "beginner" | "intermediate" | "advanced";
+  stats?: { totalViews?: number; uniqueViews?: number };
 }
 
 export interface Training {
@@ -653,10 +666,12 @@ export interface NewsletterSubscriber {
 
 
 // --- Utility Types ---
-export interface Date {
-  _seconds: number;
-  _nanoseconds: number;
-}
+// export interface Date {
+//   _seconds: number;
+//   _nanoseconds: number;
+// }
+
+
 
 export interface Address {
   id:number;
@@ -691,3 +706,4 @@ export interface ApplyCouponResponse {
   discount: number;
   final_amount: number;
 }
+// types/journal.ts

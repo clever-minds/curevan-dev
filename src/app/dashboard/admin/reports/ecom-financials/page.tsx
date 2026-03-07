@@ -132,15 +132,15 @@ export default function EcomFinancialsPage() {
                              <TableRow><TableCell colSpan={10}><Skeleton className="h-24 w-full" /></TableCell></TableRow>
                         ) : orders.map((item) => (
                             <TableRow key={item.id}>
-                                <TableCell className="font-mono text-xs">{item.id}</TableCell>
+                                <TableCell className="font-mono text-xs">{item.number}</TableCell>
                                 <TableCell>{item.customerName}</TableCell>
-                                <TableCell className="text-right"><Price amount={item.subtotal / 100} showDecimals /></TableCell>
-                                <TableCell className="text-right text-destructive">-<Price amount={(item.couponDiscount || 0) / 100} showDecimals /></TableCell>
-                                <TableCell className="text-right"><Price amount={(item.taxableValue || 0) / 100} showDecimals /></TableCell>
-                                <TableCell className="text-right"><Price amount={(item.cgst || 0) / 100} showDecimals /></TableCell>
-                                <TableCell className="text-right"><Price amount={(item.sgst || 0) / 100} showDecimals /></TableCell>
-                                <TableCell className="text-right"><Price amount={(item.igst || 0) / 100} showDecimals /></TableCell>
-                                <TableCell className="text-right font-bold"><Price amount={item.total / 100} showDecimals /></TableCell>
+                                <TableCell className="text-right"><Price amount={item.subtotal} showDecimals /></TableCell>
+                                <TableCell className="text-right text-destructive">-<Price amount={(item.couponDiscount || 0) } showDecimals /></TableCell>
+                                <TableCell className="text-right"><Price amount={(item.taxableValue || 0) } showDecimals /></TableCell>
+                                <TableCell className="text-right"><Price amount={(item.cgst || 0) } showDecimals /></TableCell>
+                                <TableCell className="text-right"><Price amount={(item.sgst || 0) } showDecimals /></TableCell>
+                                <TableCell className="text-right"><Price amount={(item.igst || 0) } showDecimals /></TableCell>
+                                <TableCell className="text-right font-bold"><Price amount={item.total } showDecimals /></TableCell>
                                 <TableCell><Badge variant="secondary">{item.paymentStatus}</Badge></TableCell>
                             </TableRow>
                         ))}

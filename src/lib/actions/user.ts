@@ -1,7 +1,6 @@
 
 'use server';
 
-import { getAuth } from 'firebase-admin/auth';
 import { z } from 'zod';
 import { getCurrentUser } from '../auth';
 import { reauthenticate, updatePassword } from '@/lib/firebase-client';
@@ -37,11 +36,11 @@ export async function changePassword(
     // to update the password directly. This is secure because the action is protected
     // by the user's session cookie.
 
-    await auth.updateUser(user.uid, {
+    await auth.updateUser(user.id, {
       password: validatedData.newPassword,
     });
     
-    console.log(`Password updated for user: ${user.uid}`);
+    console.log(`Password updated for user: ${user.id}`);
     return { success: true };
 
   } catch (error: any) {

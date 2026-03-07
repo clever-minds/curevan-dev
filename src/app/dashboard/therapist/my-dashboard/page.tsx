@@ -96,8 +96,8 @@ export default function TherapistDashboard() {
         setLoading(true);
         try {
             const [appointmentData, therapistData, therapyCats] = await Promise.all([
-                listAppointmentsForUser(user.uid, 'therapist'),
-                getTherapistById(user.uid),
+                listAppointmentsForUser(user.id, 'therapist'),
+                getTherapistById(user.id),
                 getTherapyCategories()
             ]);
             setAppointments(appointmentData);

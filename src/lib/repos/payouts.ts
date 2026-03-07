@@ -1,16 +1,23 @@
-'use server';
 
 import serverApi from "@/lib/repos/axios.server";
 import type { PayoutItem, PayoutBatch } from '../types';
 import { getSafeDate } from '../utils';
+import { getToken } from '@/lib/auth';
 
 /**
  * Adds a new payout item via backend API
  */
 export async function addPayoutItem(item: Omit<PayoutItem, 'id'>): Promise<PayoutItem> {
   try {
-    const { data } = await serverApi.post('/api/payout-items/add', item, {
-      headers: { withCredentials: true },
+    const token =await getToken();
+      if (!token) {
+        throw new Error('Token missing, please login again');
+      }
+    const { data } = await serverApi.post('/api/general/payout-items/add', item, {
+     headers: {
+        Authorization: `Bearer ${token}`, // <-- pass your token here
+        withCredentials: true,            // optional if server needs cookies
+      },
     });
     return {
       ...data,
@@ -26,10 +33,17 @@ export async function addPayoutItem(item: Omit<PayoutItem, 'id'>): Promise<Payou
 /**
  * Get a payout item by source ID via API
  */
-export async function getPayoutItemBySourceId(sourceId: string): Promise<PayoutItem | null> {
+export async function getPayoutItemBySourceId(sourceId: number): Promise<PayoutItem | null> {
   try {
-    const { data } = await serverApi.get(`/api/payout-items/source/${sourceId}`, {
-      headers: { withCredentials: true },
+      const token =await getToken();
+      if (!token) {
+        throw new Error('Token missing, please login again');
+      }
+    const { data } = await serverApi.get(`/api/general/payout-items/source/${sourceId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // <-- pass your token here
+        withCredentials: true,            // optional if server needs cookies
+      },
     });
     if (!data) return null;
     return {
@@ -48,9 +62,16 @@ export async function getPayoutItemBySourceId(sourceId: string): Promise<PayoutI
  */
 export async function listPayoutItems(filters?: any): Promise<PayoutItem[]> {
   try {
-    const { data } = await serverApi.get('/api/payout-items/list', {
+    const token =await getToken();
+      if (!token) {
+        throw new Error('Token missing, please login again');
+      }
+    const { data } = await serverApi.get('/api/general/payout-items/list', {
       params: filters,
-      headers: { withCredentials: true },
+       headers: {
+        Authorization: `Bearer ${token}`, // <-- pass your token here
+        withCredentials: true,            // optional if server needs cookies
+      },
     });
     return (data || []).map((item: any) => ({
       ...item,
@@ -68,9 +89,16 @@ export async function listPayoutItems(filters?: any): Promise<PayoutItem[]> {
  */
 export async function listPayoutBatches(filters?: any): Promise<PayoutBatch[]> {
   try {
+    const token =await getToken();
+      if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data } = await serverApi.get('/api/payout-batches/list', {
       params: filters,
-      headers: { withCredentials: true },
+      headers: {
+        Authorization: `Bearer ${token}`, // <-- pass your token here
+        withCredentials: true,            // optional if server needs cookies
+      },
     });
     return (data || []).map((item: any) => ({
       ...item,

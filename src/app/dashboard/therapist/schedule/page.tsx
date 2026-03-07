@@ -82,7 +82,7 @@ export default function TherapistSchedulePage() {
     const fetchData = async () => {
         setLoading(true);
         const [therapistData, appointmentData] = await Promise.all([
-            getTherapistById(user.uid),
+            getTherapistById(user.id),
             listAppointmentsForUser(user.id, 'therapist')
         ]);
         setTherapist(therapistData);

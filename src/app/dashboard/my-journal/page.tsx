@@ -46,8 +46,8 @@ const KpiCard = ({ title, value }: { title: string, value: number | string }) =>
 const PostActions = ({ post }: { post: JournalEntry }) => {
     const router = useRouter();
 
-    const handleEdit = () => {
-        router.push('/dashboard/journal/new');
+   const handleEdit = () => {
+        router.push(`/dashboard/journal/${post.id}`);
     }
     
     return (
@@ -93,9 +93,11 @@ export default function MyJournalPage() {
         if (user) {
             const fetchPosts = async () => {
                 setLoading(true);
-                const allPosts = await listJournalEntries({ authorId: user?.uid });
+                const allPosts = await listJournalEntries();
                 setAuthorPosts(allPosts);
                 setLoading(false);
+                        console.log("User in allPosts:", allPosts);
+
             };
             fetchPosts();
         }

@@ -19,7 +19,6 @@ import type { ProductCategory } from "@/lib/types";
 import { listProductCategories } from "@/lib/api/categories";
 import { addProductCategory } from "@/lib/api/categories";
 import { deleteProductCategory } from "@/lib/api/categories";
-
 import { getToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';

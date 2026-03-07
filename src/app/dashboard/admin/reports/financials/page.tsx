@@ -52,14 +52,10 @@ export default function FinancialReportPage() {
     fetchData();
 }, [filters]);
     const combinedData: CombinedPayoutItem[] = useMemo(() => {
-        const therapistMap = new Map(therapists.map(t => [t.id, t]));
-        return payoutItems.map(item => ({
-            ...item,
-            therapistName: therapistMap.get(item.therapistId)?.name || 'N/A',
-            therapistPan: therapistMap.get(item.therapistId)?.tax?.pan || 'N/A',
-        }));
-    }, [payoutItems, therapists]);
-
+            return payoutItems.map(item => ({
+                ...item
+            }));
+        }, [payoutItems]);
     const handleExport = () => {
         const headers = [
             "Payout Item ID", "Source ID (Booking/Order)", "Type", "Created At", "Week Start",
@@ -144,11 +140,11 @@ export default function FinancialReportPage() {
                             <TableCell className="font-mono text-xs">{item.sourceId}</TableCell>
                             <TableCell>{item.therapistName}</TableCell>
                             <TableCell className="font-mono text-xs">{item.therapistPan}</TableCell>
-                            <TableCell className="text-right"><Price amount={item.grossAmount / 100} showDecimals /></TableCell>
-                            <TableCell className="text-right"><Price amount={item.platformFeeAmount / 100} showDecimals /></TableCell>
-                            <TableCell className="text-right"><Price amount={(item.gstOnPlatformFee || 0) / 100} showDecimals /></TableCell>
-                            <TableCell className="text-right"><Price amount={(item.tdsDeducted || 0) / 100} showDecimals /></TableCell>
-                            <TableCell className="text-right font-bold"><Price amount={item.netAmount / 100} showDecimals /></TableCell>
+                            <TableCell className="text-right"><Price amount={item.grossAmount } showDecimals /></TableCell>
+                            <TableCell className="text-right"><Price amount={item.platformFeeAmount } showDecimals /></TableCell>
+                            <TableCell className="text-right"><Price amount={(item.gstOnPlatformFee || 0) } showDecimals /></TableCell>
+                            <TableCell className="text-right"><Price amount={(item.tdsDeducted || 0) } showDecimals /></TableCell>
+                            <TableCell className="text-right font-bold"><Price amount={item.netAmount } showDecimals /></TableCell>
                             <TableCell><Badge variant="secondary">{item.state}</Badge></TableCell>
                         </TableRow>
                     ))}
