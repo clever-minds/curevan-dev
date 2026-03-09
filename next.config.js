@@ -43,7 +43,8 @@ const nextConfig = {
        {
         protocol: 'https',
         hostname: '13.234.126.66',
-        pathname: '/uploads/**',
+        pathname: '/uploads/images/**',
+
       }
   ],
 },
