@@ -1,6 +1,7 @@
 // src/lib/repos/orders.ts
 import serverApi from "@/lib/repos/axios.server";
 import type { Order } from "@/lib/types";
+import { getToken } from '@/lib/auth';
 
 interface ListOrdersResponse {
   data: Order[];
@@ -11,10 +12,16 @@ export async function listOrders(filters?: { userId?: number }): Promise<Order[]
   try {
     const params: any = {};
     if (filters?.userId) params.userId = filters.userId;
-
+     const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data } = await serverApi.get<ListOrdersResponse>("/api/orders/my-orders", {
       params,
       withCredentials: true,
+       headers: {
+            Authorization: `Bearer ${token}`, 
+      },
     });
 
     return (data.data || []).map((order: any) => ({
@@ -31,8 +38,15 @@ export async function listOrders(filters?: { userId?: number }): Promise<Order[]
 export async function getOrderById(id: number): Promise<Order | null> {
 
   try {
+     const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data } = await serverApi.get<{ data: Order }>(`/api/orders/${id}`, {
       withCredentials: true,
+       headers: {
+            Authorization: `Bearer ${token}`, 
+          },
     });
 
     if (!data?.data) return null;
