@@ -40,6 +40,12 @@ const nextConfig = {
         port: '',           // agar default 443 hai
         pathname: '/uploads/images/**',
       },
+        {
+        protocol: 'https',
+        hostname: '13.234.126.66',
+        port: '',           // agar default 443 hai
+        pathname: '/uploads/images/**',
+      },
   ],
 },
   async headers() {
