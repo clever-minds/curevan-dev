@@ -155,8 +155,8 @@ export default function TherapistsPage() {
       const distance = getDistance(
         { latitude: userPosition.lat, longitude: userPosition.lng },
         {
-          latitude: therapist.position.lat,
-          longitude: therapist.position.lng,
+          latitude: therapist.lat,
+          longitude: therapist.lng,
         }
       );
       

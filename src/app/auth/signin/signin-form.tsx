@@ -62,11 +62,8 @@ export function SigninForm() {
       if (!user?.token) {
           throw new Error("Auth token missing after login");
         }
-
-        localStorage.setItem("token", user.token);
-
         const token = user.token; // ✅ use directly
-
+        document.cookie = `token=${user.token}; path=/;`;
         const userProfile = await getUserProfile(token);
       if (!userProfile) {
           throw new Error("User profile not found. Please contact support.");

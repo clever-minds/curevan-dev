@@ -17,18 +17,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import Link from "next/link";
 import { cn, getSafeDate, downloadCsv } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import type { JournalEntry } from "@/lib/types";
+import type { KnowledgeBase } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listJournalEntries } from "@/lib/repos/content";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default function AdminJournalPage() {
-  const [posts, setPosts] = useState<JournalEntry[]>([]);
+  const [posts, setPosts] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-
+  const router = useRouter();
   const fetchPosts = async () => {
       setLoading(true);
       const allPosts = await listJournalEntries();
@@ -81,7 +82,11 @@ export default function AdminJournalPage() {
   };
 
   const postsForReview = posts.filter(p => p.status === 'pending_review' || p.status === 'draft');
+  const handleEdit = (postId: number) => {
+          console.log(`Edit post ${postId}`);
 
+        router.push(`/dashboard/journal/${postId}`);
+    }
   return (
      <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -167,7 +172,7 @@ export default function AdminJournalPage() {
                         <DropdownMenuItem onClick={() => handleReject(post.id, post.title)} className="text-destructive focus:text-destructive">
                           <XCircle className="mr-2 h-4 w-4" /> Reject
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(Number(post.id))}>Edit</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

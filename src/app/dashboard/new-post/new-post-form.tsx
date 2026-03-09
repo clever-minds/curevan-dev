@@ -33,10 +33,10 @@ import { AIRichText } from '@/components/ai/ai-rich-text';
 import { getTherapyCategories } from '@/lib/repos/categories';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
-import  { submitEditorForm,updateJournal } from "@/lib/repos/journal";
-import type { JournalEntry } from "@/lib/types";
+import  { submitEditorForm,updateKnowledgeBase } from "@/lib/repos/journal";
+import type { KnowledgeBase } from "@/lib/types";
 import { useRouter } from 'next/navigation';
-import { getJournalEntryById } from '@/lib/repos/content';
+import { getKnowledgeBaseById } from '@/lib/repos/content';
 
 const editorFormSchema = z.object({
   // Common fields
@@ -50,14 +50,23 @@ const editorFormSchema = z.object({
 
   // Post specific
   videoUrl: z.string().url({ message: 'Please enter a valid YouTube URL.' }).optional().or(z.literal('')),
-  metaDescription: z.string().max(160, 'Meta description should be 160 characters or less.').optional(),
+  metaDescription: z.string().max(160, 'Meta description should be 160 characters or less.').optional().nullable().transform(val => val ?? undefined),
   
   // Training specific
-  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-  durationMin: z.coerce.number().optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced'])
+    .optional()
+    .nullable()
+    .transform(val => val ?? undefined),
+  durationMin: z.coerce.number()
+    .optional()
+    .nullable()
+    .transform(val => val ?? undefined),
 
   // Documentation specific
-  sopVersion: z.string().optional(),
+  sopVersion: z.string()
+    .optional()
+    .nullable()
+    .transform(val => val ?? undefined),
 });
 
 type EditorFormValues = z.infer<typeof editorFormSchema>;
@@ -66,6 +75,7 @@ type ContentType = 'post' | 'training' | 'documentation';
 
 interface NewPostFormProps {
     contentType: ContentType;
+    postId?:  number;
 }
 
 export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) {  const { toast } = useToast();
@@ -114,22 +124,25 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       return () => clearTimeout(timer);
     }
   }, [watchedValues, form, contentType]);
-  useEffect(() => {
+    useEffect(() => {
     if (!postId) return;
 
     const loadPost = async () => {
          try {
-              const post = await getJournalEntryById(postId);
+          const post = await getKnowledgeBaseById(postId);
           if (!post) return;
         form.reset({
             title: post.title,
             slug: post.slug,
             excerpt: post.excerpt,
             content: post.content,
-            status :post.status === "pending_review" ? "review" : post.status,
+            durationMin: post.durationMin,
+            difficulty:post.difficulty,
+            sopVersion:post.sopVersion,
+            status : post.status == "pending_review" ? "review" : post.status,
             categories: Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [],
             videoUrl: post.videoUrl || "",
-          coverImageUrl:
+            coverImageUrl:
               post.featuredImage && post.featuredImageId
                 ? [
                     {
@@ -175,55 +188,68 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
   const router = useRouter();
 
  async function onSubmit(data: EditorFormValues) {
-
   const coverImageId = Array.isArray(data.coverImageUrl)
     ? data.coverImageUrl[0]?.id ?? null
     : data.coverImageUrl;
 
-  const payload: Partial<JournalEntry> = {
-    title: data.title,
-    excerpt: data.excerpt,
-    content: data.content,
-    slug: data.slug,
-    status: data.status === "review" ? "pending_review" : data.status,
-    tags: data.categories,
-    featuredImage:coverImageId,
-    videoUrl: data.videoUrl,
-    metaDescription: data.metaDescription,
-    difficulty: data.difficulty,
-    durationMin: data.durationMin,
-    sopVersion: data.sopVersion,
-  };
+    const payload: Partial<KnowledgeBase> = {
+      title: data.title,
+      excerpt: data.excerpt,
+      content: data.content,
+      slug: data.slug,
+      status: data.status === "review" ? "pending_review" : data.status,
+      tags: data.categories,
+      featuredImage:coverImageId,
+      videoUrl: data.videoUrl,
+      metaDescription: data.metaDescription,
+      difficulty: data.difficulty,
+      durationMin: data.durationMin,
+      sopVersion: data.sopVersion,
+      contentType: contentType,
+    };
+    console.log("Submitting form with payload:", payload);
+    try {
+      let response;
 
-  try {
+      if (postId) {
+        response = await updateKnowledgeBase(postId, payload);
+      }
 
-    // ✅ EDIT MODE
-    if (postId) {
-      await updateJournal(postId, payload);
+      else {
+        response = await submitEditorForm(payload, contentType, setImagePreview);
+      }
+
+      // ✅ Success check
+      if (response?.success) {
+
+        toast({
+          title: "Saved Successfully!",
+          description: "Your content has been saved successfully.",
+        });
+
+        const redirectMap: Record<string, string> = {
+          post: "/dashboard/my-journal",
+          training: "/dashboard/admin/trainings",
+          documentation: "/dashboard/admin/documentation",
+        };
+
+        router.push(redirectMap[contentType]);
+
+      } else {
+        throw new Error("Save failed");
+      }
+
+    } catch (err) {
+
+      toast({
+        variant: "destructive",
+        title: "Error Saving",
+        description: "Something went wrong.",
+      });
+
     }
 
-    // ✅ CREATE MODE
-    else {
-      await submitEditorForm(payload, contentType, setImagePreview);
-    }
-
-    toast({
-      title: "Journal Saved!",
-      description: "Your journal has been saved successfully.",
-    });
-
-    router.push('/dashboard/my-journal');
-
-  } catch (err) {
-    toast({
-      variant: 'destructive',
-      title: 'Error Saving',
-      description: 'Something went wrong.',
-    });
-  }
-}
-
-  // A simple slug generation utility
+  }  // A simple slug generation utility
   const generateSlug = (title: string) => {
     return title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
   }
@@ -240,7 +266,9 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+    console.log("VALIDATION FAILED:", errors);  // yeh bhi nahi aaya?
+  })} className="space-y-6">
         <div className="grid lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
             <FormField
@@ -361,7 +389,7 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                         <FormItem className="space-y-3">
                         <FormLabel className='font-semibold'>Status</FormLabel>
                         <FormControl>
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                            <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
                                 <FormItem className="flex items-center space-x-3 space-y-0">
                                 <FormControl><RadioGroupItem value="draft" /></FormControl>
                                 <FormLabel className="font-normal">Draft</FormLabel>
@@ -445,7 +473,7 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Difficulty</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value ?? ""}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger></FormControl>
                                     <SelectContent>
                                         <SelectItem value="beginner">Beginner</SelectItem>
@@ -501,5 +529,3 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
     </Form>
   );
 }
-
-    

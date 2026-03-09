@@ -588,7 +588,7 @@ export interface ProfileChangeRequest {
 
 
 // --- Content Types ---
-export interface JournalEntry {
+export interface KnowledgeBase {
   id: string;
   title: string;
   slug: string;
@@ -605,52 +605,55 @@ export interface JournalEntry {
   publishedAt?: string;
   createdAt: Date;
   updatedAt: Date;
-  categories: string;
+  categories: string[];
+  durationMin:number,
   featuredImageId?: number;
+  sopVersion: string;
+  contentType: 'post' | 'training' | 'documentation';
   difficulty?: "beginner" | "intermediate" | "advanced";
   stats?: { totalViews?: number; uniqueViews?: number };
 }
 
-export interface Training {
-    id: string;
-    title: string;
-    slug: string;
-    status: "draft" | "review" | "published" | "archived";
-    categoryIds: string[];
-    tags?: string[];
-    difficulty: "beginner" | "intermediate" | "advanced";
-    durationMin: number;
-    excerpt: string;
-    content: string;
-    coverImageUrl: string;
-    attachments?: {name: string, url: string, type: string}[];
-    authorId: string;
-    readingTimeMin?: number;
-    viewCount?: number;
-    createdAt: Date;
-    updatedAt: string;
-    publishedAt?: string;
-}
+// export interface Training {
+//     id: string;
+//     title: string;
+//     slug: string;
+//     status: "draft" | "review" | "published" | "archived";
+//     categoryIds: string[];
+//     tags?: string[];
+//     difficulty: "beginner" | "intermediate" | "advanced";
+//     durationMin: number;
+//     excerpt: string;
+//     content: string;
+//     coverImageUrl: string;
+//     attachments?: {name: string, url: string, type: string}[];
+//     authorId: string;
+//     readingTimeMin?: number;
+//     viewCount?: number;
+//     createdAt: Date;
+//     updatedAt: string;
+//     publishedAt?: string;
+// }
 
-export interface Documentation {
-    id: string;
-    title: string;
-    slug: string;
-    status: "draft" | "review" | "published" | "archived";
-    categoryIds: string[];
-    tags?: string[];
-    sopVersion: string;
-    lastReviewedAt?: string;
-    excerpt: string;
-    content: string;
-    coverImageUrl: string;
-    authorId: string;
-    readingTimeMin?: number;
-    viewCount?: number;
-    createdAt: Date;
-    updatedAt: string;
-    publishedAt?: string;
-}
+// export interface Documentation {
+//     id: string;
+//     title: string;
+//     slug: string;
+//     status: "draft" | "review" | "published" | "archived";
+//     categoryIds: string[];
+//     tags?: string[];
+//     sopVersion: string;
+//     lastReviewedAt?: string;
+//     excerpt: string;
+//     content: string;
+//     coverImageUrl: string;
+//     authorId: string;
+//     readingTimeMin?: number;
+//     viewCount?: number;
+//     createdAt: Date;
+//     updatedAt: string;
+//     publishedAt?: string;
+// }
 
 export interface NewsletterSubscriber {
     id?: string; // Document ID is the email address

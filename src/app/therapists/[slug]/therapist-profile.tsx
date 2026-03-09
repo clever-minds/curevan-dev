@@ -9,13 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { Therapist, JournalEntry } from '@/lib/types';
+import type { Therapist, KnowledgeBase } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
 import { listJournalEntries } from '@/lib/repos/content';
 import { BookOpen } from 'lucide-react';
 import { imageUrl } from '@/lib/image';
 
-export function TherapistProfileClient({ therapist, authoredPosts }: { therapist: Therapist, authoredPosts: JournalEntry[] }) {
+export function TherapistProfileClient({ therapist, authoredPosts }: { therapist: Therapist, authoredPosts: KnowledgeBase[] }) {
   const { toast } = useToast();
 
   const referralLink = `/ecommerce?ref=${therapist.referralCode}`;

@@ -25,7 +25,7 @@ import { FilterBar } from '@/components/admin/FilterBar';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn, getSafeDate, downloadCsv } from '@/lib/utils';
 import Link from 'next/link';
-import type { JournalEntry } from '@/lib/types';
+import type { KnowledgeBase } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { listJournalEntries } from '@/lib/repos/content';
@@ -43,7 +43,7 @@ const KpiCard = ({ title, value }: { title: string, value: number | string }) =>
     </Card>
 );
 
-const PostActions = ({ post }: { post: JournalEntry }) => {
+const PostActions = ({ post }: { post: KnowledgeBase }) => {
     const router = useRouter();
 
    const handleEdit = () => {
@@ -65,7 +65,7 @@ const PostActions = ({ post }: { post: JournalEntry }) => {
     )
 }
 
-const PostCard = ({ post }: { post: JournalEntry }) => (
+const PostCard = ({ post }: { post: KnowledgeBase }) => (
     <Card>
         <CardContent className="p-4">
             <div className="flex justify-between items-start">
@@ -86,7 +86,7 @@ const PostCard = ({ post }: { post: JournalEntry }) => (
 export default function MyJournalPage() {
     const { user } = useAuth();
     const isMobile = useIsMobile();
-    const [authorPosts, setAuthorPosts] = useState<JournalEntry[]>([]);
+    const [authorPosts, setAuthorPosts] = useState<KnowledgeBase[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

@@ -141,7 +141,7 @@ export default function TeamManagementPage() {
         
         let matchesRole = true;
         if (activeFilter !== 'all') {
-            if (['therapist', 'patient'].includes(activeFilter)) {
+            if (['Therapist', 'Patient'].includes(activeFilter)) {
                 matchesRole = user.role === activeFilter;
             } else {
                  matchesRole = user.roles?.includes(activeFilter) ?? false;

@@ -1,11 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { UserProfile } from '@/lib/types';
-import { setCookie, deleteCookie } from 'cookies-next';
 import api from '@/lib/api/axios';
-import { getToken } from '@/lib/auth';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -20,61 +17,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ✅ Check auth on mount
   useEffect(() => {
-  const checkAuth = async () => {
-          console.log("CheckAuth started 2"); // ✅ ye print ho raha hai ya nahi
-
-    try {
-      // 1️⃣ Instant UI load
+    const checkAuth = async () => {
+      try {
         setIsLoading(true);
-      // 2️⃣ Backend verification
-      const res = await api.get('/api/auth/me', {
-        withCredentials: true,
-      });
-      console.log("Auth check response:", res.data);
-
-      if (res.data?.user) {
-        setUser(res.data.user);
+        const res = await api.get('/api/me', { withCredentials: true });
+        // /api/me returns user directly
+        setUser(res.data || null);
+      } catch (error) {
+        console.log("CheckAuth error:", error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.log("CheckAuth started error",error);
+    };
+
+    checkAuth();
+  }, []);
+
+  // ✅ Login: simply set the user passed from SigninForm
+  const login = (userData: UserProfile) => {
+    setUser(userData);
+  };
+
+  // ✅ Logout
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout", {}, { withCredentials: true });
       setUser(null);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.error("Logout error:", err);
     }
   };
 
-  checkAuth();
-}, []);
-
-
-  const login = async (userData: UserProfile) => {
-          console.log("CheckAuth started 1"); // ✅ ye print ho raha hai ya nahi
-
-  const res = await api.get('/api/auth/me', {
-    withCredentials: true
-  });
-        console.log("Auth check response:", res.data);
-
-    setUser(res.data);
-  };
-
-   const logout = async () => {
-    await api.post("/api/auth/logout", {}, {
-      withCredentials: true
-    });
-    setUser(null);
-  };
-
-  const value = {
-    user,
-    login,
-    logout,
-    isLoading,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

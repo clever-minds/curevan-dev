@@ -264,7 +264,7 @@ export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
                 <TableHead className="text-center">Items</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status</TableHead> 
                 <TableHead>Coupon</TableHead>
                 {scope !== 'patient' && <TableHead>Location</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
@@ -276,7 +276,7 @@ export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
                 return (
                 <TableRow key={order.id}>
                   {scope !== 'patient' && <TableCell><Checkbox /></TableCell>}
-                  <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                  <TableCell className="font-mono text-xs">{order.number} </TableCell>
                   <TableCell>{createdAt ? createdAt.toLocaleDateString() : 'N/A'}</TableCell>
                   {scope !== 'patient' && <TableCell className="font-medium">{order.customerName}</TableCell>}
                   <TableCell className="text-center">{order.items.length}</TableCell>

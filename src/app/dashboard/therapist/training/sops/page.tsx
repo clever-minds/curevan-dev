@@ -11,13 +11,13 @@ import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { listDocumentation } from '@/lib/repos/content';
 import { getTherapyCategories } from '@/lib/repos/meta';
-import type { Documentation } from '@/lib/types';
+import type { KnowledgeBase } from '@/lib/types';
 import { FilterBar } from '@/components/admin/FilterBar';
 
 export const dynamic = 'force-dynamic';
 
 export default function SopLibraryPage() {
-    const [filteredDocs, setFilteredDocs] = useState<Documentation[]>([]);
+    const [filteredDocs, setFilteredDocs] = useState<KnowledgeBase[]>([]);
     
     useEffect(() => {
         const fetchData = async () => {

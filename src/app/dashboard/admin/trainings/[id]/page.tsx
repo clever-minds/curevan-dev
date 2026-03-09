@@ -1,31 +1,28 @@
 'use client';
 
 import { useParams } from "next/navigation";
-import { NewPostForm } from "@/app/dashboard/new-post/new-post-form";
 import { Card, CardContent } from '@/components/ui/card';
-interface NewPostFormProps {
-  contentType: "post";
-  postId?: number;
-}
-export default function NewJournalPage() {
+import { NewPostForm } from '@/app/dashboard/new-post/new-post-form';
+
+export default function NewTrainingPage() {
 
   const params = useParams();
-  const id = params.id;
+  const id = params?.id as string;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight font-headline">
-          Update Journal Entry
+          Update Training
         </h1>
         <p className="text-muted-foreground">
-          Fill out the form below to share your expertise. It will be published after admin approval.
+          Fill out the form below to update the training course.
         </p>
       </div>
 
       <Card>
         <CardContent className="pt-6">
-          <NewPostForm contentType="post" postId={Number(id)} />
+          <NewPostForm contentType="training" postId={Number(id)} />
         </CardContent>
       </Card>
     </div>

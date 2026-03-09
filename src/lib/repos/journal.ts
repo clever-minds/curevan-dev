@@ -1,91 +1,72 @@
 import serverApi from "@/lib/repos/axios.server";
-import type { JournalEntry } from "../types";
-import { getToken } from '@/lib/auth';
+import type { ApiResponse, KnowledgeBase } from "../types";
+import { getToken } from "@/lib/auth";
 
-
-
+/**
+ * Create Knowledge Base / Journal
+ */
 export async function submitEditorForm(
-  data: Partial<JournalEntry>, // ✅ partial allows only form fields
+  data: Partial<KnowledgeBase>,
   contentType: string,
   setImagePreview?: (preview: string | null) => void
-): Promise<JournalEntry | null> {
+): Promise<ApiResponse<KnowledgeBase | null>> {
   try {
     const token = await getToken();
+
     if (!token) {
       throw new Error("Token missing, please login again");
     }
 
-    // generate slug if missing
-    const slug = data.slug || data.title?.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-") || "";
+    // Generate slug if missing
+    const slug =
+      data.slug ||
+      data.title
+        ?.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-") ||
+      "";
 
-    const payload: Partial<JournalEntry> = {
+    const payload: Partial<KnowledgeBase> = {
       ...data,
       slug,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const { data: response } = await serverApi.post(
-      `/api/general/journal/add`,
+    const response = await serverApi.post<ApiResponse<KnowledgeBase>>(
+      `/api/general/knowledge-base/add`,
       payload,
       {
+        withCredentials: true,
         headers: {
-          withCredentials: true,
           Authorization: `Bearer ${token}`,
         },
       }
     );
 
-    if (setImagePreview) setImagePreview(null);
-
-    // Construct a full Journal object for TypeScript
-  const newJournal: JournalEntry = {
-      ...(payload as any),
-      id: response.id?.toString() || "",
-      featuredImage: data.featuredImage,
-      authorId: data.authorId || "",
-      authorName: data.authorName || "",
-      stats: {
-        totalViews: 0,
-        uniqueViews: 0,
-      },
-    };
-
-    return newJournal;
-  } catch (error: any) {
-    console.error(`${contentType.toUpperCase()} SUBMIT ERROR:`, error?.message);
-    return null;
-  }
-}
-/**
- * Fetch list of journals/editor content
- */
-export async function getEditorList(
-  contentType: string,
-): Promise<JournalEntry[] | null> {
-  try {
-    const token = await getToken();
-    if (!token) {
-      throw new Error('Token missing, please login again');
+    if (setImagePreview) {
+      setImagePreview(null);
     }
 
-    const { data } = await serverApi.get(`/api/general/journal/list`, {
-      headers: {
-        withCredentials: true,
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-
-    return data.data || data || [];
+    return response.data;
   } catch (error: any) {
-    console.error(`Error fetching ${contentType} list:`, error?.message);
-    return null;
+    console.error(`${contentType.toUpperCase()} SUBMIT ERROR:`, error?.message);
+
+    return {
+      success: false,
+      message: error?.message || "Submission failed",
+      data: null,
+    };
   }
 }
-export async function updateJournal(
-  id: number | string,
-  payload: Partial<JournalEntry>
-): Promise<JournalEntry | null> {
+
+/**
+ * Fetch Knowledge Base List
+ */
+export async function getEditorList(
+  contentType: string
+): Promise<ApiResponse<KnowledgeBase[]>> {
   try {
     const token = await getToken();
 
@@ -93,20 +74,61 @@ export async function updateJournal(
       throw new Error("Token missing, please login again");
     }
 
-    const { data } = await serverApi.put(
-      `/api/general/journal/update/${id}`,
-      payload,
+    const response = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
+      `/api/general/knowledge-base/list`,
       {
+        withCredentials: true,
         headers: {
-          withCredentials: true,
           Authorization: `Bearer ${token}`,
         },
       }
     );
 
-    return data.data || data || null;
+    return response.data;
   } catch (error: any) {
-    console.error("Error updating journal:", error?.message);
-    return null;
+    console.error(`Error fetching ${contentType} list:`, error?.message);
+
+    return {
+      success: false,
+      message: error?.message || "Failed to fetch list",
+      data: [],
+    };
+  }
+}
+
+/**
+ * Update Knowledge Base
+ */
+export async function updateKnowledgeBase(
+  id: number | string,
+  payload: Partial<KnowledgeBase>
+): Promise<ApiResponse<KnowledgeBase | null>> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new Error("Token missing, please login again");
+    }
+
+    const response = await serverApi.put<ApiResponse<KnowledgeBase>>(
+      `/api/general/knowledge-base/update/${id}`,
+      payload,
+      {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error("Error updating knowledge base:", error?.message);
+
+    return {
+      success: false,
+      message: error?.message || "Update failed",
+      data: null,
+    };
   }
 }

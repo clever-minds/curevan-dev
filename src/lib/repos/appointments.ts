@@ -107,11 +107,18 @@ export async function listAppointmentsForUser(
   role: 'patient' | 'therapist'
 ): Promise<Appointment[]> {
   try {
+     const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data: response } = await serverApi.get<ApiResponse<Appointment[]>>(
       `/api/appointments/user/${userId}/appointments`,
       {
         params: { role },
         withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
       }
     )
 

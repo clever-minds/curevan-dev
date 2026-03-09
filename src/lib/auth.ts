@@ -27,6 +27,8 @@ export async function getToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies()      // Next.js server-side cookies
     const token = cookieStore.get('token')?.value
+        console.log('Fetching token:', token)
+
     return token || null
   } catch (error) {
     console.error('Error fetching token:', error)

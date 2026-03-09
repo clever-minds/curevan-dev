@@ -9,7 +9,7 @@ import { ArrowLeft, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import type { Metadata, ResolvingMetadata } from 'next';
-import { getJournalEntryBySlug } from '@/lib/repos/content';
+import { getKnowledgeBaseBySlug } from '@/lib/repos/content';
 import { getTherapistById } from '@/lib/repos/therapists';
 import TherapistCard from '@/components/therapist-card';
 
@@ -24,7 +24,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const slug = params.slug
-  const post = await getJournalEntryBySlug(slug);
+  const post = await getKnowledgeBaseBySlug(slug);
 
   if (!post) {
     return {
@@ -52,7 +52,7 @@ export async function generateMetadata(
 }
 
 export default async function ArticlePage({ params }: { params: { slug: string } }) {
-  const post = await getJournalEntryBySlug(params.slug);
+  const post = await getKnowledgeBaseBySlug(params.slug);
 
   if (!post) {
     notFound();

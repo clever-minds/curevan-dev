@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import type { Documentation } from "@/lib/types";
+import type { KnowledgeBase } from "@/lib/types";
 import { listDocumentation } from "@/lib/repos/content";
 import {
   Table,
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = 'force-dynamic';
 
 export default function AdminDocumentationPage() {
-  const [docList, setDocList] = useState<Documentation[]>([]);
+  const [docList, setDocList] = useState<KnowledgeBase[]>([]);
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -72,9 +72,13 @@ export default function AdminDocumentationPage() {
                     <Badge variant="secondary">{doc.sopVersion}</Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {doc.categoryIds.map(cat => <Badge key={cat} variant="outline">{cat}</Badge>)}
-                    </div>
+                   <div className="flex flex-wrap gap-1 mb-2">
+                       {doc.categories.map((cat) => (
+                          <Badge key={cat} variant="secondary">
+                            {cat}
+                          </Badge>
+                        ))}
+                  </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge

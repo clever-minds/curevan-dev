@@ -13,19 +13,20 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { MoreVertical, PlusCircle, FileDown } from "lucide-react";
+import { MoreVertical, PlusCircle, FileDown,Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { cn, getSafeDate, downloadCsv } from "@/lib/utils";
-import type { Documentation } from "@/lib/types";
+import type { KnowledgeBase } from "@/lib/types";
 import { listDocumentation } from "@/lib/repos/content";
+import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default function AdminDocumentationPage() {
-  const [docList, setDocList] = useState<Documentation[]>([]);
-
+  const [docList, setDocList] = useState<KnowledgeBase[]>([]);
+  const router = useRouter();
   useEffect(() => {
     async function fetchDocs() {
         const data = await listDocumentation();
@@ -41,7 +42,7 @@ export default function AdminDocumentationPage() {
         doc.title,
         doc.slug,
         doc.status,
-        doc.categoryIds.join(', '),
+        doc.categories,
         doc.sopVersion,
         doc.authorId,
         getSafeDate(doc.publishedAt)?.toISOString() || '',
@@ -51,7 +52,9 @@ export default function AdminDocumentationPage() {
     ]);
     downloadCsv(headers, data, 'documentation-export.csv');
   };
-
+    const handleEdit = (id:number) => {
+        router.push(`/dashboard/admin/documentation/${id}`);
+      };
 
   return (
     <div className="space-y-6">
@@ -95,9 +98,11 @@ export default function AdminDocumentationPage() {
                     <Badge variant="secondary">{doc.sopVersion}</Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {doc.categoryIds.map(cat => <Badge key={cat} variant="outline">{cat}</Badge>)}
-                    </div>
+                    {doc.categories?.map((cat) => (
+                      <Badge key={cat} variant="outline">
+                        {cat}
+                      </Badge>
+                    ))}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge
@@ -118,7 +123,7 @@ export default function AdminDocumentationPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem  onClick={() => handleEdit(Number(doc.id))}><Edit className="mr-2"/>Edit</DropdownMenuItem>
                         <DropdownMenuItem>Preview</DropdownMenuItem>
                         <DropdownMenuItem>Publish</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive">Archive</DropdownMenuItem>

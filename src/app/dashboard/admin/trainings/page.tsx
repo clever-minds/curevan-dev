@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import type { Training } from "@/lib/types";
+import type { KnowledgeBase } from "@/lib/types";
 import {
   Table,
   TableBody,
@@ -13,18 +13,19 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { MoreVertical, PlusCircle, FileDown } from "lucide-react";
+import { MoreVertical, PlusCircle, FileDown ,Edit} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { cn, getSafeDate, downloadCsv } from "@/lib/utils";
 import { listTrainings } from "@/lib/repos/content";
 import { FilterBar } from "@/components/admin/FilterBar";
+import { useRouter } from 'next/navigation';
 
 export default function AdminTrainingsPage() {
   // In a real app, this would be fetched from Firestore
-  const [trainingList, setTrainingList] = useState<Training[]>([]);
-
+  const [trainingList, setTrainingList] = useState<KnowledgeBase[]>([]);
+  const router = useRouter();
   useEffect(() => {
     const fetchTrainings = async () => {
         const data = await listTrainings();
@@ -40,7 +41,7 @@ export default function AdminTrainingsPage() {
         item.title,
         item.slug,
         item.status,
-        item.categoryIds.join(', '),
+        item.categories,
         item.difficulty,
         item.durationMin,
         item.authorId,
@@ -51,7 +52,9 @@ export default function AdminTrainingsPage() {
     ]);
     downloadCsv(headers, data, 'trainings-export.csv');
   };
-
+    const handleEdit = (id:number) => {
+        router.push(`/dashboard/admin/trainings/${id}`);
+      };
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -93,11 +96,15 @@ export default function AdminTrainingsPage() {
               {trainingList.map((training) => (
                 <TableRow key={training.id}>
                   <TableCell className="font-medium">{training.title}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {training.categoryIds.map(cat => <Badge key={cat} variant="outline">{cat}</Badge>)}
-                    </div>
-                  </TableCell>
+               <TableCell>
+                  <div className="flex gap-1">
+                    {training.categories?.map((cat: string) => (
+                      <Badge key={cat} variant="outline">
+                        {cat}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
                   <TableCell className="capitalize">{training.difficulty}</TableCell>
                   <TableCell>{training.durationMin} min</TableCell>
                   <TableCell className="text-center">
@@ -119,7 +126,7 @@ export default function AdminTrainingsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem  onClick={() => handleEdit(Number(training.id))}><Edit className="mr-2"/>Edit</DropdownMenuItem>
                         <DropdownMenuItem>Preview</DropdownMenuItem>
                         <DropdownMenuItem>Publish</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive">Archive</DropdownMenuItem>

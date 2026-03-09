@@ -26,7 +26,7 @@ import { useEffect, useMemo, useState } from "react";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
 import { FilterBar } from "@/components/admin/FilterBar";
-import type { Documentation, Training, ProfileChangeRequest, Appointment, Order, PayoutItem } from "@/lib/types";
+import type { KnowledgeBase,ProfileChangeRequest, Appointment, Order, PayoutItem } from "@/lib/types";
 import { listDocumentation, listProfileChangeRequests, listTrainings } from "@/lib/repos/content";
 import { getPublicStats } from "@/lib/repos/stats"; 
 import { listAppointments } from "@/lib/repos/appointments";
@@ -75,8 +75,8 @@ const ActionableTable = ({ title, description, headers, children, actionHref, ac
 
 
 export default function AdminDashboardPage() {
-    const [trainings, setTrainings] = useState<Training[]>([]);
-    const [documentation, setDocumentation] = useState<Documentation[]>([]);
+    const [trainings, setTrainings] = useState<KnowledgeBase[]>([]);
+    const [documentation, setDocumentation] = useState<KnowledgeBase[]>([]);
     const [profileChangeRequests, setProfileChangeRequests] = useState<ProfileChangeRequest[]>([]);
     const [stats, setStats] = useState<Awaited<ReturnType<typeof getPublicStats>> | null>(null);
     const [loading, setLoading] = useState(true);

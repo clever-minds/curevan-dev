@@ -11,13 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { listDocumentation } from '@/lib/repos/content';
 import { useEffect, useState } from 'react';
-import type { Documentation } from '@/lib/types';
+import type { KnowledgeBase } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SopDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const [doc, setDoc] = useState<Documentation | null>(null);
+  const [doc, setDoc] = useState<KnowledgeBase | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function SopDetailPage() {
       <article>
         <header className="mb-8">
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-            <div className="flex items-center gap-1.5"><Layers className="w-4 h-4"/> Categories: {doc.categoryIds.join(', ')}</div>
+            <div className="flex items-center gap-1.5"><Layers className="w-4 h-4"/> Categories: {doc.categories}</div>
             <div className="flex items-center gap-1.5"><GitCommitVertical className="w-4 h-4"/> Version: {doc.sopVersion}</div>
           </div>
           <h1 className="text-4xl font-bold tracking-tight font-headline md:text-5xl mb-4">{doc.title}</h1>

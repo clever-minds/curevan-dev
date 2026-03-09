@@ -1,7 +1,7 @@
 
 import serverApi from "@/lib/repos/axios.server";
 import type { 
-  JournalEntry, Training, Documentation, ProfileChangeRequest, AuditLog, 
+  KnowledgeBase, ProfileChangeRequest, AuditLog, 
   Session, PcrAmendmentRequest, NewsletterSubscriber, PaymentTransaction, 
   Invoice, CreditNote, PatientProfile, AIFeedback 
 } from "../types";
@@ -19,11 +19,11 @@ interface ApiResponse<T> {
  * Journal Entries
  * --------------------------
  */
-export async function listJournalEntries(filters?: any): Promise<JournalEntry[]> {
+export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]> {
   try {
     const token =await getToken();
-   const response = await serverApi.get<ApiResponse<JournalEntry[]>>(
-        "/api/general/journal/list",
+   const response = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
+        "/api/general/knowledge-base/list",
         {
           params: filters,
           withCredentials: true,
@@ -49,10 +49,10 @@ export async function listJournalEntries(filters?: any): Promise<JournalEntry[]>
   }
 }
 
-export async function getJournalEntryBySlug(slug: string): Promise<JournalEntry | null> {
+export async function getKnowledgeBaseBySlug(slug: string): Promise<KnowledgeBase | null> {
   try {
     const token =await getToken();
-    const { data } = await serverApi.get<ApiResponse<JournalEntry[]>>("/api/general/journal/get-by-slug", {
+    const { data } = await serverApi.get<ApiResponse<KnowledgeBase[]>>("/api/general/knowledge-base/get-by-slug", {
       params: { slug },
       withCredentials: true,
       headers: {
@@ -70,17 +70,17 @@ export async function getJournalEntryBySlug(slug: string): Promise<JournalEntry 
       publishedAt: entry.publishedAt ? new Date(entry.publishedAt).toISOString() : undefined,
     };
   } catch (error: any) {
-    console.error("JOURNAL GET ERROR:", error?.message);
+    console.error("knowledge-base GET ERROR:", error?.message);
     return null;
   }
 }
 
 
-export async function getJournalEntryById(id: number): Promise<JournalEntry | null> {
+export async function getKnowledgeBaseById(id: number): Promise<KnowledgeBase | null> {
   try {
     const token =await getToken();
-    const { data } = await serverApi.get<ApiResponse<JournalEntry>>(
-      `/api/general/journal/get-by-id/${id}`,
+    const { data } = await serverApi.get<ApiResponse<KnowledgeBase>>(
+      `/api/general/knowledge-base/get-by-id/${id}`,
       {
         withCredentials: true,
         headers: {
@@ -102,7 +102,7 @@ export async function getJournalEntryById(id: number): Promise<JournalEntry | nu
         : undefined,
     };
   } catch (error: any) {
-    console.error("JOURNAL GET ERROR:", error?.message);
+    console.error("knowledge-base GET ERROR:", error?.message);
     return null;
   }
 }
@@ -114,16 +114,21 @@ export async function getJournalEntryById(id: number): Promise<JournalEntry | nu
  * Trainings
  * --------------------------
  */
-export async function listTrainings(): Promise<Training[]> {
+export async function listTrainings(): Promise<KnowledgeBase[]> {
   try {
     const token =await getToken();
-    const { data } = await serverApi.get<ApiResponse<Training[]>>("/api/trainings/list", {
-      withCredentials: true,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const { data } = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
+        "/api/general/knowledge-base/list",
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            contentType: "training",
+          },
+        }
+      );
     return data.data.map(item => ({
       ...item,
        createdAt: item.createdAt,
@@ -141,15 +146,21 @@ export async function listTrainings(): Promise<Training[]> {
  * Documentation
  * --------------------------
  */
-export async function listDocumentation(): Promise<Documentation[]> {
+export async function listDocumentation(): Promise<KnowledgeBase[]> {
   try {
     const token =await getToken();
-    const { data } = await serverApi.get<ApiResponse<Documentation[]>>("/api/documentation/list", {
-      withCredentials: true,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+     const { data } = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
+      "/api/general/knowledge-base/list",
+      {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          contentType: "documentation",
+        },
+      }
+    );
 
     return data.data.map(item => ({
       ...item,

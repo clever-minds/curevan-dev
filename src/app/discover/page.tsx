@@ -97,7 +97,7 @@ export default function DiscoverPage() {
             setUserPosition({ lat: position.coords.latitude, lng: position.coords.longitude });
             setConsentChecked(true);
         }, () => {
-             if (allTherapists.length > 0) setUserPosition({ lat: allTherapists[0].position.lat, lng: allTherapists[0].position.lng });
+             if (allTherapists.length > 0) setUserPosition({ lat: allTherapists[0].lat, lng: allTherapists[0].lng });
              setConsentChecked(true);
         });
     } else {
@@ -128,7 +128,7 @@ export default function DiscoverPage() {
     const therapistsWithDistance = filtered.map(therapist => {
         const distance = getDistance(
             { latitude: userPosition.lat, longitude: userPosition.lng },
-            { latitude: therapist.position.lat, longitude: therapist.position.lng }
+            { latitude: therapist.lat, longitude: therapist.lng }
         );
         return { ...therapist, distance: distance / 1000 }; // convert to km
     }).filter(therapist => therapist.distance <= filters.radius);

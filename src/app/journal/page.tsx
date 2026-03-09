@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useMemo } from "react";
-import type { JournalEntry } from '@/lib/types';
+import type { KnowledgeBase } from '@/lib/types';
 import { listJournalEntries } from "@/lib/repos/content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 const PAGE_SIZE = 6; // Number of posts to show per page
 
 export default function JournalPage() {
-  const [allPosts, setAllPosts] = useState<JournalEntry[]>([]);
+  const [allPosts, setAllPosts] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);

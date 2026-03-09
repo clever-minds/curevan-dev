@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Training } from '@/lib/types';
+import type { KnowledgeBase } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -57,7 +57,7 @@ const FilterContent = ({ therapyCategories }: { therapyCategories: string[] }) =
 
 
 export default function TrainingCoursesPage() {
-    const [filteredTrainings, setFilteredTrainings] = useState<Training[]>([]);
+    const [filteredTrainings, setFilteredTrainings] = useState<KnowledgeBase[]>([]);
     const [therapyCategories, setTherapyCategories] = useState<string[]>([]);
 
     useEffect(() => {
@@ -129,7 +129,7 @@ export default function TrainingCoursesPage() {
                         <Link href={`/training/${training.slug}`} className="block">
                              <div className="relative h-40 w-full overflow-hidden rounded-t-lg">
                                 <Image 
-                                    src={training.coverImageUrl}
+                                    src={training.featuredImage}
                                     alt={training.title}
                                     fill
                                     className="object-cover group-hover:scale-105 transition-transform"
@@ -139,7 +139,7 @@ export default function TrainingCoursesPage() {
                         </Link>
                         <CardContent className="p-4 flex-1">
                              <div className="flex flex-wrap gap-1 mb-2">
-                                {training.categoryIds.map(cat => (
+                                {training.categories.split(',').map(cat => (
                                     <Badge key={cat} variant="secondary">{cat}</Badge>
                                 ))}
                             </div>
