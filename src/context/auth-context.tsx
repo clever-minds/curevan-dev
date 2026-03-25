@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           },
         });
         // /api/me returns user directly
-        setUser(res.data.user || null);
+        setUser(res.data || null);
       } catch (error) {
         console.log("CheckAuth error:", error);
         setUser(null);
