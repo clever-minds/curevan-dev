@@ -1,7 +1,7 @@
 
 import serverApi from "@/lib/repos/axios.server";
 import type { PCR,ApiResponse } from "@/lib/types";
-
+import { getToken } from "../auth";
 // ---------------------------
 // List all PCRs (optional filter by bookingId)
 // ---------------------------
@@ -9,10 +9,12 @@ export async function listPcrs(filters?: { bookingId?: number }): Promise<PCR[] 
   try {
     const params: any = {};
     if (filters?.bookingId) params.bookingId = filters.bookingId;
-
+const token = await getToken();
     const { data } = await serverApi.get<ApiResponse<PCR[]>>("/api/appointments/pcr", {
       params,
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     return (data.data || []).map((pcr: any) => ({
@@ -31,10 +33,12 @@ export async function listPcrs(filters?: { bookingId?: number }): Promise<PCR[] 
 // ---------------------------
 export async function getPcrById(id: number): Promise<PCR | null> {
   if (!id) return null;
-
+const token = await getToken();
   try {
     const { data } = await serverApi.get<ApiResponse<PCR>>(`/api/appointments/pcr/${id}`, {
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!data?.data) return null;
@@ -55,9 +59,12 @@ export async function getPcrById(id: number): Promise<PCR | null> {
 // Update PCR by ID
 // ---------------------------
 export async function updatePcr(id: number, data: Partial<PCR>): Promise<boolean> {
+  const token = await getToken();
   try {
     await serverApi.patch(`/api/appointments/pcr/${id}`, data, {
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
     return true;
   } catch (error: any) {

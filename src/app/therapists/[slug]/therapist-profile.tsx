@@ -67,7 +67,7 @@ export function TherapistProfileClient({ therapist, authoredPosts }: { therapist
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Briefcase className="w-4 h-4" />
-                                        <span>{therapist.experience} years experience</span>
+                                        <span>{therapist.experience_years} years experience</span>
                                     </div>
                                      <div className="flex items-center gap-1.5">
                                         <Eye className="w-4 h-4" />

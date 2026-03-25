@@ -147,7 +147,7 @@ export default function AccountPage() {
       return (
         <div className="space-y-8">
           <div className="flex flex-wrap items-center justify-between gap-4 no-print">
-            <div>
+            <div className="space-y-1">
               <h1 className="text-2xl font-bold tracking-tight font-headline">My Dashboard</h1>
               <p className="text-muted-foreground">An overview of your health journey with Curevan.</p>
             </div>

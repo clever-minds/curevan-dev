@@ -29,13 +29,19 @@ const getStatusBadgeVariant = (status: string) => {
 export default function PatientSupportPage() {
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
 
+  const fetchTickets = async () => {
+      const data = await listSupportTickets();
+
+      setSupportTickets(data);
+          console.log("Ticket data",data);  
+            
+  };
+
   useEffect(() => {
-    const fetchTickets = async () => {
-        const data = await listSupportTickets();
-        setSupportTickets(data);
-    };
     fetchTickets();
+    
   }, []);
+
 
   return (
     <div className="space-y-6">
@@ -59,7 +65,8 @@ export default function PatientSupportPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="pt-4">
-                        <SupportFeedbackForm formType="support" />
+                        <SupportFeedbackForm formType="support" onFormSubmit={fetchTickets} />
+
                     </div>
                 </DialogContent>
             </Dialog>
@@ -74,7 +81,7 @@ export default function PatientSupportPage() {
                 {supportTickets.map(ticket => (
                     <div key={ticket.id} className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
-                            <p className="font-semibold">{ticket.subject}</p>
+                            <p className="font-semibold">{ticket.subject || ticket.support_subject}</p>
                             <p className="text-sm text-muted-foreground">Ticket #{ticket.id} &bull; Last updated: {new Date(ticket.updatedAt).toLocaleDateString()}</p>
                         </div>
                         <div className="flex items-center gap-4">

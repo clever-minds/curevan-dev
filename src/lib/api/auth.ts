@@ -16,7 +16,7 @@ export async function signInWithEmailAndPassword(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   });
-console.log(res);
+  console.log(res);
   const data = await res.json();
 
   if (!res.ok) {
@@ -46,7 +46,7 @@ export async function getUserProfile(
     throw new Error(data.message || 'Profile fetch failed');
   }
 
-  return data;
+  return data.user;
 }
 export const getUserProfiledata = async () => {
   try {
@@ -63,7 +63,7 @@ export const getUserProfiledata = async () => {
       },
     });
 
-    return res.data;
+    return res.data.user;
 
   } catch (error) {
     throw new Error("Unauthorized");
@@ -101,10 +101,11 @@ export async function loginWithOTP(data: {
   verifyOtp?: boolean;
 }) {
   try {
+    const token = await getToken();
     const res = await api.post(`/api/auth/login-with-mobile`, data, {
       withCredentials: true,
       headers: {
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -125,7 +126,6 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     }
 
     const res = await api.get('/api/auth/me', {
-      withCredentials: true,
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -137,3 +137,4 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     return null; // not logged in
   }
 }
+

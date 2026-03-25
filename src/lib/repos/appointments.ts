@@ -143,10 +143,18 @@ export async function listAppointmentsForUser(
 }
 export async function cancelAppointments(appointmentId: number): Promise<boolean> {
   try {
+    const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data: response } = await serverApi.patch<ApiResponse<Appointment>>(
       `/api/appointments/${appointmentId}/cancel`,
       {},
-      { withCredentials: true }
+      { 
+        headers: {  
+          Authorization: `Bearer ${token}`,
+        }
+      }
     )
 
     // 🔹 response.success use karo, status nahi

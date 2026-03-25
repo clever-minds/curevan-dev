@@ -3,10 +3,13 @@ import api from "./axios";
 /* =========================
     LIST MEDIA (IMAGE + VIDEO)
    ========================= */
-export async function listMedia( token: string,
-) {
+export async function listMedia(token: string) {
   try {
-    const { data } = await api.get("/api/media/list");
+    const { data } = await api.get("/api/media/list", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return data;
   } catch (error: any) {
     throw new Error(
@@ -52,9 +55,13 @@ export async function uploadMedia(
 /* =========================
     DELETE MEDIA
    ========================= */
-export async function deleteMedia(id: number | string) {
+export async function deleteMedia(id: number | string, token: string) {
   try {
-    const { data } = await api.delete(`/api/media/delete/${id}`);
+    const { data } = await api.delete(`/api/media/delete/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return data;
   } catch (error: any) {
     throw new Error(
@@ -62,3 +69,4 @@ export async function deleteMedia(id: number | string) {
     );
   }
 }
+

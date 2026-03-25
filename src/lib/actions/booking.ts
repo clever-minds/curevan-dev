@@ -1,6 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { Appointment } from '../types';
-
+import { getToken } from "@/lib/auth";
 /**
  * Creates a new appointment and a corresponding invoice
  * by calling backend API using serverApi.
@@ -21,13 +21,15 @@ export async function createBookingAndInvoice(
       },
       paymentDetails,
     };
-
+const token = await getToken();
     // 2️⃣ Call backend API via serverApi
     const { data } = await serverApi.post(
       '/api/appointments/create-appointment',
       payload,
       {
-        headers: { withCredentials: true }, // use same style as cart/consent
+        headers: {  
+          Authorization: `Bearer ${token}`,
+        }, // use same style as cart/consent
       }
     );
 

@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail } from 'lucide-react';
 import { useState } from 'react';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail } from '@/lib/actions/user';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -38,17 +38,10 @@ export function ForgotPasswordForm() {
   });
 
   async function onSubmit(data: ForgotPasswordFormValues) {
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication service not ready',
-        description: 'Please wait a moment and try again.'
-      });
-      return;
-    }
-    setLoading(true);
+
     try {
-      await sendPasswordResetEmail(auth, data.email);
+      console.log("send email data", data);
+      await sendPasswordResetEmail(data.email);
       setSubmitted(true);
       toast({
         title: 'Reset Link Sent',
@@ -57,7 +50,7 @@ export function ForgotPasswordForm() {
     } catch (error: any) {
       console.error("Password Reset Error:", error);
       // We still show a generic success message to avoid user enumeration attacks
-      setSubmitted(true); 
+      setSubmitted(true);
       toast({
         title: 'Request Received',
         description: 'If an account exists for this email, you will receive a reset link shortly.',
@@ -66,7 +59,7 @@ export function ForgotPasswordForm() {
       setLoading(false);
     }
   }
-  
+
   if (submitted) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4 bg-muted rounded-md">

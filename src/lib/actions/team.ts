@@ -1,6 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import { z } from "zod";
-import { getCurrentUser } from "../auth";
+import { getCurrentUser, getToken } from "../auth";
 
 const inviteAdminSchema = z.object({
   email: z.string().email(),
@@ -21,6 +21,7 @@ export async function inviteAdminUser(
   roles: string[]
 ): Promise<{ success: boolean; error?: string }> {
   const currentUser = await getCurrentUser();
+  const token = await getToken();
   if (!currentUser || !currentUser.roles?.includes("admin.super")) {
     return { success: false, error: "Permission denied." };
   }
@@ -36,7 +37,9 @@ export async function inviteAdminUser(
         actorId: currentUser.uid, // For audit logging
       },
       {
-        headers: { withCredentials: true },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+         },
       }
     );
 
@@ -61,6 +64,7 @@ export async function updateUserRoles(
   roles: string[]
 ): Promise<{ success: boolean; error?: string }> {
   const currentUser = await getCurrentUser();
+  const token = await getToken();
   if (!currentUser || !currentUser.roles?.includes("admin.super")) {
     return { success: false, error: "Permission denied." };
   }
@@ -76,7 +80,9 @@ export async function updateUserRoles(
         actorId: currentUser.uid, // For audit logging
       },
       {
-        headers: { withCredentials: true },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 

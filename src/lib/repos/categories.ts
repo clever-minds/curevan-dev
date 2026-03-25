@@ -1,14 +1,20 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { ProductCategory } from "../types";
-
+import { getToken } from "@/lib/auth";
 /**
  * Fetches product categories via backend API
  * Function name unchanged: listProductCategories1
  */
 export async function listProductCategories1(): Promise<ProductCategory[]> {
   try {
+    const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data: response } = await serverApi.get("/api/products/categories", {
-      headers: { withCredentials: true },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+       },
     });
 
     if (!response?.data || !Array.isArray(response.data)) return [];

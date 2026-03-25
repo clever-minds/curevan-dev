@@ -12,9 +12,10 @@ import { useMemo, useState, useEffect, useTransition } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import type { SupportTicket } from "@/lib/types";
-import { listSupportTickets, updateSupportTicket } from "@/lib/repos/support";
+import { listSupportTickets, getSupportTicket } from "@/lib/repos/support";
+import { replyToSupportTicketAction, closeSupportTicketAction } from "@/lib/actions";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, Loader2 } from "lucide-react";
+import { Send, User, Loader2, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -41,72 +42,108 @@ const TicketViewDialog = ({ ticket, onUpdate }: { ticket: SupportTicket, onUpdat
     const { toast } = useToast();
     const [replyText, setReplyText] = useState("");
     const [isPending, startTransition] = useTransition();
+    const [details, setDetails] = useState<SupportTicket | null>(null);
+    const [loadingDetails, setLoadingDetails] = useState(true);
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            setLoadingDetails(true);
+            const data = await getSupportTicket(ticket.id);
+            if (data) {
+                setDetails(data);
+            }
+            setLoadingDetails(false);
+        };
+        fetchDetails();
+    }, [ticket.id]);
     
     const handleReply = (closeOnReply: boolean) => {
         if (!user || !replyText.trim()) return;
         startTransition(async () => {
-            const newMessage = {
-                by: 'admin' as const,
-                at: new Date().toISOString(),
-                text: replyText
+            const isCreator = String(user?.id) === String(ticket?.userId);
+            const data = { 
+                ticketId: parseInt(ticket.id), 
+                message: replyText,
+                sender_type: isCreator ? 'user' : 'admin'
             };
-
-            const updateData: Partial<SupportTicket> = {
-                messages: [...(ticket.messages || []), newMessage],
-            };
-
-            if (closeOnReply) {
-                updateData.status = 'closed';
-                updateData.closedBy = user.uid;
-                updateData.closedAt = new Date().toISOString();
-            } else {
-                updateData.status = 'pending';
-            }
-
-            const result = await updateSupportTicket(ticket.id, updateData);
+            const result = await replyToSupportTicketAction(data);
 
             if (result.success) {
+                if (closeOnReply) {
+                    const closeResult = await closeSupportTicketAction(parseInt(ticket.id));
+                    if (!closeResult.success) {
+                        toast({ variant: 'destructive', title: 'Reply sent, but failed to close ticket', description: closeResult.message });
+                    }
+                }
                 toast({ title: 'Reply Sent', description: `Ticket has been ${closeOnReply ? 'closed' : 'updated'}.` });
                 setReplyText(""); // Clear the textarea
+                
+                // Refresh details after reply
+                const updatedData = await getSupportTicket(ticket.id);
+                if (updatedData) setDetails(updatedData);
+                
                 onUpdate();
             } else {
-                toast({ variant: 'destructive', title: 'Failed to send reply', description: result.error });
+                toast({ variant: 'destructive', title: 'Failed to send reply', description: result.message });
             }
         });
     }
 
+    const currentTicket = details || ticket;
+
     return (
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
-                <DialogTitle>Ticket #{ticket.id}: {ticket.subject}</DialogTitle>
-                <DialogDescription>
-                    From: {ticket.userId} | Topic: <Badge variant="outline">{ticket.topic}</Badge> | Status: <Badge className={cn(getStatusBadgeVariant(ticket.status))}>{ticket.status}</Badge>
+                <DialogTitle className="text-2xl pt-2">Ticket #{currentTicket.id}: {currentTicket.subject}</DialogTitle>
+                <DialogDescription className="text-base py-1">
+                    From: {currentTicket.userId} | Title: <Badge variant="outline" className="font-normal text-sm">{currentTicket.subject}</Badge> | Status: <Badge className={cn("text-sm py-1 px-3", getStatusBadgeVariant(currentTicket.status))}>{currentTicket.status}</Badge>
                 </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[50vh] overflow-y-auto pr-4 space-y-4">
-                {ticket.messages?.map((msg, index) => (
-                    <div key={index} className={cn("flex flex-col", msg.by === 'user' ? 'items-start' : 'items-end')}>
-                        <p className="text-xs font-semibold mb-1">{msg.by === 'user' ? ticket.userId : 'Admin'}</p>
-                        <div className={cn(
-                            "p-3 rounded-lg max-w-sm",
-                            msg.by === 'user' ? 'bg-muted' : 'bg-primary text-primary-foreground'
-                        )}>
-                            <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                            <p className="text-xs opacity-70 mt-2 text-right">{new Date(msg.at).toLocaleString()}</p>
-                        </div>
+            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-6 py-4">
+                {currentTicket.message && (
+                    <div className="flex flex-col items-end text-xs rounded-xl bg-primary text-primary-foreground p-5 mb-5 shadow-md w-fit ml-auto">
+                        <p className="font-bold mb-1 text-lg border-b border-primary-foreground/20 pb-1 w-full">Original Request:</p>
+                        <p className="whitespace-pre-wrap text-lg pt-1">{currentTicket.message}</p>
                     </div>
-                ))}
-                {(!ticket.messages || ticket.messages.length === 0) && (
-                    <p className="text-sm text-muted-foreground">No message history available.</p>
+                )}
+                
+                {loadingDetails ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-20 w-3/4" />
+                        <Skeleton className="h-20 w-3/4 ml-auto" />
+                    </div>
+                ) : (
+                    <>
+                        {currentTicket.messages?.map((msg, index) => (
+                            <div key={index} className={cn("flex flex-col mb-6", msg.by === 'user' ? 'items-end' : 'items-start')}>
+                                <p className="text-base font-semibold mb-2 flex items-center gap-2">
+                                    {msg.by === 'user' ? <User className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+                                    {msg.by === 'user' ? 'User' : 'Admin'}
+                                </p>
+                                <div className={cn(
+                                    "p-5 rounded-xl max-w-lg shadow-md w-fit",
+                                    msg.by === 'user' ? 'bg-primary text-primary-foreground ml-auto' : 'bg-muted mr-auto'
+                                )}>
+                                    <p className="text-lg whitespace-pre-wrap">{msg.text}</p>
+                                    <p className={cn("text-sm opacity-70 mt-2", msg.by === 'user' ? 'text-right' : 'text-left')}>
+                                        {msg.at ? new Date(msg.at).toLocaleString() : 'Just now'}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                        {(!currentTicket.messages || currentTicket.messages.length === 0) && (
+                            <p className="text-sm text-muted-foreground italic">No message history available.</p>
+                        )}
+                    </>
                 )}
             </div>
-            <Separator />
-            <div className="pt-4 space-y-4">
+            <div className="pt-6 space-y-4 border-t">
                 <Textarea 
                     placeholder="Type your reply..." 
                     value={replyText} 
                     onChange={(e) => setReplyText(e.target.value)} 
-                    rows={4}
+                    rows={8}
+                    className="text-lg p-5"
                     disabled={ticket.status === 'closed'}
                 />
                 <div className="flex justify-between items-center gap-2">

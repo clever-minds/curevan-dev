@@ -22,12 +22,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listJournalEntries } from "@/lib/repos/content";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import { updateJournalStatus } from "@/lib/actions";
+import { getToken } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';
 
 export default function AdminJournalPage() {
   const [posts, setPosts] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const fetchPosts = async () => {
@@ -41,19 +44,50 @@ export default function AdminJournalPage() {
     fetchPosts();
   }, []);
   
+  const handleStatusUpdate = async (postId: string, title: string, status: "published" | "draft") => {
+      setProcessingId(postId);
+      try {
+          const token = await getToken();
+          if (!token) {
+              toast({ 
+                  variant: 'destructive', 
+                  title: "Session Expired", 
+                  description: "Please log in again to update status." 
+              });
+              return;
+          }
+          const result = await updateJournalStatus(postId, status, token);
+          if (result.success) {
+              toast({ 
+                  title: status === 'published' ? "Post Published" : "Post Rejected", 
+                  description: `"${title}" has been ${status === 'published' ? 'published' : 'returned to draft'}.` 
+              });
+              // Refetch to get updated list
+              fetchPosts();
+          } else {
+              toast({ 
+                  variant: 'destructive', 
+                  title: "Update Failed", 
+                  description: result.message 
+              });
+          }
+      } catch (error) {
+          toast({ 
+              variant: 'destructive', 
+              title: "Error", 
+              description: "An unexpected error occurred." 
+          });
+      } finally {
+          setProcessingId(null);
+      }
+  }
+
   const handleApprove = (postId: string, title: string) => {
-      // Here you would call a server action to update the post status
-      console.log(`Approving post ${postId}`);
-      toast({ title: "Post Approved", description: `"${title}" has been published.` });
-      // Refetch or update state optimistically
-      setPosts(posts.filter(p => p.id !== postId));
+      handleStatusUpdate(postId, title, 'published');
   }
 
   const handleReject = (postId: string, title: string) => {
-      // Here you would call a server action to update the post status
-      console.log(`Rejecting post ${postId}`);
-      toast({ variant: 'destructive', title: "Post Rejected", description: `"${title}" has been rejected and returned to the author.` });
-      setPosts(posts.filter(p => p.id !== postId));
+      handleStatusUpdate(postId, title, 'rejected');
   }
 
 
@@ -146,7 +180,7 @@ export default function AdminJournalPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>{getSafeDate(post.createdAt)?.toLocaleDateString() || 'N/A'}</TableCell>
                   <TableCell className="text-center">
                     <Badge
                       variant={post.status === 'pending_review' ? 'default' : 'secondary'}
@@ -161,8 +195,8 @@ export default function AdminJournalPage() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" disabled={processingId === post.id}>
+                          {processingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

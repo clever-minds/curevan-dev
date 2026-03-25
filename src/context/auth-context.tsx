@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { UserProfile } from '@/lib/types';
 import api from '@/lib/api/axios';
+import { getToken } from "@/lib/auth";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -22,9 +23,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
-        const res = await api.get('/api/me', { withCredentials: true });
+        const token = await getToken();
+
+        if (!token) {
+          throw new Error('Token missing, please login again');
+        }
+        const res = await api.get('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         // /api/me returns user directly
-        setUser(res.data || null);
+        setUser(res.data.user || null);
       } catch (error) {
         console.log("CheckAuth error:", error);
         setUser(null);
@@ -44,7 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ✅ Logout
   const logout = async () => {
     try {
-      await api.post("/api/auth/logout", {}, { withCredentials: true });
+      const token = await getToken();
+      await api.post("/api/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
       setUser(null);
     } catch (err) {
       console.error("Logout error:", err);

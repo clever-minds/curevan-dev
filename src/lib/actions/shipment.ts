@@ -1,6 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { Shipment } from "../types";
-import { getCurrentUser } from "../auth";
+import { getCurrentUser, getToken } from "../auth";
 
 /**
  * Creates a shipment for an order via backend API.
@@ -14,6 +14,7 @@ export async function createShipment(
   if (!user) {
     return { success: false, error: "User not authenticated." };
   }
+  const token = await getToken();
 
   try {
     // Call backend API to create shipment
@@ -24,7 +25,9 @@ export async function createShipment(
         actorId: user.uid, // for audit logging
       },
       {
-        headers: { withCredentials: true }, // maintain session/cookies
+        headers: { 
+          Authorization: `Bearer ${token}`,
+         }, // maintain session/cookies
       }
     );
 

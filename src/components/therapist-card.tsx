@@ -41,7 +41,7 @@
                         <p className="text-sm font-semibold text-primary">{therapist.specialty}</p>
                         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                             <BriefcaseMedical className="w-3 h-3" />
-                            <span>{therapist.experience} years experience</span>
+                            <span>{therapist.experience_years} years experience</span>
                         </div>
                         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                             <MapPin className="w-3 h-3" />

@@ -1,7 +1,7 @@
 
 import serverApi from '@/lib/repos/axios.server';
 import type { Therapist, Address, GeoPoint } from '../types';
-
+import { getToken } from '../auth';
 /**
  * List all therapists (uses cookies for auth)
  */
@@ -9,7 +9,9 @@ export async function listTherapists(): Promise<Therapist[] | null> {
     try {
 
         const { data } = await serverApi.get('/api/therapists/list', {
-        withCredentials: true, // send cookies automatically
+         headers: {
+        Authorization: `Bearer ${await getToken()}`,
+      }, // send cookies automatically
         });
 
         const therapists: Therapist[] = (data.data || []).map((item: any) => ({
@@ -32,7 +34,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             rating: item.rating || 0,
             reviews: item.reviews || 0,
             image: item.image || '',
-            experience: item.experience || 0,
+            experience_years: item.experience || 0,
             bio: item.bio || '',
             qualifications: item.qualifications || [],
             serviceTypes: item.specialty || [],
@@ -83,12 +85,23 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
     if (!id) return null;
 
     const { data } = await serverApi.get(`/api/therapists/profile/${id}`, {
-      withCredentials: true, // use cookies for auth
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+      }, 
     });
 
     if (!data?.data) return null;
 
     const item = data.data; // single therapist object
+
+    let availability = item.availability;
+    if (typeof availability === 'string') {
+      try {
+        availability = JSON.parse(availability);
+      } catch (e) {
+        console.error('Failed to parse availability:', e);
+      }
+    }
 
     const therapist: Therapist = {
       id: item.id,
@@ -111,7 +124,7 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       rating: item.rating || 0,
       reviews: item.reviews || 0,
       image: item.avatar || item.image || '',
-      experience: item.experience || 0,
+      experience_years: item.experience || 0,
       bio: item.bio || '',
       qualifications: item.qualifications || '',
        serviceTypes: item.specialty || [],
@@ -122,7 +135,7 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       referralDiscountRate: item.referralDiscountRate,
       referralCommissionRate: item.referralCommissionRate,
       referralActive: item.referralActive,
-      availability: item.availability,
+      availability: availability,
       hourlyRate: item.hourlyRate,
       membershipPlan: item.membershipPlan || 'standard',
       platformFeePct: item.platformFeePct,
@@ -132,9 +145,6 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
         ? {
             pan: item.tax.pan || '',
             panVerified: item.tax.panVerified,
-            // lastPanUpdatedAt: item.tax.lastPanUpdatedAt
-            //   ? new Date(item.tax.lastPanUpdatedAt)
-            //   : undefined,
           }
         : undefined,
     };
@@ -179,7 +189,9 @@ export async function listTherapistsByLocation(
         lat,
         lng,
       },
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+      },
     });
 
     const therapists: Therapist[] = (data.data || []).map((item: any) => ({
@@ -200,7 +212,7 @@ export async function listTherapistsByLocation(
       hourlyRate: item.hourlyRate,
       lat: item.latitude ? Number(item.latitude) : 0,
       lng: item.longitude ? Number(item.longitude) : 0,
-      experience:item.experience,
+      experience_years: item.experience,
       tax: item.tax
         ? {
             pan: item.tax.pan || '',

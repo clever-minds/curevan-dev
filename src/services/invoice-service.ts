@@ -4,7 +4,7 @@ import type { Order, Appointment, Invoice as InvoiceType } from '@/lib/types';
 import { getAppointmentById } from '@/lib/repos/appointments';
 import { getOrderById } from '@/lib/repos/orders';
 import serverApi from "@/lib/repos/axios.server";
-
+import { getToken } from "@/lib/auth";
 const supplierDetails = {
     legalName: "Himaya Care Pvt. Ltd.",
     tradeName: "Curevan",
@@ -189,8 +189,15 @@ function generateServiceInvoiceData(appointment: Appointment, invoice: InvoiceTy
 
 export async function getInvoiceById(invoiceId: number) {
   try {
+    const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const response = await serverApi.get(`/api/orders/invoice/${invoiceId}`, {
-      withCredentials: true, // ✅ cookie send karega automatically
+      withCredentials: true, 
+      headers: { 
+        Authorization: `Bearer ${token}`,
+       },
     });
 
     const invoice: InvoiceType = response.data.data;
@@ -205,6 +212,9 @@ export async function getInvoiceById(invoiceId: number) {
       // Fetch order
       const orderRes = await serverApi.get(`/api/orders/${sourceId}`, {
         withCredentials: true,
+        headers: { 
+          Authorization: `Bearer ${token}`,
+         },
       });
             console.log("invoice",orderRes.data.data);
 
@@ -219,6 +229,9 @@ export async function getInvoiceById(invoiceId: number) {
       // Fetch appointment
       const appointmentRes = await serverApi.get(`/api/appointments/${sourceId}`, {
         withCredentials: true,
+        headers: { 
+          Authorization: `Bearer ${token}`,
+         },
       });
       const appointment: Appointment = appointmentRes.data;
       if (!appointment) return null;

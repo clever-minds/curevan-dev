@@ -1,7 +1,7 @@
 'use server';
 
 import serverApi from "@/lib/repos/axios.server";
-
+import { getToken } from "@/lib/auth";
 /**
  * Fetches public-facing statistics via backend API.
  * This replaces direct Firestore queries with an API call.
@@ -14,8 +14,14 @@ export async function getPublicStats(): Promise<{
   productsDeliveredTotal: number;
 }> {
   try {
+    const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data } = await serverApi.get('/api/stats/public', {
-      headers: { withCredentials: true },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+       },
     });
 
     return {

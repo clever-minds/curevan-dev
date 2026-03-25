@@ -1,6 +1,7 @@
 import serverApi from "@/lib/repos/axios.server";
 import { z } from "zod";
 import type { Therapist, UserProfile } from "../types";
+import { getToken } from "../auth";
 
 // Validation schema (same as original)
 const therapistOnboardingSchema = z.object({
@@ -33,12 +34,13 @@ export async function createTherapistAction(
     const validatedData = therapistOnboardingSchema.parse(data);
 
     // 2️⃣ Call backend API
+    const token = await getToken();
     const { data: response } = await serverApi.post(
       "/api/therapist/create",
       validatedData,
       {
         headers: {
-          withCredentials: true, // keep session/cookies like cart/consent
+          Authorization: `Bearer ${token}`,
         },
       }
     );

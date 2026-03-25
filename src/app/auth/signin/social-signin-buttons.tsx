@@ -29,13 +29,13 @@ export function SocialSigninButtons() {
   useEffect(() => {
     // ✅ Next.js searchParams se token read karo
     const token = searchParams.get('token');
-    
+
     console.log('🔍 SearchParams token:', token);
     console.log('🔍 Window URL:', window.location.href);
 
     if (token) {
       console.log('✅ Token found!');
-      
+
       // Store token
       localStorage.setItem('token', token);
       localStorage.setItem('authToken', token);
@@ -49,7 +49,7 @@ export function SocialSigninButtons() {
 
       // Clean URL aur redirect
       window.history.replaceState({}, '', '/dashboard/account');
-      
+
       setTimeout(() => {
         console.log('✅ Navigating to dashboard...');
         router.push('/dashboard/account');

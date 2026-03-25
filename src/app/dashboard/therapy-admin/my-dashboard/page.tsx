@@ -88,7 +88,7 @@ export default function TherapyAdminDashboardPage() {
                 listAppointments(),
                 listPayoutItems()
             ]);
-            setProfileChangeRequests(requests.filter(r => r.status === 'pending'));
+            setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
             setAppointments(appointmentsData);
             setPayoutItems(payoutsData);
             setLoading(false);
@@ -247,7 +247,11 @@ export default function TherapyAdminDashboardPage() {
                             <TableCell>{req.userId}</TableCell>
                             <TableCell>{req.changes.map(c => c.fieldPath).join(', ')}</TableCell>
                             <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
-                            <TableCell><Button variant="outline" size="sm">Review</Button></TableCell>
+                            <TableCell>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href="/dashboard/therapy-admin/profile-approvals">Review</Link>
+                                </Button>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </ActionableTable>

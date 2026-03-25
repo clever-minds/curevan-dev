@@ -9,7 +9,8 @@ import { useState, useEffect } from "react";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
-import { getSafeDate, downloadCsv } from "@/lib/utils";
+import { downloadCsv, getSafeDate } from "@/lib/utils";
+import { format, parseISO } from "date-fns";
 
 
 export default function PatientBookingsPage() {
@@ -27,17 +28,36 @@ export default function PatientBookingsPage() {
   }, [user]);
   
   const handleExport = () => {
-    const headers = [
-        "ID", "Date", "Time", "Therapist Name", "Therapist ID", 
-        "Service Type", "Mode", "Status", "Payment Status", "PCR Status",
-        "Verification Status", "Service Amount", "Total Amount", "Cancellation Reason",
-        "Notes", "Address Line 1", "Address Line 2", "City", "State", "PIN", "Country",
-        "Created At",
+    const reportHeaders = [
+      "ID", "Date", "Time", "Therapist Name", "Therapist ID",
+      "Service Type", "Mode", "Status", "Payment Status", "PCR Status",
+      "Verification Status", "Service Amount", "Total Amount", "Cancellation Reason",
+      "Notes", "Address Line 1", "Address Line 1", "City", "State", "PIN", "Country",
+      "Created At",
     ];
 
-    const data = appointments.map(appt => [
+    const reportData = appointments.map((appt) => {
+      let displayDate = appt.date;
+      if (appt.date && appt.date.length >= 10 && appt.date.includes("-")) {
+        const parts = appt.date.substring(0, 10).split("-");
+        if (parts.length === 3) {
+          const [y, m, d] = parts.map(Number);
+          const localDate = new Date(y, m - 1, d);
+          if (!isNaN(localDate.getTime())) {
+            displayDate = format(localDate, "MM/dd/yyyy");
+          }
+        }
+      } else {
+        try {
+          displayDate = appt.date ? format(parseISO(appt.date), "MM/dd/yyyy") : "N/A";
+        } catch (e) {
+          displayDate = appt.date || "N/A";
+        }
+      }
+
+      return [
         appt.id,
-        getSafeDate(appt.date)?.toLocaleDateString() || '',
+        displayDate,
         appt.time,
         appt.therapist,
         appt.therapistId,
@@ -49,19 +69,20 @@ export default function PatientBookingsPage() {
         appt.verificationStatus,
         appt.serviceAmount || 0,
         appt.totalAmount || 0,
-        appt.cancellationReason || '',
-        appt.notes || '',
-        appt.serviceAddress?.line1 || '',
-        appt.serviceAddress?.line2 || '',
-        appt.serviceAddress?.city || '',
-        appt.serviceAddress?.state || '',
-        appt.serviceAddress?.pin || '',
-        appt.serviceAddress?.country || '',
-        getSafeDate(appt.createdAt)?.toISOString() || ''
-    ]);
+        appt.cancellationReason || "",
+        appt.notes || "",
+        appt.serviceAddress?.line1 || "",
+        appt.serviceAddress?.line2 || "",
+        appt.serviceAddress?.city || "",
+        appt.serviceAddress?.state || "",
+        appt.serviceAddress?.pin || "",
+        appt.serviceAddress?.country || "",
+        getSafeDate(appt.createdAt)?.toISOString() || "",
+      ];
+    });
 
-    downloadCsv(headers, data, 'my-bookings-report.csv');
-  }
+    downloadCsv(reportHeaders, reportData, "my-bookings-report.csv");
+  };
 
   return (
      <div className="space-y-6">

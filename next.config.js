@@ -8,46 +8,52 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-  remotePatterns: [
-    {
-      protocol: 'https',
-      hostname: 'placehold.co',
-      port: '',
-      pathname: '/**',
-    },
-    {
-      protocol: 'https',
-      hostname: 'picsum.photos',
-      port: '',
-      pathname: '/**',
-    },
-    {
-      protocol: 'https',
-      hostname: 'www.elitecarehc.com',
-      port: '',
-      pathname: '/**',
-    },
-    {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.elitecarehc.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
         protocol: "http",
         hostname: "localhost",
         port: "5000",
         pathname: "/uploads/**",
 
       },
-     {
+      {
         protocol: 'https',
         hostname: '13.235.132.236',
         port: '',           // agar default 443 hai
         pathname: '/uploads/images/**',
       },
-       {
+      {
         protocol: 'https',
         hostname: '13.234.126.66',
         pathname: '/uploads/images/**',
 
+      },
+      {
+        protocol: 'http',
+        hostname: '192.168.29.207',
+        pathname: '/uploads/images/**',
+
       }
-  ],
-},
+    ],
+  },
   async headers() {
     return [
       {
@@ -55,7 +61,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://www.google.com https://www.gstatic.com https://maps.googleapis.com;",
+            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://www.google.com https://www.gstatic.com https://maps.googleapis.com https://www.googletagmanager.com;",
           },
         ],
       },
@@ -73,7 +79,7 @@ const nextConfig = {
         destination: '/shop',
         permanent: true,
       },
-       {
+      {
         source: '/tp/:id',
         destination: '/therapists/:id',
         permanent: true,

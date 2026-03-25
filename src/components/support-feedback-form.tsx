@@ -25,6 +25,10 @@ import { Checkbox } from './ui/checkbox';
 import { cn } from '@/lib/utils';
 import { DialogClose } from './ui/dialog';
 import { createSupportTicket } from '@/lib/actions'; // Import the server action
+import { useAuth } from '@/context/auth-context';
+import MediaPicker from './MediaPicker';
+import { MediaItem } from '@/types/media';
+
 
 const supportFeedbackSchema = z.object({
   formType: z.enum(['support', 'feedback']),
@@ -75,9 +79,11 @@ export function SupportFeedbackForm({
     feedbackItemId: initialFeedbackItemId,
     onFormSubmit,
 }: SupportFeedbackFormProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [hoverRating, setHoverRating] = React.useState(0);
   const [isPending, startTransition] = useTransition();
+
   
   const form = useForm<SupportFeedbackFormValues>({
     resolver: zodResolver(supportFeedbackSchema),
@@ -88,7 +94,12 @@ export function SupportFeedbackForm({
       feedbackVisibility: true,
       feedbackRating: 0,
       supportAttachment: null,
+      supportTopic: '',
+      supportItemId: '',
+      supportSubject: '',
+      supportDescription: '',
     },
+
   });
 
   const formType = form.watch('formType');
@@ -102,20 +113,33 @@ export function SupportFeedbackForm({
       feedbackVisibility: true,
       feedbackRating: 0,
       supportAttachment: null,
+      supportTopic: '',
+      supportItemId: '',
+      supportSubject: '',
+      supportDescription: '',
     });
+
   }, [initialFormType, initialFeedbackTopic, initialFeedbackItemId, form]);
 
 
   function onSubmit(data: SupportFeedbackFormValues) {
+    const coverImageId = Array.isArray(data.supportAttachment)
+    ? data.supportAttachment[0]?.id ?? null
+    : data.supportAttachment;
     startTransition(async () => {
       if (data.formType === 'support') {
         const result = await createSupportTicket({
-          name: 'Anonymous User', // Or get from auth context if available
-          email: 'anonymous@example.com', // Or get from auth context
+          name: user?.name || 'Anonymous User',
+          email: user?.email || 'anonymous@example.com',
           subject: data.supportSubject!,
           message: data.supportDescription!,
           topic: data.supportTopic!,
+          itemId: data.supportItemId,
+          type: 'support',
+          fileId: coverImageId,
+          
         });
+
 
         if (result.success) {
             toast({
@@ -126,7 +150,7 @@ export function SupportFeedbackForm({
              toast({
               variant: 'destructive',
               title: 'Submission Failed',
-              description: result.error || "An unexpected error occurred.",
+              description: result.message || "An unexpected error occurred.",
             });
         }
       } else {
@@ -243,7 +267,7 @@ export function SupportFeedbackForm({
                         <FormControl>
                             <Textarea
                             placeholder="Please provide a detailed explanation of the problem you're experiencing."
-                            rows={5}
+                            rows={10}
                             {...field}
                             />
                         </FormControl>
@@ -258,7 +282,9 @@ export function SupportFeedbackForm({
                         <FormItem>
                         <FormLabel>Attach a file (Optional)</FormLabel>
                         <FormControl>
-                            <Input type="file" {...field} />
+                          <MediaPicker value={field.value as MediaItem[]}
+                                onChange={(media: MediaItem[]) => field.onChange(media)}
+                        />
                         </FormControl>
                         <FormDescription>
                             Upload a screenshot or relevant document.
@@ -309,7 +335,7 @@ export function SupportFeedbackForm({
                         <FormControl>
                             <Textarea
                             placeholder="Share your detailed feedback..."
-                            rows={5}
+                            rows={10}
                             {...field}
                             />
                         </FormControl>

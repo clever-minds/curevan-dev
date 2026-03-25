@@ -1,5 +1,6 @@
 import axios from "axios";
 import { z } from "zod";
+import { getToken } from "../auth";
 
 const createOrderSchema = z.object({
   userId: z.number(),
@@ -26,6 +27,7 @@ export async function createOrder(
     console.log("call order data validatedData",validatedData)
 
     // 🔥 Call Backend API
+    const token = await getToken();
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/api/orders/create-order`,
       {
@@ -44,8 +46,9 @@ export async function createOrder(
       {
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        withCredentials: true
+
       }
     );
     console.log("call order data response",response)

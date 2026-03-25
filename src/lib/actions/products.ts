@@ -1,6 +1,7 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { ProductCategory } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+import { getToken } from "../auth";
 
 /**
  * Adds a new product category via backend API.
@@ -11,12 +12,13 @@ export async function addProductCategory(
 ): Promise<ProductCategory> {
   try {
     // Call backend API to create the category
+    const token = await getToken();
     const { data: newCategory } = await serverApi.post(
       "/api/product-categories/add",
       categoryData,
       {
         headers: {
-          withCredentials: true, // maintain session/cookies like cart/consent
+          Authorization: `Bearer ${token}`,
         },
       }
     );

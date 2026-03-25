@@ -26,12 +26,14 @@ import { useEffect, useMemo, useState } from "react";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
 import { FilterBar } from "@/components/admin/FilterBar";
-import type { KnowledgeBase,ProfileChangeRequest, Appointment, Order, PayoutItem } from "@/lib/types";
+import type { KnowledgeBase,ProfileChangeRequest, Appointment, Order, PayoutItem, SupportTicket, SOSAlert } from "@/lib/types";
 import { listDocumentation, listProfileChangeRequests, listTrainings } from "@/lib/repos/content";
 import { getPublicStats } from "@/lib/repos/stats"; 
 import { listAppointments } from "@/lib/repos/appointments";
 import { listOrders } from "@/lib/repos/orders";
 import { listPayoutItems } from "@/lib/repos/payouts";
+import { listSupportTickets } from "@/lib/repos/support";
+import { listSosAlerts } from "@/lib/repos/alerts";
 import { getSafeDate } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
@@ -86,27 +88,38 @@ export default function AdminDashboardPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [payoutItems, setPayoutItems] = useState<PayoutItem[]>([]);
+    const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+    const [sosAlerts, setSosAlerts] = useState<SOSAlert[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            const [trainingsData, docsData, requestsData, statsData, appointmentsData, ordersData, payoutsData] = await Promise.all([
-                listTrainings(),
-                listDocumentation(),
-                listProfileChangeRequests(),
-                getPublicStats(),
-                listAppointments(filters),
-                listOrders(filters),
-                listPayoutItems(filters),
-            ]);
-            setTrainings(trainingsData);
-            setDocumentation(docsData);
-            setProfileChangeRequests(requestsData);
-            setStats(statsData);
-            setAppointments(appointmentsData);
-            setOrders(ordersData);
-            setPayoutItems(payoutsData);
-            setLoading(false);
+            try {
+                const [trainingsData, docsData, requestsData, statsData, appointmentsData, ordersData, payoutsData, supportTicketsData, sosAlertsData] = await Promise.all([
+                    listTrainings(),
+                    listDocumentation(),
+                    listProfileChangeRequests(),
+                    getPublicStats(),
+                    listAppointments(filters),
+                    listOrders(filters),
+                    listPayoutItems(filters),
+                    listSupportTickets(),
+                    listSosAlerts(),
+                ]);
+                setTrainings(trainingsData);
+                setDocumentation(docsData);
+                setProfileChangeRequests(requestsData);
+                setStats(statsData);
+                setAppointments(appointmentsData);
+                setOrders(ordersData || []);
+                setPayoutItems(payoutsData);
+                setSupportTickets(supportTicketsData || []);
+                setSosAlerts(sosAlertsData || []);
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
     }, [filters]); 
@@ -121,7 +134,7 @@ export default function AdminDashboardPage() {
     // Chart data processing logic
     const revenueData = useMemo(() => {
         const dataMap = new Map<string, { revenue: number, refunds: number }>();
-        orders.forEach(order => {
+        (orders ??[]).forEach(order => {
             const date = getSafeDate(order.createdAt)?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             if (!date) return;
             if (!dataMap.has(date)) dataMap.set(date, { revenue: 0, refunds: 0 });
@@ -253,7 +266,7 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
+             <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
                 <ActionableTable 
                     title="Pending Profile Approvals" 
                     description="Review and approve/reject user profile changes."
@@ -261,14 +274,15 @@ export default function AdminDashboardPage() {
                     actionHref="/dashboard/admin/profile-approvals"
                     actionText="View All"
                 >
-                    {profileChangeRequests.filter(r => r.status === 'pending').slice(0,3).map(req => (
+                    {profileChangeRequests?.filter(r => r.status === 'pending').slice(0,3).map(req => (
                         <TableRow key={req.id}>
-                            <TableCell>{req.userId}</TableCell>
+                            <TableCell className="font-medium">{req.userId}</TableCell>
                             <TableCell><Badge variant="outline" className="capitalize">{req.role}</Badge></TableCell>
                             <TableCell>{req.section}</TableCell>
                             <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
                         </TableRow>
                     ))}
+                    {profileChangeRequests?.filter(r => r.status === 'pending').length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-4 text-muted-foreground">No pending requests.</TableCell></TableRow>}
                 </ActionableTable>
 
                  <ActionableTable 
@@ -278,7 +292,33 @@ export default function AdminDashboardPage() {
                     actionHref="/dashboard/admin/sos-alerts"
                     actionText="Go to Alerts"
                 >
-                    {/* Mock data for now */}
+                    {sosAlerts.slice(0,3).map(alert => (
+                        <TableRow key={alert.id}>
+                            <TableCell className="font-medium">{alert.therapistName}</TableCell>
+                            <TableCell><Badge variant={alert.status === 'active' ? 'destructive' : 'secondary'} className="capitalize">{alert.status}</Badge></TableCell>
+                            <TableCell>{alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : 'N/A'}</TableCell>
+                        </TableRow>
+                    ))}
+                    {sosAlerts.length === 0 && <TableRow><TableCell colSpan={3} className="text-center py-4 text-muted-foreground">No alerts found.</TableCell></TableRow>}
+                </ActionableTable>
+
+                 <ActionableTable 
+                    title="Recent Support Tickets" 
+                    description="New and pending user support requests."
+                    headers={['Subject', 'Status', 'Updated']}
+                    actionHref="/dashboard/admin/support-tickets"
+                    actionText="View All"
+                >
+                    {supportTickets.slice(0,3).map(ticket => (
+                        <TableRow key={ticket.id}>
+                            <TableCell className="font-medium truncate max-w-[150px]">{ticket.subject}</TableCell>
+                            <TableCell>
+                                <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="capitalize">{ticket.status}</Badge>
+                            </TableCell>
+                            <TableCell>{ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleDateString() : 'N/A'}</TableCell>
+                        </TableRow>
+                    ))}
+                    {supportTickets.length === 0 && <TableRow><TableCell colSpan={3} className="text-center py-4 text-muted-foreground">No tickets found.</TableCell></TableRow>}
                 </ActionableTable>
             </div>
             

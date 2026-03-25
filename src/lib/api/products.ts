@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import api from './axios';
 import { getToken } from "@/lib/auth";
 
@@ -55,7 +56,12 @@ export async function createProducts(payload: {
   expiry_date?: string;        // ISO string "YYYY-MM-DD"
 }) {
   try {
-    const { data } = await api.post('/api/products/add', payload);
+    const token = await getToken();
+    const { data } = await api.post('/api/products/add', payload,{
+      headers: {
+        Authorization: `Bearer ${token}` // typical format for bearer tokens
+      }
+    });
     return data;
   } catch (error: any) {
     console.log( error.response?.data?.message);

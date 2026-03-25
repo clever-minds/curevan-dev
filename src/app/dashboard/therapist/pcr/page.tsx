@@ -36,18 +36,38 @@ export default function TherapistPcrPage() {
       "Booking Status", "Payment Status", "PCR Status", "Verification Status"
     ];
 
-    const data = allAppointments.map(appt => [
-        appt.id,
-        getSafeDate(appt.date)?.toLocaleDateString() || '',
-        appt.time,
-        appt.patientName,
-        appt.therapyType,
-        appt.mode,
-        appt.status,
-        appt.paymentStatus,
-        appt.pcrStatus,
-        appt.verificationStatus,
-    ]);
+    const data = allAppointments.map(appt => {
+        let displayDate = appt.date;
+        if (appt.date && appt.date.length >= 10 && appt.date.includes('-')) {
+            const parts = appt.date.substring(0, 10).split('-');
+            if (parts.length === 3) {
+                const [y, m, d] = parts.map(Number);
+                const localDate = new Date(y, m - 1, d);
+                if (!isNaN(localDate.getTime())) {
+                    displayDate = format(localDate, 'MM/dd/yyyy');
+                }
+            }
+        } else {
+            try {
+                displayDate = appt.date ? format(parseISO(appt.date), 'MM/dd/yyyy') : 'N/A';
+            } catch (e) {
+                displayDate = appt.date || 'N/A';
+            }
+        }
+
+        return [
+            appt.id,
+            displayDate,
+            appt.time,
+            appt.patientName,
+            appt.therapyType,
+            appt.mode,
+            appt.status,
+            appt.paymentStatus,
+            appt.pcrStatus,
+            appt.verificationStatus,
+        ];
+    });
 
     downloadCsv(headers, data, `pcr-report-${user.uid}.csv`);
     toast({ title: "Export Complete", description: `${allAppointments.length} records exported.` });

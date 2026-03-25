@@ -1,6 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import { z } from "zod";
-import { getCurrentUser } from "../auth";
+import { getCurrentUser, getToken } from "../auth";
 //import { revalidatePath } from "next/cache";
 
 const settingsSchema = z.object({
@@ -31,6 +31,7 @@ export async function updatePlatformSettings(
     const validatedData = settingsSchema.parse(settingsData);
 
     // Call backend API to update settings
+    const token = await getToken();
     const { data: response } = await serverApi.post(
       "/api/platform-settings/update",
       {
@@ -38,7 +39,9 @@ export async function updatePlatformSettings(
         actorId: user.uid, // pass current user for audit logging
       },
       {
-        headers: { withCredentials: true }, // maintain session/cookie
+        headers: { 
+          Authorization: `Bearer ${token}`,
+        }, // maintain session/cookie
       }
     );
 

@@ -1,5 +1,5 @@
 import serverApi from "@/lib/repos/axios.server";
-import { getCurrentUser } from "../auth";
+import { getCurrentUser, getToken } from "../auth";
 
 /**
  * Updates the status of a payout batch via backend API.
@@ -22,7 +22,8 @@ export async function updatePayoutBatchStatus(
 
   try {
     // Call backend API to update payout batch
-    const { data: response } = await serverApi.post(
+    const token = await getToken();
+    const  { data: response } = await serverApi.post(
       '/api/payout-batches/update-status',
       {
         batchId,
@@ -31,7 +32,7 @@ export async function updatePayoutBatchStatus(
       },
       {
         headers: {
-          withCredentials: true, // maintain session/cookies
+          Authorization: `Bearer ${token}`,
         },
       }
     );

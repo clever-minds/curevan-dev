@@ -1,6 +1,6 @@
 import serverApi from "@/lib/repos/axios.server";
 import type { Notification } from "../types";
-import { getCurrentUser } from "../auth";
+import { getCurrentUser, getToken } from "../auth";
 
 /**
  * Fetches notifications for the current user via backend API
@@ -14,8 +14,14 @@ export async function listNotifications(): Promise<Notification[]> {
   }
 
   try {
+    const token =await getToken();
+     if (!token) {
+        throw new Error('Token missing, please login again');
+      }
     const { data: response } = await serverApi.get(`/api/notifications/list/${user.uid}`, {
-      headers: { withCredentials: true },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+       },
     });
 
     if (!response?.data || !Array.isArray(response.data)) return [];

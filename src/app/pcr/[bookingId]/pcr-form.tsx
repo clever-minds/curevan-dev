@@ -37,17 +37,17 @@ const pcrFormSchema = z.object({
   // Patient Demographics (read-only from server)
   patientFullName: z.string(),
   dob: z.string(),
-  
+
   // Incident Info
   incidentDate: z.string().min(1, 'Incident date is required'),
   incidentLocation: z.string().min(1, 'Incident location is required'),
   therapyType: z.string().min(1, 'Therapy type is required'),
-  
+
   // Clinical Findings
   chiefComplaint: z.string().min(1, 'Chief complaint is required'),
   assessment: z.string().min(10, 'Please provide a more detailed assessment.'),
   diagnosis: z.string().optional(),
-  
+
   // Vital Signs
   vitalSigns: z.object({
     bp: z.string().optional(),
@@ -67,13 +67,13 @@ const pcrFormSchema = z.object({
   therapistName: z.string().min(1, 'Your name is required'),
   signatureConfirmation: z.boolean(),
 }).refine(data => {
-    if (data.status === 'locked') {
-        return data.signatureConfirmation === true;
-    }
-    return true;
+  if (data.status === 'locked') {
+    return data.signatureConfirmation === true;
+  }
+  return true;
 }, {
-    message: 'You must confirm your digital signature to lock the report.',
-    path: ['signatureConfirmation'],
+  message: 'You must confirm your digital signature to lock the report.',
+  path: ['signatureConfirmation'],
 });
 
 
@@ -89,9 +89,9 @@ function dbToForm(pcrData: any): Partial<PcrFormValues> {
   return {
     ...pcrData,
     vitalSigns: {
-      bp:   pcrData.bp   ?? pcrData.vitalSigns?.bp   ?? '',
-      hr:   pcrData.hr   ?? pcrData.vitalSigns?.hr   ?? '',
-      rr:   pcrData.rr   ?? pcrData.vitalSigns?.rr   ?? '',
+      bp: pcrData.bp ?? pcrData.vitalSigns?.bp ?? '',
+      hr: pcrData.hr ?? pcrData.vitalSigns?.hr ?? '',
+      rr: pcrData.rr ?? pcrData.vitalSigns?.rr ?? '',
       temp: pcrData.temp ?? pcrData.vitalSigns?.temp ?? '',
     },
   };
@@ -112,9 +112,9 @@ function formToDb(data: PcrFormValues) {
 
   return {
     ...rest,
-    bp:   vitalSigns?.bp   ?? '',
-    hr:   vitalSigns?.hr   ?? '',
-    rr:   vitalSigns?.rr   ?? '',
+    bp: vitalSigns?.bp ?? '',
+    hr: vitalSigns?.hr ?? '',
+    rr: vitalSigns?.rr ?? '',
     temp: vitalSigns?.temp ?? '',
     upload_attachment_id: uploadAttachmentId,
   };
@@ -133,116 +133,140 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   const form = useForm<PcrFormValues>({
     resolver: zodResolver(pcrFormSchema),
     defaultValues: {
-        status: 'in_progress',
-        signatureConfirmation: false,
-        attachment: [],
-        vitalSigns: { bp: '', hr: '', rr: '', temp: '' },
+      status: 'in_progress',
+      signatureConfirmation: false,
+      attachment: [],
+      vitalSigns: { bp: '', hr: '', rr: '', temp: '' },
     },
   });
 
   useEffect(() => {
     const fetchPcrData = async () => {
-        setIsLoading(true);
-        const [pcrData, cats] = await Promise.all([
-          getPcrById(bookingId),
-          getTherapyCategories()
-        ]);
+      setIsLoading(true);
+      const [pcrData, cats] = await Promise.all([
+        getPcrById(bookingId),
+        getTherapyCategories()
+      ]);
 
-        if (pcrData) {
-            // ✅ FIX: map flat DB fields into nested form shape before reset
-            form.reset(dbToForm(pcrData) as any);
-        }
-        setTherapyCategories(cats);
-        setIsLoading(false);
+      if (pcrData) {
+        // ✅ FIX: map flat DB fields into nested form shape before reset
+        form.reset(dbToForm(pcrData) as any);
+      }
+      setTherapyCategories(cats);
+      setIsLoading(false);
     }
     fetchPcrData();
   }, [bookingId, form]);
 
   async function handleSaveDraft() {
     const data = form.getValues();
-    // ✅ FIX: flatten vitalSigns + send only attachment ids
-    await updatePcr(bookingId, { ...formToDb(data), status: 'in_progress' });
+    // ✅ FIX: flatten vitalSigns + sync pcrStatus to appointment list
+    await updatePcr(bookingId, { 
+      ...formToDb(data), 
+      status: 'in_progress',
+      pcrStatus: 'in_progress' 
+    } as any);
     toast({ title: 'PCR Draft Saved' });
   }
 
-async function handleFinalize() {
-  const result = await form.trigger();
+  async function handleFinalize() {
+    const result = await form.trigger();
 
-  if (!result) {
-    toast({
-      variant: 'destructive',
-      title: 'Validation Failed',
-      description: 'Please fill all required fields and confirm your signature.',
-    });
-    return;
-  }
-
-  setIsFinalizing(true);
-
-  try {
-    const data = form.getValues();
-
-    const payoutResult = await createPayoutItemForBooking(bookingId);
-
-    // ✅ Only update PCR if payout successful
-    if (payoutResult.success) {
-
-      await updatePcr(bookingId, {
-        ...formToDb(data),
-        status: 'locked',
-      });
-
-      toast({
-        title: 'PCR Finalized & Locked',
-        description: payoutResult.message,
-      });
-
-      form.reset({ ...data, status: 'locked' });
-
-    } else {
+    if (!result) {
       toast({
         variant: 'destructive',
-        title: 'Action Failed',
-        description: payoutResult.message,
+        title: 'Validation Failed',
+        description: 'Please fill all required fields and confirm your signature.',
+      });
+      return;
+    }
+
+    setIsFinalizing(true);
+
+    try {
+      const data = form.getValues();
+
+      const payoutResult = await createPayoutItemForBooking(bookingId);
+      
+      if (payoutResult.success) {
+        // PCR is already locked by the server action
+        form.reset({ ...data, status: 'locked' });
+        toast({ title: 'PCR Locked & Finalized', description: 'Payout has been scheduled and report is now locked.' });
+      } else {
+        toast({ 
+          title: 'Finalization Failed', 
+          description: payoutResult.message, 
+          variant: 'destructive' 
+        });
+      }
+
+    } catch (error) {
+      console.log('Error during finalization:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Something went wrong',
+        description: 'Please try again1.',
       });
     }
 
-  } catch (error) {
-    console.log('Error during finalization:', error);
-    toast({
-      variant: 'destructive',
-      title: 'Something went wrong',
-      description: 'Please try again1.',
-    });
+    setIsFinalizing(false);
   }
 
-  setIsFinalizing(false);
-}
-  
+  async function handleSubmit() {
+    const result = await form.trigger();
+
+    if (!result) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Failed',
+        description: 'Please fill all required fields and confirm your signature.',
+      });
+      return;
+    }
+
+    setIsFinalizing(true);
+    try {
+      const data = form.getValues();
+      await updatePcr(bookingId, { 
+        ...formToDb(data), 
+        status: 'submitted',
+        pcrStatus: 'submitted',
+      } as any);
+      toast({ title: 'PCR Submitted', description: 'Your report has been submitted for review and is now locked.' });
+      form.reset({ ...data, status: 'submitted' });
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({ variant: 'destructive', title: 'Submission Failed', description: 'Failed to submit the report.' });
+    }
+    setIsFinalizing(false);
+  }
+
   async function handleUnlock() {
-      await updatePcr(bookingId, { status: 'returned' });
-      form.reset({ ...form.getValues(), status: 'returned' });
-      toast({ title: 'PCR Unlocked', description: 'The PCR is now available for editing by the therapist.' });
+    await updatePcr(bookingId, { status: 'returned', pcrStatus: 'returned' });
+    form.reset({ ...form.getValues(), status: 'returned' });
+    toast({ title: 'PCR Unlocked', description: 'The PCR is now available for editing by the therapist.' });
   }
 
-  const isFinal = form.watch('status') === 'locked';
+  const status = form.watch('status');
+  const isFinal = status === 'locked' || status === 'submitted';
   const isAdmin = user?.role === 'admin';
   const canUnlock = user?.roles?.includes('admin.therapy') || user?.roles?.includes('admin.super');
+  const canFinalize = user?.roles?.includes('admin.therapy') || user?.roles?.includes('admin.super');
 
   if (isLoading) {
     return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-                <Skeleton className="h-10 col-span-1" />
-                <Skeleton className="h-10 col-span-1" />
-                 <Skeleton className="h-10 col-span-1" />
-            </div>
-            <div className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-            </div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-4">
+          <Skeleton className="h-10 col-span-1" />
+          <Skeleton className="h-10 col-span-1" />
+          <Skeleton className="h-10 col-span-1" />
         </div>
+        <div className="space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </div>
     )
   }
 
@@ -250,42 +274,55 @@ async function handleFinalize() {
     <Form {...form}>
       <form className="space-y-8">
         <div className="sticky top-[var(--header-height)] bg-background/95 backdrop-blur-sm z-10 -mx-8 px-8 py-4 border-b">
-            {isFinal && (
-                <Alert variant="destructive" className="mb-4">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>This PCR is Locked</AlertTitle>
-                    <AlertDescription>
-                       This report has been finalized and cannot be edited. To make changes, an admin must unlock it.
-                    </AlertDescription>
-                </Alert>
-            )}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex-1">
-                    {/* Actions for Therapists */}
-                    {!isAdmin && !isFinal && (
-                         <div className="flex items-center gap-2">
-                            <Button type="button" onClick={handleSaveDraft} variant="outline" disabled={isFinalizing}><Save className="mr-2 h-4 w-4"/>Save Draft</Button>
-                            <Button type="button" onClick={handleFinalize} disabled={isFinalizing}>
-                                {isFinalizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4"/>}
-                                Lock & Finalize
-                            </Button>
-                        </div>
-                    )}
-                     {/* Actions for Admins */}
-                    {isAdmin && canUnlock && (
-                         <div className="flex items-center gap-2">
-                             <Button type="button" variant="destructive" disabled={!isFinal} onClick={handleUnlock}>
-                                <Edit className="mr-2 h-4 w-4"/>Unlock for Edit
-                            </Button>
-                        </div>
-                    )}
-                </div>
-                 {isFinal && (
-                    <Button variant="secondary" asChild>
-                        <Link href={`/dashboard/invoices?id=INV-${bookingId}`}><FileText className="mr-2"/>View Service Invoice</Link>
-                    </Button>
+          {isFinal && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>This PCR is Locked</AlertTitle>
+              <AlertDescription>
+                This report has been finalized and cannot be edited. To make changes, an admin must unlock it.
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Save Draft: available when not final */}
+                {!isFinal && (
+                  <Button type="button" onClick={handleSaveDraft} variant="outline" disabled={isFinalizing}>
+                    <Save className="mr-2 h-4 w-4" />Save Draft
+                  </Button>
                 )}
+
+                {/* Submit for Therapist only when not final */}
+                {!isAdmin && !isFinal && (
+                  <Button type="button" onClick={handleSubmit} disabled={isFinalizing}>
+                    {isFinalizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                    Submit Report
+                  </Button>
+                )}
+
+                {/* Lock & Finalize: ONLY for Therapy-admin/Super-admin on submitted reports */}
+                {status === 'submitted' && canFinalize && (
+                  <Button type="button" onClick={handleFinalize} disabled={isFinalizing}>
+                    {isFinalizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+                    Lock & Finalize
+                  </Button>
+                )}
+
+                {/* Unlock: ONLY for Therapy-admin/Super-admin if locked or submitted */}
+                {isFinal && canUnlock && (
+                  <Button type="button" variant="destructive" onClick={handleUnlock}>
+                    <Edit className="mr-2 h-4 w-4" />Unlock for Edit
+                  </Button>
+                )}
+              </div>
             </div>
+            {isFinal && (
+              <Button variant="secondary" asChild>
+                <Link href={`/dashboard/invoices?id=INV-${bookingId}`}><FileText className="mr-2" />View Service Invoice</Link>
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 items-start">
@@ -296,15 +333,15 @@ async function handleFinalize() {
               <p className="text-sm text-muted-foreground">This information is pre-filled from the booking and cannot be changed.</p>
               <div className="grid sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="patientFullName" render={({ field }) => (
-                  <FormItem><FormLabel>Patient Full Name</FormLabel><FormControl><Input {...field} readOnly /></FormControl><FormMessage /></FormItem>
-                )}/>
+                  <FormItem><FormLabel>Patient Full Name</FormLabel><FormControl><Input {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                )} />
                 <FormField control={form.control} name="dob" render={({ field }) => (
-                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field}  /></FormControl><FormMessage /></FormItem>
-                )}/>
-              </div>  
+                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
             </div>
 
-            <Separator/>
+            <Separator />
 
             {/* Incident Info */}
             <div className="space-y-4">
@@ -312,10 +349,10 @@ async function handleFinalize() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="incidentDate" render={({ field }) => (
                   <FormItem><FormLabel>Incident Date</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                )} />
                 <FormField control={form.control} name="incidentLocation" render={({ field }) => (
                   <FormItem><FormLabel>Incident Location</FormLabel><FormControl><Input placeholder="123 Main St" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                )} />
                 <FormField
                   control={form.control}
                   name="therapyType"
@@ -336,67 +373,67 @@ async function handleFinalize() {
             </div>
 
             <Separator />
-            
+
             {/* Clinical Findings */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Clinical Findings</h3>
-                <FormField control={form.control} name="chiefComplaint" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Chief Complaint</FormLabel>
-                      <FormControl>
-                        <AIRichText
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="e.g., Lower back pain"
-                          context={{ entityType: "pcr", field: "chiefComplaint" }}
-                          disabled={isFinal}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                )}/>
-                <FormField control={form.control} name="assessment" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assessment (Subjective / Objective)</FormLabel>
-                       <div className="relative">
-                          <FormControl>
-                             <AIRichText
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder="Patient states... Observation..."
-                                context={{ entityType: "pcr", field: "assessment" }}
-                                disabled={isFinal}
-                              />
-                          </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                )}/>
-                <FormField control={form.control} name="diagnosis" render={({ field }) => (
-                    <FormItem><FormLabel>Diagnosis (Optional)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Therapist's professional diagnosis" context={{ entityType: 'pcr', field: 'diagnosis' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <FormField control={form.control} name="vitalSigns.bp" render={({ field }) => (<FormItem><FormLabel>BP</FormLabel><FormControl><Input placeholder="120/80" {...field} disabled={isFinal} /></FormControl></FormItem>)}/>
-                    <FormField control={form.control} name="vitalSigns.hr" render={({ field }) => (<FormItem><FormLabel>Heart Rate</FormLabel><FormControl><Input placeholder="80" {...field} disabled={isFinal} /></FormControl></FormItem>)}/>
-                    <FormField control={form.control} name="vitalSigns.rr" render={({ field }) => (<FormItem><FormLabel>Resp. Rate</FormLabel><FormControl><Input placeholder="16" {...field} disabled={isFinal} /></FormControl></FormItem>)}/>
-                    <FormField control={form.control} name="vitalSigns.temp" render={({ field }) => (<FormItem><FormLabel>Temp</FormLabel><FormControl><Input placeholder="98.6°F" {...field} disabled={isFinal} /></FormControl></FormItem>)}/>
-                </div>
+              <FormField control={form.control} name="chiefComplaint" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chief Complaint</FormLabel>
+                  <FormControl>
+                    <AIRichText
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="e.g., Lower back pain"
+                      context={{ entityType: "pcr", field: "chiefComplaint" }}
+                      disabled={isFinal}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="assessment" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assessment (Subjective / Objective)</FormLabel>
+                  <div className="relative">
+                    <FormControl>
+                      <AIRichText
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Patient states... Observation..."
+                        context={{ entityType: "pcr", field: "assessment" }}
+                        disabled={isFinal}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="diagnosis" render={({ field }) => (
+                <FormItem><FormLabel>Diagnosis (Optional)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Therapist's professional diagnosis" context={{ entityType: 'pcr', field: 'diagnosis' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <FormField control={form.control} name="vitalSigns.bp" render={({ field }) => (<FormItem><FormLabel>BP</FormLabel><FormControl><Input placeholder="120/80" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.hr" render={({ field }) => (<FormItem><FormLabel>Heart Rate</FormLabel><FormControl><Input placeholder="80" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.rr" render={({ field }) => (<FormItem><FormLabel>Resp. Rate</FormLabel><FormControl><Input placeholder="16" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.temp" render={({ field }) => (<FormItem><FormLabel>Temp</FormLabel><FormControl><Input placeholder="98.6°F" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
+              </div>
             </div>
-            
+
             <Separator />
 
             {/* Treatment & Plan */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Treatment & Plan</h3>
               <FormField control={form.control} name="treatmentProvided" render={({ field }) => (
-                    <FormItem><FormLabel>Treatment Provided</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Detailed record of the treatment or therapy administered..." context={{ entityType: 'pcr', field: 'treatmentProvided' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="planOfCare" render={({ field }) => (
-                    <FormItem><FormLabel>Plan of Care</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Recommended next steps, exercises, or future treatment plan..." context={{ entityType: 'pcr', field: 'planOfCare' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="nextTreatmentDate" render={({ field }) => (
-                  <FormItem><FormLabel>Next Treatment Date (Optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                <FormItem><FormLabel>Treatment Provided</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Detailed record of the treatment or therapy administered..." context={{ entityType: 'pcr', field: 'treatmentProvided' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="planOfCare" render={({ field }) => (
+                <FormItem><FormLabel>Plan of Care</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Recommended next steps, exercises, or future treatment plan..." context={{ entityType: 'pcr', field: 'planOfCare' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="nextTreatmentDate" render={({ field }) => (
+                <FormItem><FormLabel>Next Treatment Date (Optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+              )} />
             </div>
 
             <Separator />
@@ -404,37 +441,38 @@ async function handleFinalize() {
             {/* Attachments & Signature */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Attachments & Signature</h3>
-                  <FormField
-                    control={form.control}
-                    name="attachment"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Images</FormLabel>
-                        <FormControl>
-                          <MediaPicker
-                            value={field.value as MediaItem[]}
-                            onChange={(media: MediaItem[]) => field.onChange(media)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                <FormField control={form.control} name="therapistName" render={({ field }) => (
-                    <FormItem><FormLabel>Therapist Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="signatureConfirmation" render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
-                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isFinal} /></FormControl>
-                        <div className="space-y-1 leading-none">
-                            <FormLabel>Digital Signature</FormLabel>
-                            <FormDescription>
-                                By checking this box, I certify that the information provided in this report is accurate and complete to the best of my knowledge.
-                            </FormDescription>
-                            <FormMessage />
-                        </div>
-                    </FormItem>
-                )}/>
+              <FormField
+                control={form.control}
+                name="attachment"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Images</FormLabel>
+                    <FormControl>
+                      <MediaPicker
+                        value={field.value as MediaItem[]}
+                        onChange={(media: MediaItem[]) => field.onChange(media)}
+                        disabled={isFinal}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField control={form.control} name="therapistName" render={({ field }) => (
+                <FormItem><FormLabel>Therapist Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="signatureConfirmation" render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isFinal} /></FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Digital Signature</FormLabel>
+                    <FormDescription>
+                      By checking this box, I certify that the information provided in this report is accurate and complete to the best of my knowledge.
+                    </FormDescription>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )} />
             </div>
           </div>
         </div>

@@ -57,82 +57,82 @@ export function SigninForm() {
     // }
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(data.email,data.password);
+      const userCredential = await signInWithEmailAndPassword(data.email, data.password);
       const user = userCredential.user;
       if (!user?.token) {
-          throw new Error("Auth token missing after login");
-        }
-        const token = user.token; // ✅ use directly
-        document.cookie = `token=${user.token}; path=/;`;
-        const userProfile = await getUserProfile(token);
-      if (!userProfile) {
-          throw new Error("User profile not found. Please contact support.");
+        throw new Error("Auth token missing after login");
       }
-      
+      const token = user.token; // ✅ use directly
+      document.cookie = `token=${user.token}; path=/;`;
+      const userProfile = await getUserProfile(token);
+      if (!userProfile) {
+        throw new Error("User profile not found. Please contact support.");
+      }
+
       login(userProfile);
 
       toast({
-          title: 'Sign In Successful',
-          description: `Welcome back, ${userProfile.name}!`,
+        title: 'Sign In Successful',
+        description: `Welcome back, ${userProfile.name}!`,
       });
-      
+
       const redirectUrl = searchParams.get('redirectUrl');
 
       router.push(redirectUrl || resolveMyDashboardHref(userProfile.roles));
 
     } catch (error: any) {
-        console.error("Firebase Sign In Error:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Sign In Failed',
-            description: error.message || 'Invalid credentials. Please try again.'
-        });
+      console.error("Firebase Sign In Error:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Sign In Failed',
+        description: error.message || 'Invalid credentials. Please try again.'
+      });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }
 
   return (
     <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Email Address</FormLabel>
-                <FormControl>
-                    <Input type="email" placeholder="you@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-                <FormItem>
-                 <div className="flex items-center justify-between">
-                    <FormLabel>Password</FormLabel>
-                    <Link href="/auth/forgot-password" passHref legacyBehavior>
-                      <a className="text-sm font-medium text-primary hover:underline">
-                        Forgot Password?
-                      </a>
-                    </Link>
-                  </div>
-                <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-                Sign In
-            </Button>
-        </form>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email Address</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="you@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Password</FormLabel>
+                <Link href="/auth/forgot-password" passHref legacyBehavior>
+                  <a className="text-sm font-medium text-primary hover:underline">
+                    Forgot Password?
+                  </a>
+                </Link>
+              </div>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+          Sign In
+        </Button>
+      </form>
     </Form>
   );
 }

@@ -52,7 +52,7 @@ const defaultFilters = {
     plan: 'any',
     sort: 'distance',
     gender: 'any',
-    experience: 0,
+    experience_years: 0,
     language: 'any',
     brand: '',
     stockStatus: 'all',
@@ -130,7 +130,7 @@ export function FilterBar({
       }
   }
 
-  const FilterContent = () => (
+  const FilterContent = (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
         {showSearch && (
             <div className="space-y-1">
@@ -169,7 +169,7 @@ export function FilterBar({
                     <Select onValueChange={(v) => handleFilterChange('therapistId', v)} value={filters.therapistId}>
                         <SelectTrigger><SelectValue placeholder="All Therapists" /></SelectTrigger>
                         <SelectContent>
-                            {meta.therapists.map((therapist: Therapist) => <SelectItem key={therapist.id} value={therapist.id}>{therapist.name}</SelectItem>)}
+                            {meta.therapists.map((therapist: Therapist) => <SelectItem key={therapist.id} value={therapist.id.toString()}>{therapist.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -228,7 +228,7 @@ export function FilterBar({
                     <Select onValueChange={(v) => handleFilterChange('categories', [v])} value={filters.categories[0] || ''}>
                         <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                         <SelectContent>
-                            {meta.productCategories.map((cat:any) => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                            {meta.productCategories.map((cat:any) => <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -320,7 +320,7 @@ export function FilterBar({
                         </SheetHeader>
                         <div className="flex-1 overflow-y-auto pr-4 -mr-6 py-4">
                             <div className="space-y-4">
-                                <FilterContent />
+                                {FilterContent}
                             </div>
                         </div>
                         <div className="flex justify-between gap-2 border-t pt-4">
@@ -339,7 +339,7 @@ export function FilterBar({
       <CardContent className="p-4">
         <div className="flex flex-wrap items-end gap-4 justify-between">
             <div className="flex-grow">
-                <FilterContent />
+                {FilterContent }
             </div>
             <div className="flex-shrink-0">
                  <Button variant="ghost" onClick={resetFilters} className="shrink-0"><Trash2 className="mr-2"/>Reset All</Button>

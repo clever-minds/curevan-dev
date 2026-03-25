@@ -10,6 +10,7 @@ export interface LogConsentPayload {
  * Log user consent via backend API
  */
 export async function logConsent(payload: LogConsentPayload): Promise<{ success: boolean; error?: string }> {
+  const token = await getToken();
   try {
     const { data } = await serverApi.post(
       '/api/consent/log',
@@ -20,7 +21,7 @@ export async function logConsent(payload: LogConsentPayload): Promise<{ success:
       },
       {
         headers: {
-          withCredentials: true, // same as your cart API style
+          Authorization: `Bearer ${token}`,
         },
       }
     );

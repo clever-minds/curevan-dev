@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert } from 'lucide-react';
+import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert, PhoneOutgoing } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
@@ -16,7 +16,9 @@ import Logo from './logo';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
 import { Badge } from './ui/badge';
 import type { SOSAlert } from '@/lib/types';
-import { listSosAlerts } from '@/lib/repos/alerts';
+import { listSosAlerts, createSosAlert } from '@/lib/repos/alerts';
+import { useToast } from '@/hooks/use-toast';
+import { listAppointmentsForUser } from '@/lib/repos/appointments';
 
 
 const navLinks = [
@@ -52,6 +54,58 @@ export default function Header() {
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [activeAlertCount, setActiveAlertCount] = useState(0);
+
+  const { toast } = useToast();
+  const [isSosSending, setIsSosSending] = useState(false);
+
+  const handleSosTrigger = async () => {
+    if (!user) return;
+    setIsSosSending(true);
+    
+    // Attempt to get location
+    let location: { lat: number; lng: number } | undefined;
+    try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+        location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch (e) {
+        console.warn("Could not get geolocation for SOS:", e);
+    }
+
+    // Try to get latest booking for context
+    let latestBookingId: string | undefined;
+    try {
+        const appointments = await listAppointmentsForUser(user.id, user.role === 'therapist' ? 'therapist' : 'patient');
+        if (appointments && appointments.length > 0) {
+            latestBookingId = appointments[0].id; // latest
+        }
+    } catch (e) {
+        console.warn("Could not fetch latest booking for SOS context:", e);
+    }
+
+    const result = await createSosAlert({
+        bookingId: latestBookingId,
+        location,
+        type: 'sos'
+    });
+
+    if (result.success) {
+        toast({
+            variant: 'destructive',
+            title: 'EMERGENCY ALERT SENT',
+            description: 'Your SOS has been sent to the admin team. Help is on the way.',
+            duration: 10000,
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'SOS Failed',
+            description: result.error || 'Could not send SOS alert. Please call emergency services directly.',
+        });
+    }
+    setIsSosSending(false);
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -182,6 +236,19 @@ export default function Header() {
             <div className="flex items-center justify-end gap-0">
               <Button variant="ghost" size="icon" aria-label="Search"><Search /></Button>
               
+              {user && (
+                <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="mr-1 animate-pulse bg-red-600 hover:bg-red-700 font-bold h-8 px-2"
+                    onClick={handleSosTrigger}
+                    disabled={isSosSending}
+                >
+                    <PhoneOutgoing className="w-4 h-4 mr-1" />
+                    {isSosSending ? '...' : 'SOS'}
+                </Button>
+              )}
+              
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -219,6 +286,8 @@ export default function Header() {
 
         <div className="hidden lg:flex flex-1 items-center justify-end gap-2">
             <Button variant="ghost" size="icon" aria-label="Search"><Search /></Button>
+            
+            {/* SOS button moved to after Book Now */}
             
             <CartSheet>
                 <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
@@ -276,9 +345,22 @@ export default function Header() {
                 </Button>
             )}
 
-           <Button asChild className="hidden sm:inline-flex bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity">
+            <Button asChild className="hidden sm:inline-flex bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity">
               <Link href="/book">Book Now</Link>
             </Button>
+
+            {user && (
+                <Button 
+                    variant="destructive" 
+                    size="default" 
+                    className="hidden sm:inline-flex animate-pulse bg-red-600 hover:bg-red-700 font-bold ml-2"
+                    onClick={handleSosTrigger}
+                    disabled={isSosSending}
+                >
+                    <PhoneOutgoing className="w-4 h-4 mr-2" />
+                    {isSosSending ? 'Sending...' : 'SOS'}
+                </Button>
+            )}
         </div>
       </div>
     </header>

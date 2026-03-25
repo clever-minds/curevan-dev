@@ -32,7 +32,7 @@ export default function TherapistsPage() {
     plan: 'any',
     sort: 'distance',
     gender: 'any',
-    experience: 0,
+    experience_years: 0,
     language: 'any',
     search: '',
   });
@@ -143,7 +143,7 @@ export default function TherapistsPage() {
         filters.plan === 'any' || therapist.membershipPlan === filters.plan;
 
       const experienceMatch =
-        therapist.experience >= filters.experience;
+        therapist.experience_years >= filters.experience_years;
       const searchMatch =
         !filters.search ||
         therapist.name.toLowerCase().includes(filters.search.toLowerCase());
@@ -175,8 +175,8 @@ export default function TherapistsPage() {
       if (filters.sort === 'rating')
         return (b.rating || 0) - (a.rating || 0);
 
-      if (filters.sort === 'experience')
-        return (b.experience || 0) - (a.experience || 0);
+      if (filters.sort === 'experience_years')
+        return (b.experience_years || 0) - (a.experience_years || 0);
 
       return (a.distance || 0) - (b.distance || 0);
     });

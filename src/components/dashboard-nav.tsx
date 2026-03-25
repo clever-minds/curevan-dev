@@ -70,6 +70,7 @@ import { Skeleton } from './ui/skeleton';
 import { Badge } from './ui/badge';
 import { listSosAlerts } from '@/lib/repos/alerts';
 import { listSupportTickets } from '@/lib/repos/support';
+import { listProfileChangeRequests } from '@/lib/repos/content';
 
 const allNavItems = {
   patient: [
@@ -104,10 +105,10 @@ const allNavItems = {
   ],
 };
 
-const superAdminRootNav = (activeAlertCount: number, openTicketCount: number) => [
+const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pendingApprovalsCount: number) => [
      { type: 'group', label: 'Team & Governance', icon: Users, items: [
         { href: '/dashboard/admin/team', label: 'Team Management', icon: Users },
-        { href: '/dashboard/admin/profile-approvals', label: 'Profile Approvals', icon: UserCheck },
+        { href: '/dashboard/admin/profile-approvals', label: 'Profile Approvals', icon: UserCheck, badgeCount: pendingApprovalsCount },
     ]},
      { type: 'group', label: 'Content & Training', icon: BookCopy, items: [
         { href: '/dashboard/admin/journal', label: 'Journal Approvals', icon: UserCheck },
@@ -182,6 +183,7 @@ export function DashboardNav() {
   const { user, isLoading } = useAuth();
   const [activeAlertCount, setActiveAlertCount] = React.useState(0);
   const [openTicketCount, setOpenTicketCount] = React.useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = React.useState(0);
   
   const roles = user?.roles || [];
   const primaryRole = user?.role || 'patient';
@@ -189,12 +191,14 @@ export function DashboardNav() {
   React.useEffect(() => {
     if (roles.includes('admin.super') || roles.includes('admin.therapy')) {
         const fetchData = async () => {
-            const [alerts, tickets] = await Promise.all([
+            const [alerts, tickets, approvals] = await Promise.all([
                 listSosAlerts(),
-                listSupportTickets({ status: 'open' })
+                listSupportTickets({ status: 'open' }),
+                listProfileChangeRequests()
             ]);
             setActiveAlertCount(alerts.filter(a => a.status === 'active').length);
             setOpenTicketCount(tickets.length);
+            setPendingApprovalsCount(approvals.filter(r => r.status === 'pending').length);
         }
         fetchData();
     }
@@ -245,7 +249,7 @@ export function DashboardNav() {
 
   // New Super Admin view
   if (roles.includes('admin.super')) {
-      const navigationItems = superAdminRootNav(activeAlertCount, openTicketCount);
+      const navigationItems = superAdminRootNav(activeAlertCount, openTicketCount, pendingApprovalsCount);
       const activeGroup = navigationItems.find(group => group.items.some(item => checkActive(item.href)));
       return (
         <div className="space-y-4">

@@ -30,12 +30,23 @@ export interface UserProfile {
   roles?: string[];
   name: string;
   phone?: string;
+  emergencyContact?: string;
   role_name?: string; // For display purposes (e.g., "admin.super" => "Super Admin")
-
-  createdAt?: Date  | null;
+  push_opt_in: boolean;
+  email_opt_in: boolean;
+  createdAt?: Date | null;
   addresses?: Address[];
   shipping_address_id?: number;
   billing_address_id?: number;
+  line1?: string;
+  line2?: string;
+  dob?: Date;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+  city?: string;
+  state?: string;
+  pin?: string;
+  country?: string;
+
 }
 
 
@@ -52,12 +63,12 @@ export interface PatientProfile {
 
 export interface Therapist {
   id: number; // This is the user UID
-  user_id:number;
+  user_id: number;
   name: string;
   specialty: string;
-  registrationNo:string,
-  bankAccountNo:string,
-  bankIfscCode:string,
+  registrationNo: string,
+  bankAccountNo: string,
+  bankIfscCode: string,
   line1: string;
   line2?: string;
   city: string;
@@ -65,13 +76,13 @@ export interface Therapist {
   pin: string;
   country: string;
   position: GeoPoint;
-  lat:number;
-  lng:number;
+  lat: number;
+  lng: number;
   rating: number;
-  fullAddress:string;
+  fullAddress: string;
   reviews: number;
   image: string;
-  experience: number; // in years
+  experience_years: number;
   bio: string;
   qualifications: string;
   isProfilePublic?: boolean;
@@ -87,7 +98,7 @@ export interface Therapist {
   membershipPlan?: 'standard' | 'premium';
   platformFeePct?: number;
   isHighlighted?: boolean;
-  distance?:number;
+  distance?: number;
   tax?: {
     pan: string;
     panVerified?: boolean;
@@ -128,7 +139,7 @@ export interface TherapistAvailability {
 export interface Appointment {
   id: number;
   patientId: number;
-  dateofBirth:string;
+  dateofBirth: string;
   patientName: string;
   patientPhone?: string;
   therapistId: number;
@@ -139,9 +150,9 @@ export interface Appointment {
   serviceAmount?: number;
   totalAmount?: number;
   clinicId?: string;
-  startTime?: Date ;
-  endTime?: Date ;
-  date: string;
+  startTime?: Date;
+  endTime?: Date;
+  date: Date;
   time: string;
   mode: 'home' | 'online' | 'clinic';
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show';
@@ -213,7 +224,7 @@ export interface ProductVariant {
 }
 
 export interface Inventory {
-  id:number,
+  id: number,
   sku: string;
   productId: number;
   warehouseId?: string;
@@ -232,7 +243,7 @@ export interface Cart {
 }
 
 export interface CartItem extends Product {
-  id:number;
+  id: number;
   quantity: number
   productId: number;
 }
@@ -251,21 +262,21 @@ export interface Order {
   userId: number;
   customerName: string;
   customerPhone?: string;
-  items: { 
-    sku: string; 
-    name: string; 
-    qty: number; 
-    price: number; 
+  items: {
+    sku: string;
+    name: string;
+    qty: number;
+    price: number;
     mrp: number;
     hsnCode: string;
     taxRatePct: number;
-    featuredImage: string 
+    featuredImage: string
   }[];
-  invoiceId:number;
+  invoiceId: number;
   shippingAddress: Address;
   billingAddress: Address;
 
-  
+
   subtotal: number;
   taxableValue?: number;
   cgst?: number;
@@ -274,7 +285,7 @@ export interface Order {
   totalTax?: number;
   total: number;
   status: 'Placed' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded';
-  createdAt: Date ;
+  createdAt: Date;
   deliveredAt?: string | null;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';
   paymentTxnId?: string;
@@ -372,7 +383,7 @@ export interface Invoice {
   status: 'issued' | 'draft' | 'cancelled';
   number: string;
   source: { orderId?: string; bookingId?: string };
-  issuedAt: Date ;
+  issuedAt: Date;
   totalAmountPaise: number;
 }
 
@@ -388,18 +399,18 @@ export interface CreditNote {
 }
 
 export interface InvoiceSequence {
-    id: string; // e.g., INV-G-2025-26
-    series: 'INV-G' | 'INV-S' | 'CN';
-    financialYear: string;
-    next: number;
+  id: string; // e.g., INV-G-2025-26
+  series: 'INV-G' | 'INV-S' | 'CN';
+  financialYear: string;
+  next: number;
 }
 
 export interface TaxSettings {
-    id: 'active';
-    supplier: { legalName: string; gstin: string; pan: string; cin: string; stateCode: string; address: Address; email: string; website: string };
-    seriesConfig: { goods: string; services: string; credit: string };
-    hsnSacCatalog: { code: string; label: string; defaultRatePct: number; type: 'good' | 'service' }[];
-    gstRules: { defaultGoodsRatePct: number; defaultServiceRatePct: number; useShipToForGoods: boolean; useServiceAddressForServices: boolean };
+  id: 'active';
+  supplier: { legalName: string; gstin: string; pan: string; cin: string; stateCode: string; address: Address; email: string; website: string };
+  seriesConfig: { goods: string; services: string; credit: string };
+  hsnSacCatalog: { code: string; label: string; defaultRatePct: number; type: 'good' | 'service' }[];
+  gstRules: { defaultGoodsRatePct: number; defaultServiceRatePct: number; useShipToForGoods: boolean; useServiceAddressForServices: boolean };
 }
 
 // --- Records & Logs ---
@@ -416,6 +427,7 @@ export interface PCR { // Patient Care Report
   planOfCare: string;
   vitals?: Record<string, string>; // bp, hr, rr, temp
   status: 'not_started' | 'in_progress' | 'submitted' | 'locked' | 'returned';
+  pcrStatus?: 'not_started' | 'in_progress' | 'submitted' | 'locked' | 'returned' | 'Draft';
   lockedAt?: Date;
   lockedBy?: string;
   version: number;
@@ -431,40 +443,40 @@ export interface PCR { // Patient Care Report
 }
 
 export interface Session {
-    id: string; // bookingId
-    bookingId: string;
-    therapistId: string;
-    startedAt: Date;
-    endedAt: Date;
-    durationMin: number;
-    events: {type: string; at: Date; note: string}[];
+  id: string; // bookingId
+  bookingId: string;
+  therapistId: string;
+  startedAt: Date;
+  endedAt: Date;
+  durationMin: number;
+  events: { type: string; at: Date; note: string }[];
 }
 
 export interface PcrAmendmentRequest {
-    id: string;
-    bookingId: string;
-    therapistId: string;
-    reason: string;
-    requestedAt: Date;
-    status: 'pending' | 'approved' | 'rejected';
+  id: string;
+  bookingId: string;
+  therapistId: string;
+  reason: string;
+  requestedAt: Date;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface VerificationLog {
-    bookingId: string;
-    therapistId: string;
-    method: 'OTP' | 'QR' | 'GEOFENCE' | 'ADMIN';
-    success: boolean;
-    verifiedAt: Date;
-    meta?: Record<string, any>;
+  bookingId: string;
+  therapistId: string;
+  method: 'OTP' | 'QR' | 'GEOFENCE' | 'ADMIN';
+  success: boolean;
+  verifiedAt: Date;
+  meta?: Record<string, any>;
 }
 
 export interface ConsentLog {
-    number: string;
-    consentType: 'terms' | 'privacy' | 'medical' | 'marketing';
-    version: string;
-    acceptedAt: Date;
-    ip: string;
-    userAgent: string;
+  number: string;
+  consentType: 'terms' | 'privacy' | 'medical' | 'marketing';
+  version: string;
+  acceptedAt: Date;
+  ip: string;
+  userAgent: string;
 }
 
 // --- Support & System ---
@@ -487,56 +499,66 @@ export interface SOSAlert {
   status: 'active' | 'resolved';
   triggeredAt: Date;
   resolvedAt?: Date;
+  therapistName?: string;
+  timestamp?: string;
 }
 
 export interface SupportTicket {
-    id: string;
-    number: string;
-    topic: string;
-    subject: string;
-    bookingId?: string;
-    orderId?: string;
-    status: 'open' | 'pending' | 'escalated' | 'closed';
-    updatedAt: string;
-    messages?: { by: 'user' | 'admin'; at: string; text: string }[];
-    createdAt?: Date;
-    closedBy?: string;
-    closedAt?: string;
+  id: string;
+  number: string;
+  userId: string;
+  topic: string;
+  subject: string;
+  support_subject?: string;
+  message?: string;
+  description?: string;
+  support_description?: string;
+  priority?: string;
+  bookingId?: string;
+  orderId?: string;
+  status: 'open' | 'pending' | 'escalated' | 'closed';
+  updatedAt: string;
+  messages?: { by: string; at: string; text: string }[];
+  sender_id: number;
+
+  createdAt?: Date;
+  closedBy?: string;
+  closedAt?: string;
 }
 
 export interface PaymentTransaction {
-    id: string;
-    ref: string;
-    number: string;
-    orderId?: string;
-    bookingId?: string;
-    amount: number;
-    currency: string;
-    status: 'paid' | 'failed';
-    gateway: 'razorpay';
-    createdAt: Date;
+  id: string;
+  ref: string;
+  number: string;
+  orderId?: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: 'paid' | 'failed';
+  gateway: 'razorpay';
+  createdAt: Date;
 }
 
 export interface AuditLog {
-    id?: number;
-    actorId: string; // "system" or a user UID
-    action: string; // e.g., "payout.item.created"
-    entityType: "booking" | "pcr" | "user" | "order" | "invoice" | "payoutBatch" | "profileChangeRequest" | "sosAlert";
-    entityId: number;
-    timestamp?: Date;
-    details?: Record<string, any>;
+  id?: number;
+  actorId: string; // "system" or a user UID
+  action: string; // e.g., "payout.item.created"
+  entityType: "booking" | "pcr" | "user" | "order" | "invoice" | "payoutBatch" | "profileChangeRequest" | "sosAlert";
+  entityId: number;
+  timestamp?: Date;
+  details?: Record<string, any>;
 }
 
 export interface AIFeedback {
-    id: string;
-    timestamp: Date;
-    number: string;
-    context: 'chat_assistant' | 'pcr_refinement' | 'dashboard_summary' | 'content_generation';
-    interactionId: string; // Unique ID for the specific AI query/response pair
-    rating: 'positive' | 'negative';
-    query?: string; // The user's query
-    response?: string; // The AI's response
-    userComment?: string;
+  id: string;
+  timestamp: Date;
+  number: string;
+  context: 'chat_assistant' | 'pcr_refinement' | 'dashboard_summary' | 'content_generation';
+  interactionId: string; // Unique ID for the specific AI query/response pair
+  rating: 'positive' | 'negative';
+  query?: string; // The user's query
+  response?: string; // The AI's response
+  userComment?: string;
 }
 
 
@@ -558,32 +580,34 @@ export interface Coupon {
   permanent?: boolean;
   appliesTo?: { categories?: string[]; skus?: string[] };
   active: boolean;
-  createdAt?: Date ;
+  createdAt?: Date;
   status?: 'Active' | 'Paused' | 'Expired' | 'Scheduled';
   usageLimit?: number | null;
 }
 
 export interface TaxSettings {
-    id: 'active';
-    supplier: { legalName: string; gstin: string; pan: string; cin: string; stateCode: string; address: Address; email: string; website: string };
-    seriesConfig: { goods: string; services: string; credit: string };
-    hsnSacCatalog: { code: string; label: string; defaultRatePct: number; type: 'good' | 'service' }[];
-    gstRules: { defaultGoodsRatePct: number; defaultServiceRatePct: number; useShipToForGoods: boolean; useServiceAddressForServices: boolean };
+  id: 'active';
+  supplier: { legalName: string; gstin: string; pan: string; cin: string; stateCode: string; address: Address; email: string; website: string };
+  seriesConfig: { goods: string; services: string; credit: string };
+  hsnSacCatalog: { code: string; label: string; defaultRatePct: number; type: 'good' | 'service' }[];
+  gstRules: { defaultGoodsRatePct: number; defaultServiceRatePct: number; useShipToForGoods: boolean; useServiceAddressForServices: boolean };
 }
 
 export interface ProfileChangeRequest {
-    id: string;
-    number: string;
-    role: 'therapist' | 'patient';
-    entityId: number;
-    section: string;
-    changes: { fieldPath: string; old: any; new: any }[];
-    status: 'pending' | 'approved' | 'rejected';
-    reason?: string;
-    reviewerId?: string;
-    createdAt: Date;
-    reviewedAt?: string;
-    attachments?: any[];
+  id: string;
+  number: string;
+  role: 'therapist' | 'patient';
+  entityId: number;
+  userName: string;
+  userId?: string | number;
+  section: string;
+  changes: { fieldPath: string; name?: string; old: any; new: any }[];
+  status: 'pending' | 'approved' | 'rejected';
+  reason?: string;
+  reviewerId?: string;
+  createdAt: Date;
+  reviewedAt?: string;
+  attachments?: any[];
 }
 
 
@@ -606,7 +630,7 @@ export interface KnowledgeBase {
   createdAt: Date;
   updatedAt: Date;
   categories: string[];
-  durationMin:number,
+  durationMin: number,
   featuredImageId?: number;
   sopVersion: string;
   contentType: 'post' | 'training' | 'documentation';
@@ -656,15 +680,15 @@ export interface KnowledgeBase {
 // }
 
 export interface NewsletterSubscriber {
-    id?: string; // Document ID is the email address
-    email: string;
-    status: 'pending' | 'active' | 'unsubscribed';
-    createdAt: Date;
-    confirmedAt?: Date;
-    source: string; // e.g., 'footer', 'journal_popup'
-    consentVersion: string; // e.g., 'v1.0'
-    unsubToken: string;
-    segments?: string[]; // e.g., ['patient', 'physiotherapy_interest']
+  id?: string; // Document ID is the email address
+  email: string;
+  status: 'pending' | 'active' | 'unsubscribed';
+  createdAt: Date;
+  confirmedAt?: Date;
+  source: string; // e.g., 'footer', 'journal_popup'
+  consentVersion: string; // e.g., 'v1.0'
+  unsubToken: string;
+  segments?: string[]; // e.g., ['patient', 'physiotherapy_interest']
 }
 
 
@@ -677,7 +701,7 @@ export interface NewsletterSubscriber {
 
 
 export interface Address {
-  id:number;
+  id: number;
   line1: string;
   line2?: string;
   city: string;

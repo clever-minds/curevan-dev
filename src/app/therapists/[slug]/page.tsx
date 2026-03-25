@@ -29,7 +29,7 @@ export async function generateMetadata(
 
   return {
     title: `${therapist.name} | ${therapist.specialty} in ${therapist.city}`,
-    description: `Book an appointment with ${therapist.name}, a certified ${therapist.specialty} with ${therapist.experience} years of experience. ${therapist.bio.substring(0, 120)}...`,
+    description: `Book an appointment with ${therapist.name}, a certified ${therapist.specialty} with ${therapist.experience_years} years of experience. ${therapist.bio.substring(0, 120)}...`,
     openGraph: {
       title: `${therapist.name} | Curevan Therapist Profile`,
       description: therapist.bio.substring(0, 160),

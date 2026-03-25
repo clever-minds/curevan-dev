@@ -13,11 +13,12 @@ export default function MediaPicker({
   value = [],                 // ✅ DEFAULT VALUE (IMPORTANT)
   onChange,
   multiple = true, // ✅ optional prop
-
+  disabled = false,
 }: {
   value?: MediaItem[];
   onChange: (media: MediaItem[]) => void;
   multiple?: boolean;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [library, setLibrary] = useState<MediaItem[]>([]);
@@ -49,13 +50,15 @@ export default function MediaPicker({
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="border px-3 py-2 rounded"
-      >
-        Select / Upload Images
-      </button>
+      {!disabled && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="border px-3 py-2 rounded"
+        >
+          Select / Upload Images
+        </button>
+      )}
 
       {/* ✅ SAFE MAP */}
       <div className="flex gap-2 flex-wrap">

@@ -28,7 +28,7 @@ import { useState, useMemo, useEffect, useTransition } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import useRazorpay from '@/hooks/use-razorpay';
-import { isSameDay, isPast, set } from 'date-fns';
+import { isSameDay, isPast, set, format } from 'date-fns';
 import { Price } from '@/components/money/price';
 import { listAppointmentsForUser } from '@/lib/repos/appointments';
 import { getTherapyCategories } from '@/lib/repos/categories';
@@ -540,14 +540,17 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     if (!selectedDate) return false;
     const [h, m] = time.split(':').map(Number);
     if (isPast(set(selectedDate, { hours: h, minutes: m }))) return false;
+    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
     return !therapistAppointments.some(a =>
-      isSameDay(new Date(a.date), selectedDate) && a.time === time && a.status !== 'Cancelled'
+      a.date.startsWith(selectedDateStr) && a.time === time && a.status !== 'Cancelled'
     );
   };
 
-  const isDateFullyBooked = (date: Date) =>
-    timeSlots.length > 0 &&
-    therapistAppointments.filter(a => isSameDay(new Date(a.date), date) && a.status !== 'Cancelled').length >= timeSlots.length;
+  const isDateFullyBooked = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return timeSlots.length > 0 &&
+      therapistAppointments.filter(a => a.date.startsWith(dateStr) && a.status !== 'Cancelled').length >= timeSlots.length;
+  };
 
   // ── Address handlers ──────────────────────────────────────────────────────
 
@@ -647,7 +650,7 @@ console.log("booking new data",data);
             therapyType: data.serviceType,
             serviceAmount,
             totalAmount: serviceAmount,
-            date: data.scheduledDate.toISOString(),
+            date: format(data.scheduledDate, 'yyyy-MM-dd'),
             time: data.scheduledTime,
             mode: data.sessionMode,
             notes: data.notes,

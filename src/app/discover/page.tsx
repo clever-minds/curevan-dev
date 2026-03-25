@@ -34,7 +34,7 @@ export default function DiscoverPage() {
       radius: 15,
       sort: 'distance',
       gender: 'any',
-      experience: 0,
+      experience_years: 0,
       language: 'any',
       search: '',
   });
@@ -118,7 +118,7 @@ export default function DiscoverPage() {
         const specialtyMatch = filters.specialty.length === 0 || filters.specialty.some(s => therapist.serviceTypes.includes(s as never));
         const planMatch = filters.plan === 'any' || therapist.membershipPlan === filters.plan;
         const genderMatch = filters.gender === 'any'; // Mock gender filter
-        const experienceMatch = therapist.experience >= filters.experience;
+        const experienceMatch = therapist.experience_years >= filters.experience_years;
         const availabilityMatch = true;
         
         return specialtyMatch && planMatch && availabilityMatch && genderMatch && experienceMatch;
@@ -145,8 +145,8 @@ export default function DiscoverPage() {
             if (a.distance > b.distance) return 1;
         } else if (filters.sort === 'rating') {
              if ((b.rating || 0) - (a.rating || 0) !== 0) return (b.rating || 0) - (a.rating || 0);
-        } else if (filters.sort === 'experience') {
-            if ((b.experience || 0) - (a.experience || 0) !== 0) return (b.experience || 0) - (a.experience || 0);
+        } else if (filters.sort === 'experience_years') {
+            if ((b.experience_years || 0) - (a.experience_years || 0) !== 0) return (b.experience_years || 0) - (a.experience_years || 0);
         }
 
         return (a.distance || 0) - (b.distance || 0); // Default tie-breaker is distance

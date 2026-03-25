@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
 import { listAppointments, listAppointmentsForUser ,cancelAppointments} from '@/lib/repos/appointments';
+import { format, parseISO } from 'date-fns';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -145,13 +146,38 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
   );
 };
 
+const formatDateSafe = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
+  
+  // If it's a simple YYYY-MM-DD string, handle it manually to avoid ANY UTC interpretation
+  if (dateStr.length >= 10 && dateStr.includes('-')) {
+    const parts = dateStr.substring(0, 10).split('-');
+    if (parts.length === 3) {
+      const [y, m, d] = parts.map(Number);
+      // This constructor (year, monthIndex, day) always creates a LOCAL date
+      const localDate = new Date(y, m - 1, d);
+      if (!isNaN(localDate.getTime())) {
+        return format(localDate, 'MMM dd, yyyy');
+      }
+    }
+  }
+
+  try {
+    const date = parseISO(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return format(date, 'MMM dd, yyyy');
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 
 const AppointmentCard = ({ appointment, scope, context }: { appointment: Appointment, scope: AppointmentsTableProps['scope'], context: AppointmentsTableProps['context'] }) => (
     <Card>
         <CardContent className="p-4">
             <div className="flex justify-between items-start">
                 <div>
-                    <p className="font-bold">{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</p>
+                    <p className="font-bold">{formatDateSafe(appointment.date)} at {appointment.time}</p>
                     <p className="text-sm text-muted-foreground">{scope === 'patient' ? appointment.therapist : appointment.patientName}</p>
                 </div>
                 {context === 'bookings' && <Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{appointment.status}</Badge>}
@@ -181,6 +207,7 @@ export function AppointmentsTable({ scope, filters = {}, context = 'bookings' }:
   const isMobile = useIsMobile();
   const { user } = useAuth();
   
+  
 const stableFilters = React.useMemo(() => filters, [JSON.stringify(filters)]);
 
 React.useEffect(() => {
@@ -197,6 +224,7 @@ React.useEffect(() => {
 
       console.log("scope value",scope)
       setAppointments(data);
+      console.log("appointments date",data);
       setLoading(false);
   }
   fetchData();
@@ -240,7 +268,7 @@ React.useEffect(() => {
             <TableBody>
               {appointments.map((appointment) => (
                 <TableRow key={appointment.id}>
-                  <TableCell>{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</TableCell>
+                  <TableCell>{formatDateSafe(appointment.date)} at {appointment.time}</TableCell>
                   <TableCell>{scope === 'patient' ? appointment.therapist : appointment.patientName}</TableCell>
                   <TableCell>{appointment.therapyType}</TableCell>
                   <TableCell>{appointment.serviceAddress ? `${appointment.serviceAddress.city}` : 'N/A'}</TableCell>

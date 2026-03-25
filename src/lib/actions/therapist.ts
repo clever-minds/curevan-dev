@@ -2,9 +2,8 @@
 
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/api/auth';
-//import { therapistOnboardingSchema } from '@/app/auth/therapist-signup/therapist-onboarding-form';
-
 import { therapistOnboardingSchema } from '@/app/auth/therapist-signup/therapist-onboarding-form';
+import { getToken } from '../auth';
 
 type OnboardingData = z.infer<typeof therapistOnboardingSchema>;
 
@@ -21,7 +20,7 @@ const createTherapistSchema = z.object({
   mobile: z.string(),
   bio: z.string().optional(),
   qualification: z.string(),
-  experienceYears: z.number(),
+  experience_years: z.coerce.number(),
   panNumber: z.string(),
   hourlyRate: z.number(),
   membershipPlan: z.string(),
@@ -31,6 +30,14 @@ const createTherapistSchema = z.object({
   state: z.string(),
   pin: z.string(),
   image: z.any().optional(),
+  // Missing fields added:
+  registrationNo: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankIfscCode: z.string().optional(),
+  specialty: z.any().optional(),
+  lat: z.any().optional(),
+  lng: z.any().optional(),
+  fullAddress: z.string().optional(),
 });
 
 /**
@@ -38,18 +45,29 @@ const createTherapistSchema = z.object({
  */
 export async function createTherapistAction(
   data: unknown
-): Promise<{ success: boolean; error?: string; userId?: string }> {
+): Promise<{ success: boolean; error?: string; userId?: string; uid?: string }> {
   try {
     // ✅ Use separate schema instead of .omit()
     const validatedData = createTherapistSchema.parse(data);
-      console.log('Create therapist validated data:', validatedData);
+    console.log('Create therapist validated data:', validatedData);
 
     const response = await fetch(`${API_BASE}/api/therapists/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${await getToken()}`,
       },
-      body: JSON.stringify(validatedData),
+      body: JSON.stringify({
+        role: 'therapist',
+        data: {
+          ...validatedData,
+          experience: validatedData.experience_years,
+          registration_no: (validatedData as any).registrationNo,
+          bank_account_number: (validatedData as any).bankAccountNumber,
+          bank_ifsc_code: (validatedData as any).bankIfscCode,
+          availability: validatedData.availability,
+        }
+      }),
       cache: 'no-store',
     });
     const result = await response.json();
@@ -64,6 +82,7 @@ export async function createTherapistAction(
     return {
       success: true,
       userId: result.userId,
+      uid: result.uid || result.userId, // Ensure we get the UID
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -79,28 +98,44 @@ export async function createTherapistAction(
  * Sends profile update request to Node.js backend
  */
 export async function requestProfileUpdate(
-  data: OnboardingData
+  data: OnboardingData,
+  explicitUserId?: string
 ): Promise<{ success: boolean; error?: string; requestId?: string }> {
   try {
-  const current = await getCurrentUser();
+    let userId = explicitUserId;
+    if (!userId) {
+      const current = await getCurrentUser();
+      if (!current || current.roles?.[0] !== 'therapist') {
+        return { success: false, error: 'Permission denied.' };
+      }
+      userId = current.uid || (current as any).id;
+    }
 
-if (!current || current.roles?.[0] !== 'therapist') {
-    return { success: false, error: 'Permission denied.' };
-  }
     // Update ke liye original schema safe hai
     const validatedData = therapistOnboardingSchema.parse(data);
-    console.log("validatedData",validatedData)
+    console.log("validatedData", validatedData)
     const response = await fetch(
-      `${API_BASE}/api/therapists/profile/${current.id}`,
+      // `${API_BASE}/api/therapists/profile/${current.id}`
+      `${API_BASE}/api/auth/change-profile-request`,
       {
-        method: 'Put',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${await getToken()}`,
         },
         credentials: 'include',
         body: JSON.stringify({
-          userId: current.uid,
-          ...validatedData,
+          userId,
+          section: 'Therapist Profile',
+          role: 'therapist',
+          data: {
+            ...validatedData,
+            experience: validatedData.experience_years,
+            registration_no: (validatedData as any).registrationNo,
+            bank_account_number: (validatedData as any).bankAccountNumber,
+            bank_ifsc_code: (validatedData as any).bankIfscCode,
+            availability: validatedData.availability,
+          }
         }),
         cache: 'no-store',
       }
@@ -125,6 +160,6 @@ if (!current || current.roles?.[0] !== 'therapist') {
     }
 
     console.error('Profile update error:', error);
-    return { success: false, error: 'Unexpected server error.'+error };
+    return { success: false, error: 'Unexpected server error.' + error };
   }
 }
