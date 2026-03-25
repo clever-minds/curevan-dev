@@ -63,7 +63,7 @@ export const getUserProfiledata = async () => {
       },
     });
 
-    return res.data.user;
+    return res.data;
 
   } catch (error) {
     throw new Error("Unauthorized");
@@ -131,7 +131,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
       },
     });
 
-    return res.data.user;
+    return res.data;
 
   } catch (error) {
     return null; // not logged in
