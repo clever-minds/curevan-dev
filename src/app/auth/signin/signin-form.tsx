@@ -65,6 +65,7 @@ export function SigninForm() {
       const token = user.token; // ✅ use directly
       document.cookie = `token=${user.token}; path=/;`;
       const userProfile = await getUserProfile(token);
+      console.log("userProfile",userProfile);
       if (!userProfile) {
         throw new Error("User profile not found. Please contact support.");
       }
