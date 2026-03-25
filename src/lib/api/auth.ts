@@ -46,7 +46,7 @@ export async function getUserProfile(
     throw new Error(data.message || 'Profile fetch failed');
   }
 
-  return data.user;
+  return data;
 }
 export const getUserProfiledata = async () => {
   try {
