@@ -12,7 +12,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     console.error('token token:', token)
 
     if (!token) return null
-
+console.log( " process.env.JWT_SECRET!",process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string }
     if (!decoded?.id) return null
     console.log('Decoded user profile:', decoded.id)
