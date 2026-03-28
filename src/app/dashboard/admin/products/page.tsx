@@ -64,7 +64,7 @@ export default function AdminProductsPage() {
   const productInventory = useMemo(() => {
     const inventoryMap = new Map(inventory.map(item => [item.productId, item]));
     return products.map(product => {
-      const inv = inventoryMap.get(product.id.toString());
+      const inv = inventoryMap.get(product.id);
       console.log("inventoryMap",inventoryMap);
       return {
         ...product,
