@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { UserProfile } from '@/lib/types';
 import api from '@/lib/api/axios';
-import { getToken } from "@/lib/auth";
+import { getToken,logoutAction } from "@/lib/auth";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -57,7 +57,10 @@ const logout = async () => {
       const token = await getToken();
       await api.post("/api/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
 
-      // :white_check_mark: Explicitly clear the token cookie from client-side
+      // :white_check_mark: Robustly clear the token cookie via Server Action
+      await logoutAction();
+
+      // :white_check_mark: Secondary client-side fallback to clear current browser session
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
       setUser(null);

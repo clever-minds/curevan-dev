@@ -25,6 +25,8 @@ console.log( " process.env.JWT_SECRET!",process.env.JWT_SECRET);
   }
 }
 
+
+
 export async function getToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies()      // Next.js server-side cookies
@@ -37,5 +39,12 @@ export async function getToken(): Promise<string | null> {
     return null
   }
 }
-
+export async function logoutAction() {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete('token');
+  } catch (error) {
+    console.error('Error in logoutAction:', error);
+  }
+}
 
