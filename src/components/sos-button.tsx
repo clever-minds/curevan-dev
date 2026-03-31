@@ -20,7 +20,7 @@ export function SosButton({ session }: { session: Appointment }) {
             variant: 'destructive',
             title: 'EMERGENCY ALERT SENT',
             description: 'Your SOS has been sent to the admin team with your location.',
-            duration: 10000,
+            duration: 3000,
         });
     }
 

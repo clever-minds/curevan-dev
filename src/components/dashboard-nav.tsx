@@ -80,7 +80,7 @@ const allNavItems = {
     { href: '/dashboard/patient/invoices', label: 'Invoices', icon: Receipt },
     { href: '/dashboard/patient/orders', label: 'Shop Orders', icon: Package },
     { href: '/dashboard/patient/notifications', label: 'Notifications', icon: Bell },
-    { href: '/dashboard/admin/support-tickets', label: 'My Tickets', icon: Send },
+    { href: '/dashboard/support', label: 'My Tickets', icon: Send },
     { href: '/dashboard/account', label: 'Account Settings', icon: UserCog },
     { href: '/dashboard/account/security', label: 'Security', icon: KeyRound },
   ],

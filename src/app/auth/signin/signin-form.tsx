@@ -79,7 +79,7 @@ export function SigninForm() {
 
       const redirectUrl = searchParams.get('redirectUrl');
 
-      router.push(redirectUrl || resolveMyDashboardHref(userProfile.roles));
+      router.push(redirectUrl || '/dashboard');
 
     } catch (error: any) {
       console.error("Firebase Sign In Error:", error);

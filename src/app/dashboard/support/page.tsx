@@ -57,7 +57,7 @@ export default function PatientSupportPage() {
                         Create New Ticket
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="lg:max-w-[900px]">
                     <DialogHeader>
                         <DialogTitle>Create a New Support Ticket</DialogTitle>
                         <DialogDescription>

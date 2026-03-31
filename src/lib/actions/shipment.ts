@@ -19,7 +19,7 @@ export async function createShipment(
   try {
     // Call backend API to create shipment
     const { data: response } = await serverApi.post(
-      "/api/shipments/create",
+      "/api/shipment/create",
       {
         orderId,
         actorId: user.uid, // for audit logging

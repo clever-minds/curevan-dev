@@ -62,3 +62,33 @@ export async function getOrderById(id: number): Promise<Order | null> {
     return null;
   }
 }
+
+/**
+ * Cancel an order by ID
+ */
+export async function cancelOrder(id: number): Promise<{ success: boolean; message?: string }> {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Token missing, please login again');
+    }
+    const { data } = await serverApi.post(`/api/orders/${id}/cancel`, {}, {
+      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return {
+      success: data.success ?? true,
+      message: data.message
+    };
+  } catch (error: any) {
+    console.error("ORDER CANCEL ERROR:", error?.message);
+    return {
+      success: false,
+      message: error?.response?.data?.message || error?.message || "Failed to cancel order"
+    };
+  }
+}
+

@@ -142,7 +142,7 @@ export function PhoneSigninForm() {
       }
       toast({ title: 'Signed in!', description: 'Welcome!' });
       const redirectUrl = searchParams.get('redirectUrl');
-      router.push(redirectUrl || resolveMyDashboardHref(userProfile.roles));    } catch (err: any) {
+      router.push(redirectUrl || '/dashboard');    } catch (err: any) {
       console.error(err);
       toast({ variant: 'destructive', title: 'Invalid OTP', description: err.message });
     } finally {

@@ -87,13 +87,20 @@ export default function MediaPicker({
           setUpload={setUpload}
           reloadMedia={fetchMedia}
           onClose={() => setOpen(false)}
-          onSelect={(item) => {
+          multiple={multiple}
+          onSelect={(items) => {
             if (multiple) {
-              // existing logic
-              onChange([...(value || []), item]);
+              // Merge unique items
+              const newValue = [...(value || [])];
+              items.forEach((item) => {
+                if (!newValue.some((v) => v.id === item.id)) {
+                  newValue.push(item);
+                }
+              });
+              onChange(newValue);
             } else {
-              // single select logic: replace previous
-              onChange([item]);
+              // Single select logic: replace previous
+              onChange(items);
             }
             setOpen(false);
           }}

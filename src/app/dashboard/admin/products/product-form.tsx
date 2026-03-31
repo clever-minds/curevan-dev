@@ -63,12 +63,12 @@ const productFormSchema = z.object({
   // Inventory & Fulfillment
   trackInventory: z.boolean().default(true),
   stock: z.coerce.number().min(0, 'Stock cannot be negative.'),
-  reorderPoint: z.coerce.number().optional(),
+  reorderPoint: z.coerce.number().min(0, 'Reorder point cannot be negative.').optional(),
   dimensions: z.object({
-    lengthCm: z.coerce.number().optional(),
-    widthCm: z.coerce.number().optional(),
-    heightCm: z.coerce.number().optional(),
-    weightKg: z.coerce.number().optional(),
+    lengthCm: z.coerce.number().min(0, 'Length cannot be negative.').optional(),
+    widthCm: z.coerce.number().min(0, 'Width cannot be negative.').optional(),
+    heightCm: z.coerce.number().min(0, 'Height cannot be negative.').optional(),
+    weightKg: z.coerce.number().min(0, 'Weight cannot be negative.').optional(),
   }).optional(),
 
   // Manufacturing & Compliance
@@ -336,10 +336,10 @@ export function ProductForm({
         <Separator />
         <div className="space-y-4">
              <h3 className="text-lg font-medium font-headline">Pricing, Taxes & Promotions</h3>
-             <div className="grid sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP (₹)</FormLabel><FormControl><Input type="number" placeholder="e.g., 6000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price (₹)</FormLabel><FormControl><Input type="number" placeholder="e.g., 4999" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-             </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP (₹)</FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 6000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price (₹)</FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 4999" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+              </div>
              <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Price includes tax?</FormLabel><FormDescription>Is GST already included in the selling price?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
              <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Exclude from Therapist Coupons</FormLabel><FormDescription>If enabled, this product will not be discounted by referral codes.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
             {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} /></FormControl><FormMessage /></FormItem>)}/>)}
@@ -351,16 +351,16 @@ export function ProductForm({
                 <h3 className="text-lg font-medium font-headline">Inventory & Fulfillment</h3>
                 <FormField control={form.control} name="trackInventory" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Track Inventory</FormLabel><FormDescription>Enable stock management for this product.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="stock" render={({ field }) => (<FormItem><FormLabel>Available Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} disabled={!form.watch('trackInventory')} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="reorderPoint" render={({ field }) => (<FormItem><FormLabel>Reorder Point</FormLabel><FormControl><Input type="number" placeholder="10" {...field} disabled={!form.watch('trackInventory')} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="stock" render={({ field }) => (<FormItem><FormLabel>Available Stock</FormLabel><FormControl><Input type="number" min="0" placeholder="100" {...field} disabled={!form.watch('trackInventory')} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="reorderPoint" render={({ field }) => (<FormItem><FormLabel>Reorder Point</FormLabel><FormControl><Input type="number" min="0" placeholder="10" {...field} disabled={!form.watch('trackInventory')} /></FormControl><FormMessage /></FormItem>)}/>
                 </div>
                  <h4 className="text-sm font-medium font-headline pt-2">Package Dimensions</h4>
                  <Alert><Info className="h-4 w-4" /><AlertDescription>These details are crucial for accurate shipping cost calculation.</AlertDescription></Alert>
                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <FormField control={form.control} name="dimensions.lengthCm" render={({ field }) => (<FormItem><FormLabel>Length (cm)</FormLabel><FormControl><Input type="number" placeholder="e.g. 20" {...field} /></FormControl></FormItem>)}/>
-                    <FormField control={form.control} name="dimensions.widthCm" render={({ field }) => (<FormItem><FormLabel>Width (cm)</FormLabel><FormControl><Input type="number" placeholder="e.g. 15" {...field} /></FormControl></FormItem>)}/>
-                    <FormField control={form.control} name="dimensions.heightCm" render={({ field }) => (<FormItem><FormLabel>Height (cm)</FormLabel><FormControl><Input type="number" placeholder="e.g. 10" {...field} /></FormControl></FormItem>)}/>
-                    <FormField control={form.control} name="dimensions.weightKg" render={({ field }) => (<FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" placeholder="e.g. 1.5" {...field} /></FormControl></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.lengthCm" render={({ field }) => (<FormItem><FormLabel>Length (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 20" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.widthCm" render={({ field }) => (<FormItem><FormLabel>Width (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 15" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.heightCm" render={({ field }) => (<FormItem><FormLabel>Height (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 10" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.weightKg" render={({ field }) => (<FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 1.5" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 </div>
             </div>
         )}

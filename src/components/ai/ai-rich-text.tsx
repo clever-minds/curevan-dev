@@ -71,7 +71,7 @@ export function AIRichText({
     editorProps: {
       attributes: {
         class:
-          'prose dark:prose-invert prose-sm sm:prose-base min-h-[150px] w-full rounded-md rounded-t-none border-0 px-3 py-2 focus:outline-none focus:ring-0',
+          'prose dark:prose-invert prose-sm sm:prose-base max-w-none break-all min-h-[150px] w-full rounded-md rounded-t-none border-0 px-3 py-2 focus:outline-none focus:ring-0',
       },
     },
   });

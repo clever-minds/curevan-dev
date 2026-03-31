@@ -214,12 +214,12 @@ export default function AdminProductsPage() {
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
+                                <DropdownMenuItem asChild className="cursor-pointer">
                                    <Link href={`/dashboard/admin/products/${product.id}/edit`}>
                                       Edit
                                     </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem> 
+                                <DropdownMenuItem asChild className="cursor-pointer"> 
                                   <Link href={`/products/${product.id}`}>
                                     View on Store
                                   </Link>

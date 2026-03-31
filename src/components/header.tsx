@@ -78,7 +78,7 @@ export default function Header() {
     try {
         const appointments = await listAppointmentsForUser(user.id, user.role === 'therapist' ? 'therapist' : 'patient');
         if (appointments && appointments.length > 0) {
-            latestBookingId = appointments[0].id; // latest
+            latestBookingId = appointments[0].id.toString(); // latest
         }
     } catch (e) {
         console.warn("Could not fetch latest booking for SOS context:", e);
@@ -95,7 +95,7 @@ export default function Header() {
             variant: 'destructive',
             title: 'EMERGENCY ALERT SENT',
             description: 'Your SOS has been sent to the admin team. Help is on the way.',
-            duration: 10000,
+            duration: 3000,
         });
     } else {
         toast({

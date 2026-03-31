@@ -13,11 +13,52 @@ import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import useRazorpay from '@/hooks/use-razorpay';
 import { createOrder } from '@/lib/actions/order';
-import { Loader2, Edit, Trash2, Plus, X, MapPin, User, Mail, Phone, ChevronRight } from 'lucide-react';
+import { Loader2, Edit, Trash2, Plus, X, MapPin, User, Mail, Phone, ChevronRight, Navigation } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useTransition } from 'react';
 import { createAddress, deleteAddress, listAddresses, updateAddress } from '@/lib/repos/address';
 import { getIndianStates } from '@/lib/repos/meta';
+
+// --- Reverse Geocoding helper ---
+async function reverseGeocode(lat: number, lng: number): Promise<{
+  fullAddress: string;
+  city: string;
+  state: string;
+  pincode: string;
+} | null> {
+  try {
+    const GOOGLE_API_KEY = "AIzaSyDGxg9Uw6sQXWDVoEAmirxdVF5neAICKJM";
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}&language=en&region=IN`
+    );
+    const data = await res.json();
+
+    if (data.status !== 'OK' || !data.results?.length) return null;
+
+    const components: { types: string[]; long_name: string; short_name: string }[] =
+      data.results[0].address_components ?? [];
+
+    const get = (type: string) =>
+      components.find(c => c.types.includes(type))?.long_name || '';
+
+    const streetNumber = get('street_number');
+    const route = get('route');
+    const sublocality = get('sublocality_level_1') || get('sublocality') || get('neighborhood');
+    const fullAddress = [streetNumber, route, sublocality].filter(Boolean).join(', ');
+
+    const city =
+      get('locality') ||
+      get('administrative_area_level_3') ||
+      get('administrative_area_level_2');
+
+    const state = get('administrative_area_level_1');
+    const pincode = get('postal_code');
+
+    return { fullAddress, city, state, pincode };
+  } catch {
+    return null;
+  }
+}
 
 const addressSchema = z.object({
   customerName: z.string().min(1, "Full name is required."),
@@ -51,13 +92,13 @@ const addressSchema = z.object({
 type AddressFormValues = z.infer<typeof addressSchema>;
 
 // Unified Modal Component for both Add and Edit
-function AddressModal({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  indianStates, 
-  address = null, 
-  mode = 'add' 
+function AddressModal({
+  isOpen,
+  onClose,
+  onSave,
+  indianStates,
+  address = null,
+  mode = 'add'
 }: any) {
   const [formData, setFormData] = useState(address || {
     fullName: '',
@@ -68,6 +109,8 @@ function AddressModal({
     state: '',
     pincode: '',
   });
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (address) {
@@ -87,6 +130,37 @@ function AddressModal({
       state: '',
       pincode: '',
     });
+  };
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ variant: 'destructive', title: 'Not supported', description: 'Geolocation is not supported by your browser.' });
+      return;
+    }
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords: { latitude, longitude } }) => {
+        const geo = await reverseGeocode(latitude, longitude);
+        if (geo) {
+          setFormData((prev: any) => ({
+            ...prev,
+            fullAddress: geo.fullAddress || prev.fullAddress,
+            city: geo.city || prev.city,
+            state: geo.state || prev.state,
+            pincode: geo.pincode || prev.pincode,
+          }));
+          toast({ title: '📍 Location detected!', description: 'Address fields have been filled automatically.' });
+        } else {
+          toast({ variant: 'destructive', title: 'Could not resolve address', description: 'Please fill in the address manually.' });
+        }
+        setIsFetchingLocation(false);
+      },
+      () => {
+        toast({ variant: 'destructive', title: 'Location Error', description: 'Could not retrieve your location.' });
+        setIsFetchingLocation(false);
+      },
+      { timeout: 10000 }
+    );
   };
 
   const isEditMode = mode === 'edit';
@@ -109,7 +183,7 @@ function AddressModal({
         {/* Animated Header Background */}
         <div className="relative h-32 overflow-hidden">
           {/* Gradient Background using CSS variables */}
-          <div 
+          <div
             className="absolute inset-0 opacity-90"
             style={{
               background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))'
@@ -117,7 +191,7 @@ function AddressModal({
           ></div>
 
           {/* Animated Gradient Overlay */}
-          <div 
+          <div
             className="absolute inset-0 opacity-50"
             style={{
               background: `linear-gradient(-45deg, transparent 0%, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%, transparent 100%)`,
@@ -128,7 +202,7 @@ function AddressModal({
           {/* Content */}
           <div className="relative h-full px-8 py-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div 
+              <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg backdrop-blur-sm"
                 style={{
                   background: `hsl(var(--primary) / 0.2)`,
@@ -168,7 +242,7 @@ function AddressModal({
             {/* Contact Information Section */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div 
+                <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center"
                   style={{
                     background: `hsl(var(--primary) / 0.1)`,
@@ -246,7 +320,7 @@ function AddressModal({
 
             {/* Animated Divider */}
             <div className="relative h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent">
-              <div 
+              <div
                 className="absolute left-1/2 -translate-x-1/2 -top-3 px-3 bg-white"
                 style={{ color: 'hsl(var(--accent))' }}
               >
@@ -257,7 +331,7 @@ function AddressModal({
             {/* Address Information Section */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div 
+                <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center"
                   style={{
                     background: `hsl(var(--accent) / 0.1)`,
@@ -266,7 +340,25 @@ function AddressModal({
                 >
                   <MapPin size={20} />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900">Address Details</h4>
+                <div className="flex-1 flex items-center justify-between">
+                  <h4 className="text-lg font-semibold text-gray-900">Address Details</h4>
+
+                  {/* Use Current Location Button */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleUseLocation}
+                    disabled={isFetchingLocation}
+                    className="gap-2 text-xs border-purple-200 text-purple-700 hover:bg-purple-50 rounded-xl"
+                  >
+                    {isFetchingLocation
+                      ? <Loader2 size={13} className="animate-spin" />
+                      : <MapPin size={13} />
+                    }
+                    {isFetchingLocation ? 'Detecting...' : 'Use Current Location'}
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -309,7 +401,7 @@ function AddressModal({
                       value={formData?.state || ''}
                       onValueChange={(value) => setFormData({ ...formData, state: value })}
                     >
-                      <SelectTrigger 
+                      <SelectTrigger
                         className="h-11 border-gray-300 rounded-xl focus:border-0"
                         style={{
                           '--tw-ring-color': 'hsl(var(--accent) / 0.2)'
@@ -429,67 +521,71 @@ export function CheckoutAddressForm() {
   };
 
   const onSubmit = (data: AddressFormValues) => {
-  startTransition(async () => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to place an order.' });
-      return;
-    }
+    startTransition(async () => {
+      if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to place an order.' });
+        return;
+      }
 
-    const { total } = getCartTotal();
+      const { total, discount, subtotal } = getCartTotal();
+      console.log("data for check create order total", total, "discount", discount, "subtotal", subtotal);
 
-    const finalShippingId = Number(data.shippingAddressId);
-    const finalBillingId = data.useShippingAsBilling
-      ? Number(data.shippingAddressId)
-      : Number(data.billingAddressId);
+      const finalShippingId = Number(data.shippingAddressId);
+      const finalBillingId = data.useShippingAsBilling
+        ? Number(data.shippingAddressId)
+        : Number(data.billingAddressId);
 
-    try {
-    
+      try {
 
-      // 2️⃣ Open Razorpay modal
-      openPayment({
-        amount: Math.round(total * 100),
-        currency: 'INR',
-        receipt:"",          // internal receipt id
-        orderId: "", // Razorpay order ID
-        productName: `Curevan Order`,
-        productDescription: `Your order with ${cart.length} items.`,
-        prefill: { name: data.customerName, email: data.customerEmail, contact: data.customerPhone },
-        onSuccess: async (paymentResponse) => {
-          // 3️⃣ After payment success, create order in DB
-          const orderResult = await createOrder({
-            userId: user.id,
-            customerName: data.customerName,
-            customerPhone: data.customerPhone,
-            items: cart,
-            shippingAddressId: finalShippingId,
-            billingAddressId: finalBillingId,
-            couponCode: appliedCoupon?.code,
-            referredTherapistId: commissionInfo?.referredTherapistId,
-            paymentStatus: "Paid",
-            paymentRef: paymentResponse.razorpay_payment_id,
-            paymentGateway: "razorpay",
-          });
 
-          if (!orderResult.success || !orderResult.orderId) {
-            toast({ variant: 'destructive', title: 'Order Failed', description: orderResult.error || 'Could not create your order after payment.' });
-            return;
+        // 2️⃣ Open Razorpay modal
+        openPayment({
+          amount: Math.round(total * 100),
+          currency: 'INR',
+          receipt: "",          // internal receipt id
+          orderId: "", // Razorpay order ID
+          productName: `Curevan Order`,
+          productDescription: `Your order with ${cart.length} items.`,
+          prefill: { name: data.customerName, email: data.customerEmail, contact: data.customerPhone },
+          onSuccess: async (paymentResponse) => {
+            // 3️⃣ After payment success, create order in DB
+            const orderResult = await createOrder({
+              userId: user.id,
+              customerName: data.customerName,
+              customerPhone: data.customerPhone,
+              items: cart,
+              shippingAddressId: finalShippingId,
+              billingAddressId: finalBillingId,
+              couponCode: appliedCoupon?.code,
+              couponDiscount: discount,
+              subtotal: subtotal,
+              total: total,
+              referredTherapistId: commissionInfo?.referredTherapistId,
+              paymentStatus: "Paid",
+              paymentRef: paymentResponse.razorpay_payment_id,
+              paymentGateway: "razorpay",
+            });
+
+            if (!orderResult.success || !orderResult.orderId) {
+              toast({ variant: 'destructive', title: 'Order Failed', description: orderResult.error || 'Could not create your order after payment.' });
+              return;
+            }
+
+            clearCart();
+            toast({ title: "Order Placed!", description: `Your order #${orderResult.orderId} has been confirmed.` });
+            router.push(`/dashboard/${user.role}/orders`);
+          },
+          onFailure: (error) => {
+            toast({ variant: 'destructive', title: 'Payment Failed', description: error.reason || 'Please try again.' });
           }
+        });
 
-          clearCart();
-          toast({ title: "Order Placed!", description: `Your order #${orderResult.orderId} has been confirmed.` });
-          router.push('/dashboard/orders');
-        },
-        onFailure: (error) => {
-          toast({ variant: 'destructive', title: 'Payment Failed', description: error.reason || 'Please try again.' });
-        }
-      });
-
-    } catch (err: any) {
-      console.error(err);
-      toast({ variant: 'destructive', title: 'Error', description: err.message || 'Something went wrong.' });
-    }
-  });
-};
+      } catch (err: any) {
+        console.error(err);
+        toast({ variant: 'destructive', title: 'Error', description: err.message || 'Something went wrong.' });
+      }
+    });
+  };
 
 
   const handleAddAddress = async (type: 'shipping' | 'billing', formData: any) => {
@@ -510,14 +606,14 @@ export function CheckoutAddressForm() {
     if (result) {
       toast({ title: '✓ Address added successfully!' });
       await fetchAddressesData();
-      
-    //   if (type === 'shipping') {
-    //     form.setValue('shippingAddressId', Sresult.id), { shouldValidate: true });
-    //     setShowAddShipping(false);
-    //   } else {
-    //     form.setValue('billingAddressId', String(result.id), { shouldValidate: true });
-    //     setShowAddBilling(false);
-    //   }
+
+      //   if (type === 'shipping') {
+      //     form.setValue('shippingAddressId', Sresult.id), { shouldValidate: true });
+      //     setShowAddShipping(false);
+      //   } else {
+      //     form.setValue('billingAddressId', String(result.id), { shouldValidate: true });
+      //     setShowAddBilling(false);
+      //   }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to add address' });
     }
@@ -618,11 +714,10 @@ export function CheckoutAddressForm() {
                         <FormItem>
                           <FormControl>
                             <div
-                              className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative group ${
-                                isSelected
+                              className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative group ${isSelected
                                   ? 'border-blue-500 bg-blue-50'
                                   : 'border-gray-200 bg-white hover:border-gray-300'
-                              }`}
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -650,11 +745,10 @@ export function CheckoutAddressForm() {
                               </div>
 
                               <div className="absolute top-4 right-4 pointer-events-none">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                  isSelected
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
                                     ? 'border-blue-500 bg-blue-500'
                                     : 'border-gray-400 bg-white'
-                                }`}>
+                                  }`}>
                                   {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                 </div>
                               </div>
@@ -731,11 +825,10 @@ export function CheckoutAddressForm() {
                             <FormItem>
                               <FormControl>
                                 <div
-                                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative group ${
-                                    isSelected
+                                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative group ${isSelected
                                       ? 'border-green-500 bg-green-50'
                                       : 'border-gray-200 bg-white hover:border-gray-300'
-                                  }`}
+                                    }`}
                                 >
                                   <input
                                     type="radio"
@@ -763,11 +856,10 @@ export function CheckoutAddressForm() {
                                   </div>
 
                                   <div className="absolute top-4 right-4 pointer-events-none">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                      isSelected
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
                                         ? 'border-green-500 bg-green-500'
                                         : 'border-gray-400 bg-white'
-                                    }`}>
+                                      }`}>
                                       {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                     </div>
                                   </div>
@@ -812,9 +904,9 @@ export function CheckoutAddressForm() {
           </div>
 
           {/* Submit Button */}
-         <Button type="submit" className="w-full" size="lg" disabled={!isLoaded || isPending}>
-                            {isPending ? <Loader2 className="mr-2 animate-spin" /> : 'Proceed to Payment'}
-                        </Button>
+          <Button type="submit" className="w-full" size="lg" disabled={!isLoaded || isPending}>
+            {isPending ? <Loader2 className="mr-2 animate-spin" /> : 'Proceed to Payment'}
+          </Button>
         </form>
       </Form>
     </>

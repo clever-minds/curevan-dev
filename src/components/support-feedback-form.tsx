@@ -178,7 +178,7 @@ export function SupportFeedbackForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {initialFormType === 'support' && (
              <FormField
                 control={form.control}
@@ -210,7 +210,7 @@ export function SupportFeedbackForm({
        
         
         {formType === 'support' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="grid sm:grid-cols-2 gap-4">
                     <FormField
                         control={form.control}
@@ -267,7 +267,7 @@ export function SupportFeedbackForm({
                         <FormControl>
                             <Textarea
                             placeholder="Please provide a detailed explanation of the problem you're experiencing."
-                            rows={10}
+                            rows={4}
                             {...field}
                             />
                         </FormControl>
@@ -297,7 +297,7 @@ export function SupportFeedbackForm({
         )}
 
         {formType === 'feedback' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300">
                  <FormField
                     control={form.control}
                     name="feedbackRating"
@@ -335,7 +335,7 @@ export function SupportFeedbackForm({
                         <FormControl>
                             <Textarea
                             placeholder="Share your detailed feedback..."
-                            rows={10}
+                            rows={4}
                             {...field}
                             />
                         </FormControl>

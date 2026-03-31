@@ -48,11 +48,11 @@ export function SocialSigninButtons() {
       });
 
       // Clean URL aur redirect
-      window.history.replaceState({}, '', '/dashboard/account');
+      window.history.replaceState({}, '', '/dashboard');
 
       setTimeout(() => {
         console.log('✅ Navigating to dashboard...');
-        router.push('/dashboard/account');
+        router.push('/dashboard');
       }, 800);
     }
   }, [searchParams, toast, router]);

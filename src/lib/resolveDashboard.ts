@@ -16,7 +16,7 @@ export function resolveMyDashboardHref(roles?: string[] | null): string {
   if (has('admin.ecom')) return '/dashboard/ecom-admin/my-dashboard';
   if (has('admin.therapy')) return '/dashboard/therapy-admin/my-dashboard';
   if (has('therapist')) return '/dashboard/therapist/my-dashboard';
-  
+
   // Patient dashboard is the default account page
   return '/dashboard/account';
 }
