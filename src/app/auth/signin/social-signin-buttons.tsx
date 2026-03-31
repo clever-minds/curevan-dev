@@ -23,7 +23,7 @@ export function SocialSigninButtons() {
 
   const handleGoogleLogin = () => {
     setLoading(true);
-    window.location.href = 'https://curevan.com/api/auth/google';
+    window.location.href = 'https://api.curevan.com/api/auth/google';
   };
 
   useEffect(() => {
