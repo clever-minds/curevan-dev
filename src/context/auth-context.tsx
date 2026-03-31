@@ -52,15 +52,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ✅ Logout
-  const logout = async () => {
-    try {
-      const token = await getToken();
-      await api.post("/api/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
-      setUser(null);
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
+const logout = async () => {
+    try {
+      const token = await getToken();
+      await api.post("/api/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
+
+      // :white_check_mark: Explicitly clear the token cookie from client-side
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+      setUser(null);
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isLoading }}>
