@@ -86,19 +86,33 @@ export default function EcomAdminDashboardPage() {
     }, [products]);
 
     const revenueRefundsData = useMemo(() => {
-        const dataMap = new Map<string, { revenue: number, refunds: number }>();
+        const dataMap = new Map<string, { revenue: number, refunds: number, time: number }>();
         orders.forEach(order => {
-            const date = getSafeDate(order.createdAt)?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            if(!date) return;
-            if (!dataMap.has(date)) dataMap.set(date, { revenue: 0, refunds: 0 });
-            const entry = dataMap.get(date)!;
+            const dateObj = getSafeDate(order.createdAt);
+            if(!dateObj) return;
+            const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            if (!dataMap.has(dateLabel)) {
+                // Ensure we have a timestamp for sorting
+                const dateAtMidnight = new Date(dateObj);
+                dateAtMidnight.setHours(0,0,0,0);
+                dataMap.set(dateLabel, { revenue: 0, refunds: 0, time: dateAtMidnight.getTime() });
+            }
+            const entry = dataMap.get(dateLabel)!;
+            // Removed / 100 as backend 'total' is already in Rupees
             if (order.status !== 'Refunded') {
-                entry.revenue += (order.total || 0) / 100;
+                entry.revenue += (order.total || 0);
             } else {
-                entry.refunds += (order.total || 0) / 100;
+                entry.refunds += (order.total || 0);
             }
         });
-        return Array.from(dataMap.entries()).map(([date, values]) => ({ date, ...values }));
+      
+        
+        
+        // Convert to array and sort chronologically by the 'time' property
+        return Array.from(dataMap.entries())
+            .map(([date, values]) => ({ date, ...values }))
+            .sort((a, b) => a.time - b.time);
     }, [orders]);
 
     const ordersByStatusData = useMemo(() => {
@@ -113,30 +127,36 @@ export default function EcomAdminDashboardPage() {
         const categoryMap = new Map<string, number>();
         orders.forEach(order => {
             order.items.forEach(item => {
-                const product = products.find(p => p.sku === item.sku);
+                const product = products.find(p => p.sku?.toLowerCase() === item.sku?.toLowerCase());
                 if (product) {
-                    const categoryName = productCategories.find(c => c.id === product.categoryId)?.name || 'Unknown';
+                    // Use product.categoryname (mapped in repository) or fallback to ID lookup
+                    const categoryName = product.categoryname || productCategories.find(c => String(c.id) === String(product.categoryId))?.name || 'Unknown';
                     categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + (item.price * item.qty));
                 }
             });
         });
         return Array.from(categoryMap.entries())
-            .map(([categoryName, revenue]) => ({ categoryName, revenue: revenue / 100 }))
+            .map(([categoryName, revenue]) => ({ categoryName, revenue }))
             .sort((a,b) => b.revenue - a.revenue)
             .slice(0, 10);
     }, [orders, products, productCategories]);
 
     const kpis = useMemo(() => {
         const paidOrders = orders.filter(o => o.paymentStatus === 'Paid');
-        const gmv = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0) / 100;
+        const gmv = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
         const totalOrders = orders.length;
         const aov = totalOrders > 0 ? gmv / totalOrders : 0;
         const refunds = orders.filter(o => o.status === 'Refunded').length;
         const refundRate = totalOrders > 0 ? (refunds / totalOrders) * 100 : 0;
         const onTime = orders.filter(o => o.status === 'Delivered').length; // Mock
         const onTimeRate = totalOrders > 0 ? (onTime / totalOrders) * 100 : 0;
-
+console.log("gmv",gmv);
+console.log("totalOrders",totalOrders);
+console.log("aov",aov);
+console.log("refundRate",refundRate.toFixed(1) + '%');
+console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
         return { gmv, totalOrders, aov, refundRate: refundRate.toFixed(1) + '%', onTimeRate: onTimeRate.toFixed(1) + '%' };
+        
     }, [orders]);
 
     return (
@@ -208,7 +228,7 @@ export default function EcomAdminDashboardPage() {
                                 <TableCell>{createdAt ? createdAt.toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>{order.customerName}</TableCell>
                                 <TableCell>{order.items.length}</TableCell>
-                                <TableCell><Price amount={(order.total || 0) / 100} showDecimals /></TableCell>
+                                <TableCell><Price amount={(order.total || 0)} showDecimals /></TableCell>
                                 <TableCell><Badge variant="secondary">{order.status}</Badge></TableCell>
                                 <TableCell><Button variant="outline" size="sm">View Order</Button></TableCell>
                             </TableRow>

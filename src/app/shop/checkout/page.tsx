@@ -16,7 +16,7 @@ import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CheckoutPage() {
-    const { cart } = useCart();
+    const { cart, validateStock } = useCart();
     const { user, isLoading } = useAuth();
     const router = useRouter();
 
@@ -27,7 +27,27 @@ export default function CheckoutPage() {
         if (!isLoading && cart.length === 0) {
             router.push('/shop');
         }
-    }, [user, isLoading, cart, router]);
+    }, [user, isLoading, cart.length, router]);
+
+    useEffect(() => {
+        const checkStock = async () => {
+            if (user && cart.length > 0) {
+                try {
+                    const res = await validateStock();
+                    if (!res.success) {
+                        alert(res.message || "Some items in your cart are no longer in stock. Returning to shop.");
+                        router.push('/shop');
+                    }
+                } catch (error) {
+                    console.error("Stock check error:", error);
+                }
+            }
+        };
+        
+        if (!isLoading) {
+            checkStock();
+        }
+    }, [user, isLoading, cart.length, router, validateStock]);
 
     if (isLoading || !user || cart.length === 0) {
         return (

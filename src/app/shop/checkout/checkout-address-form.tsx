@@ -514,9 +514,13 @@ export function CheckoutAddressForm() {
   const fetchAddressesData = async () => {
     if (!user?.id) return;
     const data = await listAddresses();
-    if (data && Array.isArray(data) && data.length > 0) {
-      setAddresses(data);
-      form.setValue('shippingAddressId', String(data[0].id), { shouldValidate: true });
+    const addressList = Array.isArray(data) ? data : [];
+    setAddresses(addressList);
+    
+    if (addressList.length > 0) {
+      form.setValue('shippingAddressId', String(addressList[0].id), { shouldValidate: true });
+    } else {
+      form.setValue('shippingAddressId', '', { shouldValidate: true });
     }
   };
 

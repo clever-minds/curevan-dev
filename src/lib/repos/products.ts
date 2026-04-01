@@ -10,8 +10,18 @@
       Authorization: `Bearer ${token}` // typical format for bearer tokens
     }
   });
-      console.log("PRODUCT FETCH DATA:", data);
-      return data;
+      // Map backend fields to frontend Product type
+      const products: Product[] = (data.data || data || []).map((p: any) => ({
+        ...p,
+        reorderPoint: p.reorder_point || p.reorderPoint || 0,
+        // If stock is 0 but onHand is > 0, we might want to prefer onHand or keep stock as is.
+        // For now, ensuring camelCase consistency:
+        categoryId: Number(p.category_id || p.categoryId),
+        categoryname: p.category_name || p.categoryname || 'Unknown',
+        featuredImage: p.featuredImage || p.featured_image || ''
+      }));
+
+      return products;
     } catch (error: any) {
       console.error("PRODUCT FETCH ERROR:", error?.message);
       return []; // ✅ NO throw in server component

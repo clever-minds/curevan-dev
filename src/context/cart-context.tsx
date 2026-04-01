@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import type { Product, Coupon, CartItem } from '@/lib/types';
 import { useAuth } from './auth-context';
-import { getCart, saveCart, clearCart as clearFirestoreCart,removeCartItem } from '@/lib/repos/cart';
+import { getCart, saveCart, clearCart as clearFirestoreCart,removeCartItem, validateCartStock } from '@/lib/repos/cart';
 
 interface CartContextType {
   cart: CartItem[];
@@ -26,9 +26,10 @@ interface CartContextType {
   removeCoupon: () => Promise<void>;
   commissionInfo: {
     commissionAmount: number;
-    referredTherapistId: string | undefined;
+    referredTherapistId: number | undefined;
     commissionBase: number;
   } | null;
+  validateStock: () => Promise<any>;
   isCartLoaded: boolean;
 }
 
@@ -239,6 +240,20 @@ const updateQuantity = async (
     }
   };
 
+  const validateStock = async () => {
+    if (cart.length === 0) return { success: true };
+    try {
+      const items = cart.map(item => ({ 
+        productId: Number(item.productId), 
+        quantity: Number(item.quantity) 
+      }));
+      return await validateCartStock(items);
+    } catch (err) {
+      console.error('Failed to validate stock:', err);
+      return { success: false, message: 'Stock validation failed' };
+    }
+  };
+
   // -------------------------------
   // Coupon
   // -------------------------------
@@ -284,7 +299,7 @@ const updateQuantity = async (
     const { subtotal, discount } = getCartTotal();
     if (!appliedCoupon || !appliedCoupon.therapistId) return null;
 
-    if (user?.id.toString() === appliedCoupon.therapistId) {
+    if (user?.id === appliedCoupon.therapistId) {
       return { commissionAmount: 0, referredTherapistId: appliedCoupon.therapistId, commissionBase: 0 };
     }
 
@@ -297,7 +312,7 @@ const updateQuantity = async (
   return (
    
           <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, 
-            isCartOpen, setIsCartOpen, appliedCoupon, applyCoupon, removeCoupon, commissionInfo ,isCartLoaded}}>
+            isCartOpen, setIsCartOpen, appliedCoupon, applyCoupon, removeCoupon, commissionInfo ,isCartLoaded, validateStock}}>
 
       {children}
     </CartContext.Provider>

@@ -149,3 +149,23 @@ export async function removeCartItem(cartItemId: number): Promise<boolean> {
     return false;
   }
 }
+
+export async function validateCartStock(items: { productId: number, quantity: number }[]): Promise<any> {
+  try {
+    const token = await getToken();
+    const { data } = await serverApi.post("/api/orders/validate-cart-stock", { items }, {
+      headers: {
+        withCredentials: true,
+        Authorization: `Bearer ${token}`
+      },
+    });
+    return data;
+  } catch (error: any) {
+    console.error("CART STOCK VALIDATION ERROR:", error?.message);
+    return { 
+        success: false, 
+        message: error?.response?.data?.message || "Stock validation failed",
+        error: error?.response?.data
+    };
+  }
+}

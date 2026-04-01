@@ -1,5 +1,6 @@
-
 'use client';
+
+import React, { useState } from 'react';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
@@ -16,20 +17,36 @@ import { Price } from "../money/price";
 import { imageUrl } from '@/lib/image';
 
 export function CartSheet({ children }: { children: React.ReactNode }) {
-    const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, isCartOpen, setIsCartOpen, appliedCoupon } = useCart();
+    const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, isCartOpen, setIsCartOpen, appliedCoupon, validateStock } = useCart();
+    const [isValidating, setIsValidating] = useState(false);
     const { user } = useAuth();
     const router = useRouter();
 console.log("CartSheet render - cart items:", cart);
     const { subtotal, discount, total } = getCartTotal();
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (!user) {
             setIsCartOpen(false);
             router.push('/auth/signin?redirectUrl=/shop/checkout');
             return;
         }
-        setIsCartOpen(false);
-        router.push('/shop/checkout');
+
+        setIsValidating(true);
+        try {
+            const res = await validateStock();
+            console.log("Stock validation response:", res);
+            if (res.success) {
+                setIsCartOpen(false);
+                router.push('/shop/checkout');
+            } else {
+                alert(res.message || "Some items in your cart are out of stock. Please check your cart.");
+            }
+        } catch (error) {
+            console.error("Checkout validation error:", error);
+            alert("Failed to validate stock. Please try again.");
+        } finally {
+            setIsValidating(false);
+        }
     }
     
     return (
@@ -89,8 +106,8 @@ console.log("CartSheet render - cart items:", cart);
                                     <p><Price amount={total} showDecimals /></p>
                                 </div>
                                 <div className="grid grid-cols-1 gap-2">
-                                     <Button onClick={handleCheckout} disabled={total === 0}>
-                                        Proceed to Checkout
+                                     <Button onClick={handleCheckout} disabled={total === 0 || isValidating}>
+                                        {isValidating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Validating...</> : 'Proceed to Checkout'}
                                     </Button>
                                     <Button variant="outline" onClick={clearCart}>Clear Cart</Button>
                                 </div>
