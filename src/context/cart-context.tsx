@@ -171,7 +171,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Remove item from cart
   // -------------------------------
   const removeFromCart = async (id: number) => {
-    alert(`Removing item with ID: ${id}`);
     if (!user) return;
     try {
       await removeCartItem(id);
