@@ -29,6 +29,7 @@ type PhoneFormValues = z.infer<typeof phoneSchema>;
 
 
 export function PhoneSigninForm() {
+  
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -140,6 +141,8 @@ export function PhoneSigninForm() {
       if (!userProfile) {
           throw new Error("User profile not found. Please contact support.");
       }
+            login(userProfile);
+
       toast({ title: 'Signed in!', description: 'Welcome!' });
       const redirectUrl = searchParams.get('redirectUrl');
       router.push(redirectUrl || '/dashboard');    } catch (err: any) {
