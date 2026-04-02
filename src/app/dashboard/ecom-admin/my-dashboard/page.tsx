@@ -97,15 +97,6 @@ export default function EcomAdminDashboardPage() {
         const dataMap = new Map<string, { revenue: number, refunds: number, time: number }>();
         orders.forEach(order => {
             const dateObj = getSafeDate(order.createdAt);
-<<<<<<< HEAD
-            if(!dateObj) return;
-            const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            
-            if (!dataMap.has(dateLabel)) {
-                // Ensure we have a timestamp for sorting
-                const dateAtMidnight = new Date(dateObj);
-                dateAtMidnight.setHours(0,0,0,0);
-=======
             if (!dateObj) return;
             const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -113,7 +104,6 @@ export default function EcomAdminDashboardPage() {
                 // Ensure we have a timestamp for sorting
                 const dateAtMidnight = new Date(dateObj);
                 dateAtMidnight.setHours(0, 0, 0, 0);
->>>>>>> 796b0e5 (email verify ,product detail)
                 dataMap.set(dateLabel, { revenue: 0, refunds: 0, time: dateAtMidnight.getTime() });
             }
             const entry = dataMap.get(dateLabel)!;
@@ -124,15 +114,9 @@ export default function EcomAdminDashboardPage() {
                 entry.refunds += (order.total || 0);
             }
         });
-<<<<<<< HEAD
-      
-        
-        
-=======
 
 
 
->>>>>>> 796b0e5 (email verify ,product detail)
         // Convert to array and sort chronologically by the 'time' property
         return Array.from(dataMap.entries())
             .map(([date, values]) => ({ date, ...values }))
@@ -161,11 +145,7 @@ export default function EcomAdminDashboardPage() {
         });
         return Array.from(categoryMap.entries())
             .map(([categoryName, revenue]) => ({ categoryName, revenue }))
-<<<<<<< HEAD
-            .sort((a,b) => b.revenue - a.revenue)
-=======
             .sort((a, b) => b.revenue - a.revenue)
->>>>>>> 796b0e5 (email verify ,product detail)
             .slice(0, 10);
     }, [orders, products, productCategories]);
 
@@ -178,15 +158,6 @@ export default function EcomAdminDashboardPage() {
         const refundRate = totalOrders > 0 ? (refunds / totalOrders) * 100 : 0;
         const onTime = orders.filter(o => o.status === 'Delivered').length; // Mock
         const onTimeRate = totalOrders > 0 ? (onTime / totalOrders) * 100 : 0;
-<<<<<<< HEAD
-console.log("gmv",gmv);
-console.log("totalOrders",totalOrders);
-console.log("aov",aov);
-console.log("refundRate",refundRate.toFixed(1) + '%');
-console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
-        return { gmv, totalOrders, aov, refundRate: refundRate.toFixed(1) + '%', onTimeRate: onTimeRate.toFixed(1) + '%' };
-        
-=======
         console.log("gmv", gmv);
         console.log("totalOrders", totalOrders);
         console.log("aov", aov);
@@ -194,7 +165,6 @@ console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
         console.log("onTimeRate", onTimeRate.toFixed(1) + '%');
         return { gmv, totalOrders, aov, refundRate: refundRate.toFixed(1) + '%', onTimeRate: onTimeRate.toFixed(1) + '%' };
 
->>>>>>> 796b0e5 (email verify ,product detail)
     }, [orders]);
 
     return (

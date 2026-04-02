@@ -27,12 +27,8 @@ export function SocialSigninButtons() {
 
   const handleGoogleLogin = () => {
     setLoading(true);
-<<<<<<< HEAD
-    window.location.href = 'https://api.curevan.com/api/auth/google';
-=======
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.curevan.com';
     window.location.href = `${apiUrl}/api/auth/google`;
->>>>>>> 796b0e5 (email verify ,product detail)
   };
 
   useEffect(() => {
@@ -55,15 +51,6 @@ export function SocialSigninButtons() {
             description: `Welcome back, ${userProfile.name}!`
           });
 
-<<<<<<< HEAD
-      // Clean URL aur redirect
-      window.history.replaceState({}, '', '/dashboard');
-
-      setTimeout(() => {
-        console.log('✅ Navigating to dashboard...');
-        router.push('/dashboard');
-      }, 800);
-=======
           // Resolve role-specific dashboard link
           const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
           const dashboardHref = resolveMyDashboardHref(roles);
@@ -86,7 +73,6 @@ export function SocialSigninButtons() {
       };
 
       handleSuccess();
->>>>>>> 796b0e5 (email verify ,product detail)
     }
   }, [searchParams, toast, router, login]);
 

@@ -593,11 +593,7 @@ export function CheckoutAddressForm() {
               couponDiscount: discount,
               subtotal: subtotal,
               total: total,
-<<<<<<< HEAD
-              referredTherapistId: commissionInfo?.referredTherapistId,
-=======
               referredTherapistId: String(commissionInfo?.referredTherapistId || ""),
->>>>>>> 796b0e5 (email verify ,product detail)
               paymentStatus: "Paid",
               paymentRef: paymentResponse.razorpay_payment_id,
               paymentGateway: "razorpay",

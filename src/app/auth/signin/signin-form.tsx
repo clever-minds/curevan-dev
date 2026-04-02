@@ -91,15 +91,11 @@ export function SigninForm() {
 
       const redirectUrl = searchParams.get('redirectUrl');
 
-<<<<<<< HEAD
-      router.push(redirectUrl || '/dashboard');
-=======
       // Resolve role-specific dashboard link
       const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
       const dashboardHref = resolveMyDashboardHref(roles);
 
       router.push(redirectUrl || dashboardHref);
->>>>>>> 796b0e5 (email verify ,product detail)
 
     } catch (error: any) {
       console.error("Firebase Sign In Error:", error);
