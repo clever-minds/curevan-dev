@@ -91,7 +91,3 @@ export async function cancelOrder(id: number): Promise<{ success: boolean; messa
     };
   }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 796b0e5 (email verify ,product detail)
