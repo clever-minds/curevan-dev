@@ -53,24 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ✅ Logout
-<<<<<<< HEAD
-const logout = async () => {
-    try {
-      const token = await getToken();
-      await api.post("/api/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
-
-      // :white_check_mark: Robustly clear the token cookie via Server Action
-      await logoutAction();
-
-      // :white_check_mark: Secondary client-side fallback to clear current browser session
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-      setUser(null);
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
-=======
   const logout = async () => {
     try {
       const token = await getToken();
@@ -104,7 +86,6 @@ const logout = async () => {
       console.error("Logout error:", err);
     }
   };
->>>>>>> 796b0e5 (email verify ,product detail)
 
   // ✅ Refresh User manually after profile update
   const refreshUser = async () => {
