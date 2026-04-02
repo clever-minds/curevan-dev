@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
+import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
+import { getUserProfile } from '@/lib/api/auth';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 48 48">
@@ -16,37 +19,43 @@ const GoogleIcon = () => (
 );
 
 export function SocialSigninButtons() {
+  const { login } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams(); // ✅ Next.js ka use karo
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = () => {
     setLoading(true);
+<<<<<<< HEAD
     window.location.href = 'https://api.curevan.com/api/auth/google';
+=======
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.curevan.com';
+    window.location.href = `${apiUrl}/api/auth/google`;
+>>>>>>> 796b0e5 (email verify ,product detail)
   };
 
   useEffect(() => {
-    // ✅ Next.js searchParams se token read karo
     const token = searchParams.get('token');
 
-    console.log('🔍 SearchParams token:', token);
-    console.log('🔍 Window URL:', window.location.href);
-
     if (token) {
-      console.log('✅ Token found!');
+      const handleSuccess = async () => {
+        try {
+          // Store token in cookies for consistency
+          document.cookie = `token=${token}; path=/;`;
+          localStorage.setItem('token', token);
+          localStorage.setItem('authToken', token);
 
-      // Store token
-      localStorage.setItem('token', token);
-      localStorage.setItem('authToken', token);
-      console.log('✅ Token stored');
+          // Get user profile to determine correct dashboard
+          const userProfile = await getUserProfile(token);
+          login(userProfile);
 
-      // Show toast
-      toast({
-        title: 'Login Successful! 🎉',
-        description: 'Welcome back!'
-      });
+          toast({
+            title: 'Login Successful! 🎉',
+            description: `Welcome back, ${userProfile.name}!`
+          });
 
+<<<<<<< HEAD
       // Clean URL aur redirect
       window.history.replaceState({}, '', '/dashboard');
 
@@ -54,8 +63,32 @@ export function SocialSigninButtons() {
         console.log('✅ Navigating to dashboard...');
         router.push('/dashboard');
       }, 800);
+=======
+          // Resolve role-specific dashboard link
+          const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
+          const dashboardHref = resolveMyDashboardHref(roles);
+
+          // Clean URL and redirect
+          window.history.replaceState({}, '', dashboardHref);
+          
+          setTimeout(() => {
+            router.push(dashboardHref);
+          }, 500);
+        } catch (error) {
+          console.error("Social login profile fetch failed:", error);
+          toast({
+            variant: 'destructive',
+            title: 'Login failed',
+            description: 'Could not fetch your profile. Please try again.'
+          });
+          setLoading(false);
+        }
+      };
+
+      handleSuccess();
+>>>>>>> 796b0e5 (email verify ,product detail)
     }
-  }, [searchParams, toast, router]);
+  }, [searchParams, toast, router, login]);
 
   return (
     <div className="space-y-4">

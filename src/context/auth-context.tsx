@@ -3,12 +3,13 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { UserProfile } from '@/lib/types';
 import api from '@/lib/api/axios';
-import { getToken,logoutAction } from "@/lib/auth";
+import { getToken, logoutAction } from "@/lib/auth";
 
 interface AuthContextType {
   user: UserProfile | null;
   login: (user: UserProfile) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -52,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ✅ Logout
+<<<<<<< HEAD
 const logout = async () => {
     try {
       const token = await getToken();
@@ -68,9 +70,58 @@ const logout = async () => {
       console.error("Logout error:", err);
     }
   };
+=======
+  const logout = async () => {
+    try {
+      const token = await getToken();
+      await api.post("/api/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
+      
+      // ✅ Robustly clear the token cookie via Server Action
+      await logoutAction();
+      
+      // ✅ Comprehensive client-side fallback
+      // 1. Clear common localStorage keys
+      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
+      
+      // 2. Clear cookies aggressively for multiple domains
+      const domains = [
+          window.location.hostname,
+          "." + window.location.hostname,
+          window.location.hostname.split('.').slice(-2).join('.') // root domain
+      ];
+      
+      domains.forEach(domain => {
+          document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+          document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
+      });
+      
+      // Standard path=/ clear as well
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
+      setUser(null);
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+>>>>>>> 796b0e5 (email verify ,product detail)
+
+  // ✅ Refresh User manually after profile update
+  const refreshUser = async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await api.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(res.data || null);
+    } catch (error) {
+      console.log("RefreshUser error:", error);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

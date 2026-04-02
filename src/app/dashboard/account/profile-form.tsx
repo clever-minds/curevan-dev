@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/context/auth-context';
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { updateUserProfile, updateChangeRequest } from '@/lib/repos/users';
@@ -33,19 +33,29 @@ const profileFormSchema = z.object({
 
   // Contact Info (locked)
   email: z.string().email(),
-  mobile: z.string(),
+  mobile: z.string().length(10, "Mobile number must be exactly 10 digits.").refine((val) => /^\d*$/.test(val), {
+    message: "Mobile number should only contain numbers",
+  }),
 
   // Role Info (locked for patient)
   default_role_id: z.string().min(1, 'Please select a role.'),
 
   // Address & Emergency
-  emergencyContact: z.string().optional(),
-  line1: z.string().optional(),
-  line2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  pin: z.string().optional(),
-  country: z.string().optional(),
+  emergencyContact: z.string().min(1, 'This is a required field'),
+  line1: z.string().min(1, 'This is a required field'),
+  line2: z.string().min(1, 'This is a required field'),
+  city: z.string().min(1, 'This is a required field').refine((val) => !val || /^[a-zA-Z\s]*$/.test(val), {
+    message: "City should only contain letters and spaces",
+  }),
+  state: z.string().min(1, 'This is a required field').refine((val) => !val || /^[a-zA-Z\s]*$/.test(val), {
+    message: "State should only contain letters and spaces",
+  }),
+  pin: z.string().min(1, 'This is a required question').refine((val) => !val || /^\d*$/.test(val), {
+    message: "Pincode should only contain numbers",
+  }),
+  country: z.string().min(1, 'This is a required question').refine((val) => !val || /^[a-zA-Z\s]*$/.test(val), {
+    message: "Country should only contain letters and spaces",
+  }),
 
   // Preferences
   email_opt_in: z.boolean().default(false),
@@ -56,7 +66,8 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export function ProfileForm() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -83,38 +94,64 @@ export function ProfileForm() {
         fullName: user.name || '',
         email: user.email || '',
         default_role_id: user.role,
-        gender: user.gender,
+        gender: user.gender || 'male',
         email_opt_in: user.email_opt_in || false, // Assuming these fields exist in your user model
         push_opt_in: user.push_opt_in || false,
-        mobile: user.phone || '9876543210', // Mock data
-        emergencyContact: user.emergencyContact || '9876543210', // Mock data
-        line1: user?.line1,
-        line2: user?.line2,
-        pin: user?.pin,
-        city: user?.city,
-        state: user?.state,
-        country: user?.country,
+        mobile: user.phone || '', // User phone from backend or empty
+        emergencyContact: user.emergencyContact || '', // User emergency contact or empty
+        line1: user?.line1 || '',
+        line2: user?.line2 || '',
+        pin: user?.pin || '',
+        city: user?.city || '',
+        state: user?.state || '',
+        country: user?.country || '',
         dob: user?.dob ? new Date(user.dob).toISOString().split('T')[0] : '1990-01-01', // Format for input[type=date]
       })
     }
   }, [user, form])
 
-  function onSubmit(data: ProfileFormValues) {
-    const roles = user?.roles || [];
-    const isRestrictedRole = 
-      roles.includes('admin.therapy') || 
-      roles.includes('admin.ecom')
-    if (isRestrictedRole) {
-      updateChangeRequest(data);
-    } else {
-      updateUserProfile(data);
-    }
+  async function onSubmit(data: ProfileFormValues) {
+    setIsUpdating(true);
+    try {
+        const roles = user?.roles || [];
+        const isRestrictedRole = 
+          roles.includes('admin.therapy') || 
+          roles.includes('admin.ecom');
+        
+        let success = false;
+        if (isRestrictedRole) {
+          success = await updateChangeRequest(data);
+        } else {
+          success = await updateUserProfile(data);
+        }
 
-    console.log("Saving profile data:", data);
-    toast({
-      title: 'Profile Updated',
-      description: 'Your profile update request has been submitted.',
-    });
+        if (success) {
+            if (typeof refreshUser === 'function') {
+                await refreshUser();
+            }
+            toast({
+                title: 'Profile Updated',
+                description: isRestrictedRole 
+                    ? 'Your profile update request has been submitted for review.' 
+                    : 'Your profile has been updated successfully.',
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: 'Could not update your profile. Please try again.',
+            });
+        }
+    } catch (error) {
+        console.error("Profile update error:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Something went wrong while updating your profile.',
+        });
+    } finally {
+        setIsUpdating(false);
+    }
   }
 
   return (
@@ -140,7 +177,7 @@ export function ProfileForm() {
               <FormItem>
                 <FormLabel>Date of Birth</FormLabel>
                 <FormControl><Input type="date" {...field} /></FormControl>
-                <FormDescription>Changes to DOB require admin approval.</FormDescription>
+                {/* <FormDescription>Changes to DOB require admin approval.</FormDescription> */}
                 <FormMessage />
               </FormItem>
             )}
@@ -152,7 +189,7 @@ export function ProfileForm() {
               <FormItem className="space-y-3">
                 <FormLabel>Gender</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4">
                     <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="male" /></FormControl><FormLabel className="font-normal">Male</FormLabel></FormItem>
                     <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="female" /></FormControl><FormLabel className="font-normal">Female</FormLabel></FormItem>
                     <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="other" /></FormControl><FormLabel className="font-normal">Other</FormLabel></FormItem>
@@ -166,20 +203,41 @@ export function ProfileForm() {
             <FormField
               control={form.control}
               name="default_role_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Primary Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select your primary role" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="patient">Patient</SelectItem>
-                      <SelectItem value="therapist">Therapist</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const roles = user?.roles || [];
+                const isSubAdmin = roles.some(r => 
+                  r === 'admin.super' || 
+                  r === 'admin.ecom' || 
+                  r === 'admin.therapy'
+                );
+                
+                // Force value to 'admin' for sub-admins
+                const currentRoleValue = isSubAdmin ? 'admin' : field.value;
+
+                return (
+                  <FormItem>
+                    <FormLabel>Primary Role</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={currentRoleValue} 
+                      value={currentRoleValue}
+                      disabled={isSubAdmin}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your primary role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="patient">Patient</SelectItem>
+                        <SelectItem value="therapist">Therapist</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
           )}
         </div>
@@ -195,8 +253,13 @@ export function ProfileForm() {
             </FormItem>
           )} />
           <FormField control={form.control} name="mobile" render={({ field }) => (
-            <FormItem><FormLabel>Mobile (Locked)</FormLabel><FormControl><Input type="tel" {...field} disabled /></FormControl>
-              <FormDescription>To change your mobile, please go to <Link href="/dashboard/account/security" className="text-primary hover:underline">Security Settings</Link>.</FormDescription>
+            <FormItem><FormLabel>Mobile</FormLabel><FormControl><Input type="tel" placeholder="Your mobile number" {...field} onChange={(e) => {
+              const val = e.target.value;
+              if (val.length <= 10 && (!val || /^\d*$/.test(val))) {
+                  field.onChange(val);
+              }
+            }} /></FormControl>
+            <FormMessage />
             </FormItem>
           )} />
           <FormField control={form.control} name="emergencyContact" render={({ field }) => (
@@ -206,10 +269,30 @@ export function ProfileForm() {
         <div className="grid md:grid-cols-2 gap-6">
           <FormField control={form.control} name="line1" render={({ field }) => (<FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="Street address" {...field} /></FormControl><FormMessage /></FormItem>)} />
           <FormField control={form.control} name="line2" render={({ field }) => (<FormItem><FormLabel>Address Line 2</FormLabel><FormControl><Input placeholder="Apartment, suite, etc." {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="City" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="state" render={({ field }) => (<FormItem><FormLabel>State</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="pin" render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Pincode" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="City" {...field} onChange={(e) => {
+            const val = e.target.value;
+            if (!val || /^[a-zA-Z\s]*$/.test(val)) {
+                field.onChange(val);
+            }
+          }} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="state" render={({ field }) => (<FormItem><FormLabel>State</FormLabel><FormControl><Input placeholder="State" {...field} onChange={(e) => {
+            const val = e.target.value;
+            if (!val || /^[a-zA-Z\s]*$/.test(val)) {
+                field.onChange(val);
+            }
+          }} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="pin" render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Pincode" {...field} onChange={(e) => {
+            const val = e.target.value;
+            if (!val || /^\d*$/.test(val)) {
+                field.onChange(val);
+            }
+          }} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} onChange={(e) => {
+            const val = e.target.value;
+            if (!val || /^[a-zA-Z\s]*$/.test(val)) {
+                field.onChange(val);
+            }
+          }} /></FormControl><FormMessage /></FormItem>)} />
         </div>
 
         <Separator />
@@ -250,9 +333,12 @@ export function ProfileForm() {
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
-            Save Changes
+          <Button type="submit" disabled={isUpdating}>
+            {isUpdating ? (
+                <>Updating...</>
+            ) : (
+                <><Save className="mr-2 h-4 w-4" /> Save Changes</>
+            )}
           </Button>
         </div>
       </form>

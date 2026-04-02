@@ -22,7 +22,9 @@ import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
 import { getUserProfile } from '@/lib/api/auth';
 
 const phoneSchema = z.object({
-  phoneNumber: z.string().regex(/^\+?[1-9]\d{10,14}$/, 'Please enter a valid phone number including country code (e.g., +919876543210).'),
+  phoneNumber: z.string()
+    .length(10, 'Phone number must be exactly 10 digits')
+    .regex(/^\d+$/, 'Only digits allowed'),
 });
 
 type PhoneFormValues = z.infer<typeof phoneSchema>;
@@ -48,44 +50,28 @@ export function PhoneSigninForm() {
     },
 });
 
-//   useEffect(() => {
-//     if (!auth || recaptchaVerifierRef.current) return;
+  useEffect(() => {
+    if (typeof window === 'undefined' || !auth) return;
 
-//     try {
-//         recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-//             'size': 'invisible',
-//             'callback': () => {
-//                 console.log("reCAPTCHA solved, ready to send OTP.");
-//             }
-//         });
-//         recaptchaVerifierRef.current.render().catch((error) => {
-//             console.error("reCAPTCHA render error, maybe already rendered?", error);
-//         });
-//     } catch (error) {
-//         console.error("Error creating reCAPTCHA verifier", error);
-//         toast({ variant: 'destructive', title: 'reCAPTCHA Error', description: 'Could not initialize security check. Please refresh the page.' });
-//     }
-
-//     return () => {
-//         if (recaptchaVerifierRef.current) {
-//             recaptchaVerifierRef.current.clear();
-//         }
-//     };
-//   }, [auth, toast]);
-// useEffect(() => {
-//   if (typeof window === 'undefined') return;
-//   if (!auth) return;
-
-//   if (!recaptchaVerifierRef.current) {
-//     recaptchaVerifierRef.current = new RecaptchaVerifier(auth,
-//       'recaptcha-container',
-//       { size: 'invisible' },
-      
-//     );
-
-//     recaptchaVerifierRef.current.render().catch(console.error);
-//   }
-// }, []);
+    if (!recaptchaVerifierRef.current) {
+      try {
+        const { setupRecaptcha } = require('@/lib/firebase');
+        recaptchaVerifierRef.current = setupRecaptcha('recaptcha-container');
+        console.log("reCAPTCHA initialized on mount.");
+      } catch (error) {
+        console.error("Error initializing reCAPTCHA:", error);
+      }
+    }
+    
+    return () => {
+        if (recaptchaVerifierRef.current) {
+            const { resetRecaptcha } = require('@/lib/firebase');
+            resetRecaptcha();
+            recaptchaVerifierRef.current = null;
+            console.log("reCAPTCHA cleaned up on unmount.");
+        }
+    };
+  }, []);
 
  // 🔹 Send OTP
   const handleSendOTP = async (data: PhoneFormValues) => {
@@ -93,16 +79,14 @@ export function PhoneSigninForm() {
     try {
       // 1️⃣ Check backend if number exists
      const checkData = await loginWithOTP({
-            phoneNumber: data.phoneNumber
+            phoneNumber: `+91${data.phoneNumber}`
             });
     
       if (!checkData.success)
         throw new Error(checkData.error || 'Phone number not registered');
 
       // 2️⃣ Send OTP via Firebase
-      const formattedPhone = data.phoneNumber.startsWith('+')
-        ? data.phoneNumber
-        : `+${data.phoneNumber}`;
+      const formattedPhone = `+91${data.phoneNumber}`;
 
       confirmationResultRef.current = await sendOTP(formattedPhone);
   if (confirmationResultRef.current) {
@@ -141,11 +125,17 @@ export function PhoneSigninForm() {
       if (!userProfile) {
           throw new Error("User profile not found. Please contact support.");
       }
-            login(userProfile);
-
+      login(userProfile);
+      
       toast({ title: 'Signed in!', description: 'Welcome!' });
       const redirectUrl = searchParams.get('redirectUrl');
-      router.push(redirectUrl || '/dashboard');    } catch (err: any) {
+      
+      // Resolve role-specific dashboard link
+      const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
+      const dashboardHref = resolveMyDashboardHref(roles);
+      
+      router.push(redirectUrl || dashboardHref);
+    } catch (err: any) {
       console.error(err);
       toast({ variant: 'destructive', title: 'Invalid OTP', description: err.message });
     } finally {
@@ -166,12 +156,23 @@ export function PhoneSigninForm() {
                             <FormItem>
                             <FormLabel>Phone Number</FormLabel>
                             <FormControl>
-                                <Input 
-                                    id="phone" 
-                                    type="tel"
-                                    placeholder="+919876543210"
-                                    {...field}
-                                />
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold border-r pr-3">+91</span>
+                                    <Input 
+                                        id="phone" 
+                                        type="tel"
+                                        placeholder="9876543210"
+                                        className="pl-16 h-12 text-lg font-medium tracking-wider"
+                                        maxLength={10}
+                                        {...field}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            if (val.length <= 10) {
+                                                field.onChange(val);
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </FormControl>
                             <FormMessage />
                             </FormItem>

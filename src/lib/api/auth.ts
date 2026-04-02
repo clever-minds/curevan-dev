@@ -138,3 +138,17 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   }
 }
 
+export async function verifyEmail(token: string) {
+  const res = await fetch(`${API}/api/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+
+  const result = await res.json();
+  if (!res.ok) {
+    throw new Error(result.message || 'Email verification failed');
+  }
+  return result;
+}
+

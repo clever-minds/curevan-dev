@@ -14,7 +14,7 @@ import { getCart, saveCart, clearCart as clearFirestoreCart,removeCartItem, vali
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product) => Promise<void>;
+  addToCart: (product: Product, quantity?: number) => Promise<void>;
   removeFromCart: (productId: number) => Promise<void>;
   updateQuantity: (productId: number, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -118,16 +118,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   //   }
   // };
 
- const addToCart = async (product: Product) => {
+  const addToCart = async (product: Product, quantity: number = 1) => {
   if (!user) return;
 
   const existingItem = cart.find(
-    (item) => item.productId === product.id
+    (item) => Number(item.productId) === Number(product.id)
   );
 
   try {
     if (existingItem) {
-      const newQuantity = existingItem.quantity + 1;
+      const newQuantity = existingItem.quantity + quantity;
 
       // 1️⃣ Update backend first
       await saveCart({
@@ -138,25 +138,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       // 2️⃣ Then update state
       setCart((prevCart: CartItem[]) =>
-  prevCart.map((item): CartItem =>
-    Number(item.productId) === Number(product.id)
-      ? { ...item, quantity: newQuantity }
-      : item
-  )
-);
+        prevCart.map((item): CartItem =>
+          Number(item.productId) === Number(product.id)
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
     } else {
       // 1️⃣ Save to backend
       await saveCart({
         userId: user.id,
         product_id: product.id,
-        quantity: 1,
+        quantity: quantity,
       });
 
       // 2️⃣ Add properly structured CartItem
       const newItem: CartItem = {
         ...product,
         productId: product.id, // ✅ MUST
-        quantity: 1,
+        quantity: quantity,
       };
 
       setCart((prevCart: CartItem[]) => [...prevCart, newItem]);

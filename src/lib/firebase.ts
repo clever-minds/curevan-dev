@@ -34,18 +34,35 @@ declare global {
 // Singleton reCAPTCHA instance
 let recaptchaVerifierInstance: RecaptchaVerifier | null = null;
 
-export const setupRecaptcha = (): RecaptchaVerifier => {
+export const resetRecaptcha = () => {
+  if (recaptchaVerifierInstance) {
+    try {
+      recaptchaVerifierInstance.clear();
+    } catch (e) {
+      console.warn("Error clearing reCAPTCHA instance:", e);
+    }
+    recaptchaVerifierInstance = null;
+  }
+};
+
+export const setupRecaptcha = (containerId: string = "recaptcha-container"): RecaptchaVerifier => {
   if (typeof window === "undefined") throw new Error("window is undefined");
+
+  // If container doesn't exist in DOM, reset the instance
+  if (!document.getElementById(containerId)) {
+    resetRecaptcha();
+  }
 
   if (!recaptchaVerifierInstance) {
     recaptchaVerifierInstance = new RecaptchaVerifier(auth,
-      "recaptcha-container",
-      { size: "invisible" }
-      
+      containerId,
+      { 
+        size: "invisible",
+        callback: () => {
+             console.log("reCAPTCHA solved");
+        }
+      }
     );
-    recaptchaVerifierInstance.render().catch((err) => {
-      console.error("Error rendering reCAPTCHA:", err);
-    });
     window.recaptchaVerifier = recaptchaVerifierInstance;
   }
 

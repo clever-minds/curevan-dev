@@ -38,8 +38,12 @@ const requestTherapistSchema = z.object({
   scheduledDate: z.date({ required_error: "Please select a date." }),
   scheduledTime: z.string().min(1, { message: "Please select a time slot." }),
   line1: z.string().optional(),
-  city: z.string().optional(),
-  pin: z.string().optional(),
+  city: z.string().optional().refine((val) => !val || /^[a-zA-Z\s]*$/.test(val), {
+    message: "City should only contain letters and spaces",
+  }),
+  pin: z.string().optional().refine((val) => !val || /^\d*$/.test(val), {
+    message: "Pincode should only contain numbers",
+  }),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   prescription: z.any().optional(),
@@ -211,7 +215,12 @@ export function RequestTherapistForm() {
                 <FormField control={form.control} name="line1" render={({ field }) => (<FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="Building name and street" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Your city" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="pin" render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Your pincode" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="pin" render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Your pincode" {...field} onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val || /^\d*$/.test(val)) {
+                            field.onChange(val);
+                        }
+                    }} /></FormControl><FormMessage /></FormItem>)}/>
                 </div>
                 {form.watch('latitude') && form.watch('longitude') && (
                     <Input disabled value={`Lat: ${form.watch('latitude')}, Lng: ${form.watch('longitude')}`} />

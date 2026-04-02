@@ -3,12 +3,12 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
@@ -24,14 +24,16 @@ import { listProductCategories, listProducts } from "@/lib/repos/products";
 import { listOrders } from "@/lib/repos/orders";
 import { getSafeDate } from "@/lib/utils";
 
-const KpiCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
+const KpiCard = ({ title, value, icon: Icon, description, loading, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, isCurrency?: boolean }) => (
     <Card className="avoid-break">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{typeof value === 'number' ? <Price amount={value} /> : value}</div>
+            {loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-md" /> : (
+                <div className="text-2xl font-bold">{isCurrency && typeof value === 'number' ? <Price amount={value} /> : value}</div>
+            )}
             {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </CardContent>
     </Card>
@@ -61,27 +63,33 @@ export default function EcomAdminDashboardPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            const [categoriesData, ordersData, productsData] = await Promise.all([
-                listProductCategories(),
-                listOrders(),
-                listProducts(),
-            ]);
-            setProductCategories(categoriesData);
-            setRecentOrders(ordersData.slice(0,5));
-            setProducts(productsData);
-            setOrders(ordersData);
-            setLoading(false);
+            try {
+                const [categoriesData, ordersData, productsData] = await Promise.all([
+                    listProductCategories(),
+                    listOrders(filters),
+                    listProducts(),
+                ]);
+                setProductCategories(categoriesData);
+                setRecentOrders(ordersData.slice(0, 5));
+                setProducts(productsData);
+                setOrders(ordersData);
+            } catch (err) {
+                console.error("Fetch Data Error:", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
-    }, []);
-    
+    }, [filters]);
+
     const lowStockData = useMemo(() => {
         return products.filter(p => p.stock < p.reorderPoint).map(p => ({
-             sku: p.sku || `${p.id}-M`, product: p.name, stock: p.stock, sold30d: Math.floor(Math.random() * 50) + 10, daysCover: Math.floor(p.stock / ((Math.floor(Math.random() * 50) + 10) / 30))
+            sku: p.sku || `${p.id}-M`, product: p.name, stock: p.stock, sold30d: Math.floor(Math.random() * 50) + 10, daysCover: Math.floor(p.stock / ((Math.floor(Math.random() * 50) + 10) / 30))
         }))
     }, [products]);
 
@@ -89,6 +97,7 @@ export default function EcomAdminDashboardPage() {
         const dataMap = new Map<string, { revenue: number, refunds: number, time: number }>();
         orders.forEach(order => {
             const dateObj = getSafeDate(order.createdAt);
+<<<<<<< HEAD
             if(!dateObj) return;
             const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             
@@ -96,6 +105,15 @@ export default function EcomAdminDashboardPage() {
                 // Ensure we have a timestamp for sorting
                 const dateAtMidnight = new Date(dateObj);
                 dateAtMidnight.setHours(0,0,0,0);
+=======
+            if (!dateObj) return;
+            const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            if (!dataMap.has(dateLabel)) {
+                // Ensure we have a timestamp for sorting
+                const dateAtMidnight = new Date(dateObj);
+                dateAtMidnight.setHours(0, 0, 0, 0);
+>>>>>>> 796b0e5 (email verify ,product detail)
                 dataMap.set(dateLabel, { revenue: 0, refunds: 0, time: dateAtMidnight.getTime() });
             }
             const entry = dataMap.get(dateLabel)!;
@@ -106,9 +124,15 @@ export default function EcomAdminDashboardPage() {
                 entry.refunds += (order.total || 0);
             }
         });
+<<<<<<< HEAD
       
         
         
+=======
+
+
+
+>>>>>>> 796b0e5 (email verify ,product detail)
         // Convert to array and sort chronologically by the 'time' property
         return Array.from(dataMap.entries())
             .map(([date, values]) => ({ date, ...values }))
@@ -137,7 +161,11 @@ export default function EcomAdminDashboardPage() {
         });
         return Array.from(categoryMap.entries())
             .map(([categoryName, revenue]) => ({ categoryName, revenue }))
+<<<<<<< HEAD
             .sort((a,b) => b.revenue - a.revenue)
+=======
+            .sort((a, b) => b.revenue - a.revenue)
+>>>>>>> 796b0e5 (email verify ,product detail)
             .slice(0, 10);
     }, [orders, products, productCategories]);
 
@@ -150,6 +178,7 @@ export default function EcomAdminDashboardPage() {
         const refundRate = totalOrders > 0 ? (refunds / totalOrders) * 100 : 0;
         const onTime = orders.filter(o => o.status === 'Delivered').length; // Mock
         const onTimeRate = totalOrders > 0 ? (onTime / totalOrders) * 100 : 0;
+<<<<<<< HEAD
 console.log("gmv",gmv);
 console.log("totalOrders",totalOrders);
 console.log("aov",aov);
@@ -157,21 +186,30 @@ console.log("refundRate",refundRate.toFixed(1) + '%');
 console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
         return { gmv, totalOrders, aov, refundRate: refundRate.toFixed(1) + '%', onTimeRate: onTimeRate.toFixed(1) + '%' };
         
+=======
+        console.log("gmv", gmv);
+        console.log("totalOrders", totalOrders);
+        console.log("aov", aov);
+        console.log("refundRate", refundRate.toFixed(1) + '%');
+        console.log("onTimeRate", onTimeRate.toFixed(1) + '%');
+        return { gmv, totalOrders, aov, refundRate: refundRate.toFixed(1) + '%', onTimeRate: onTimeRate.toFixed(1) + '%' };
+
+>>>>>>> 796b0e5 (email verify ,product detail)
     }, [orders]);
 
     return (
         <div className="space-y-8">
             <div className="no-print space-y-4">
-                 <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight font-headline">E-commerce Admin • My Dashboard</h1>
                         <p className="text-muted-foreground">An overview of your store's performance and operations.</p>
                     </div>
-                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2"/> Print</Button>
-                         <DropdownMenu>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2" /> Print</Button>
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button><FileDown className="mr-2"/> Export CSV</Button>
+                                <Button><FileDown className="mr-2" /> Export CSV</Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem>Orders</DropdownMenuItem>
@@ -182,12 +220,13 @@ console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
                         </DropdownMenu>
                     </div>
                 </div>
-                 <FilterBar
+                <FilterBar
                     showDatePicker={true}
                     showLocationFilters={true}
                     showSearch={true}
                     showEcomFilters={true}
-                 />
+                    onFilterChange={setFilters}
+                />
             </div>
 
             <section id="report" className="print-area space-y-8">
@@ -196,14 +235,14 @@ console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
                     <p className="text-muted-foreground">For period: Last 90 Days</p>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                    <KpiCard title="GMV Paid" value={kpis.gmv} icon={DollarSign} />
-                    <KpiCard title="Orders Placed" value={kpis.totalOrders} icon={ShoppingBag} />
-                    <KpiCard title="Avg. Order Value" value={kpis.aov} icon={TrendingUp} />
-                    <KpiCard title="Refund Rate" value={kpis.refundRate} icon={RotateCcw} />
-                    <KpiCard title="On-time Delivery" value={kpis.onTimeRate} icon={Truck} />
+                    <KpiCard title="GMV Paid" value={kpis.gmv} icon={DollarSign} isCurrency={true} loading={loading} />
+                    <KpiCard title="Orders Placed" value={kpis.totalOrders} icon={ShoppingBag} isCurrency={false} loading={loading} />
+                    <KpiCard title="Avg. Order Value" value={kpis.aov} icon={TrendingUp} isCurrency={true} loading={loading} />
+                    <KpiCard title="Refund Rate" value={kpis.refundRate} icon={RotateCcw} loading={loading} />
+                    <KpiCard title="On-time Delivery" value={kpis.onTimeRate} icon={Truck} loading={loading} />
                 </div>
-                
-                 <ReportAiSummary 
+
+                <ReportAiSummary
                     summaryText={[
                         "Revenue is up 15% WoW, driven by strong sales in the 'Physiotherapy' category.",
                         "Coupon 'SAVE10' has high usage but low AOV; consider making it product-specific.",
@@ -212,15 +251,15 @@ console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
                     regenerate={() => console.log('regenerate')}
                     copy={() => console.log('copy')}
                 />
-                
+
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Revenue vs Refunds (90d)" type="line" data={revenueRefundsData} categoryKey="date" valueKey="revenue" loading={loading}/>
-                    <DashboardCard title="Orders by Status (90d)" type="pie" data={ordersByStatusData} categoryKey="status" valueKey="count" loading={loading} />
-                    <DashboardCard title="Top 10 Categories by Revenue (90d)" type="bar" data={topCategoriesData} categoryKey="categoryName" valueKey="revenue" loading={loading} />
+                    <DashboardCard title="Revenue vs Refunds (90d)" type="line" data={revenueRefundsData} categoryKey="date" valueKey="revenue" loading={loading} isCurrency={true} />
+                    <DashboardCard title="Orders by Status (90d)" type="pie" data={ordersByStatusData} categoryKey="status" valueKey="count" loading={loading} isCurrency={false} />
+                    <DashboardCard title="Top 10 Categories by Revenue (90d)" type="bar" data={topCategoriesData} categoryKey="categoryName" valueKey="revenue" loading={loading} isCurrency={true} />
                 </div>
 
-                 <ActionableTable title="Recent Orders" headers={['Order #', 'Date', 'Customer', 'Items', 'Amount', 'Status', 'Actions']}>
-                     {recentOrders.map(order => {
+                <ActionableTable title="Recent Orders" headers={['Order #', 'Date', 'Customer', 'Items', 'Amount', 'Status', 'Actions']}>
+                    {recentOrders.map(order => {
                         const createdAt = getSafeDate(order.createdAt);
                         return (
                             <TableRow key={order.id}>
@@ -233,9 +272,9 @@ console.log("onTimeRate",onTimeRate.toFixed(1) + '%');
                                 <TableCell><Button variant="outline" size="sm">View Order</Button></TableCell>
                             </TableRow>
                         )
-                     })}
+                    })}
                 </ActionableTable>
-                 <ActionableTable title="Low-Stock SKUs" headers={['SKU', 'Product', 'Stock', 'Sold (30d)', 'Days Left', 'Actions']}>
+                <ActionableTable title="Low-Stock SKUs" headers={['SKU', 'Product', 'Stock', 'Sold (30d)', 'Days Left', 'Actions']}>
                     {lowStockData.map(item => (
                         <TableRow key={item.sku}>
                             <TableCell>{item.sku}</TableCell>

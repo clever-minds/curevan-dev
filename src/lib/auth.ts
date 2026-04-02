@@ -39,12 +39,12 @@ export async function getToken(): Promise<string | null> {
     return null
   }
 }
-export async function logoutAction() {
-  try {
-    const cookieStore = await cookies();
-    cookieStore.delete('token');
-  } catch (error) {
-    console.error('Error in logoutAction:', error);
-  }
-}
 
+export async function logoutAction() {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete('token');
+  } catch (error) {
+    console.error('Error in logoutAction:', error);
+  }
+}

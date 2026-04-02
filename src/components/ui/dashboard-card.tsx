@@ -18,9 +18,10 @@ interface DashboardCardProps {
   valueKey: string;
   className?: string;
   loading?: boolean;
+  isCurrency?: boolean;
 }
 
-export function DashboardCard({ title, description, data, type, categoryKey, valueKey, className, loading }: DashboardCardProps) {
+export function DashboardCard({ title, description, data, type, categoryKey, valueKey, className, loading, isCurrency = false }: DashboardCardProps) {
   const ChartComponent = () => {
     switch (type) {
       case 'line':
@@ -45,11 +46,19 @@ export function DashboardCard({ title, description, data, type, categoryKey, val
               fontSize={12} 
               tickLine={false} 
               axisLine={false} 
+<<<<<<< HEAD
               tickFormatter={(value) => typeof value === 'number' ? formatINR(value) : value}
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
             <Tooltip 
               formatter={(value: any) => typeof value === 'number' ? formatINR(value, true) : value}
+=======
+              tickFormatter={(value) => isCurrency && typeof value === 'number' ? formatINR(value) : value}
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <Tooltip 
+              formatter={(value: any) => isCurrency && typeof value === 'number' ? formatINR(value, true) : value}
+>>>>>>> 796b0e5 (email verify ,product detail)
               contentStyle={{ 
                 backgroundColor: 'hsl(var(--background))', 
                 borderColor: 'hsl(var(--border))',
@@ -76,8 +85,13 @@ export function DashboardCard({ title, description, data, type, categoryKey, val
           <BarChart data={data} width={500} height={300}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={categoryKey} stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+<<<<<<< HEAD
             <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => typeof value === 'number' ? formatINR(value) : value} />
             <Tooltip formatter={(value: any) => typeof value === 'number' ? formatINR(value, true) : value} />
+=======
+            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => isCurrency && typeof value === 'number' ? formatINR(value) : value} />
+            <Tooltip formatter={(value: any) => isCurrency && typeof value === 'number' ? formatINR(value, true) : value} />
+>>>>>>> 796b0e5 (email verify ,product detail)
             <Bar dataKey={valueKey} radius={[4, 4, 0, 0]}>
                  {data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -88,12 +102,20 @@ export function DashboardCard({ title, description, data, type, categoryKey, val
       case 'pie':
         return (
           <PieChart width={500} height={300}>
+<<<<<<< HEAD
             <Pie data={data} dataKey={valueKey} nameKey={categoryKey} cx="50%" cy="50%" outerRadius={100} label>
+=======
+            <Pie data={data} dataKey={valueKey} nameKey={categoryKey} cx="50%" cy="50%" outerRadius={100} label={(props) => props.payload[categoryKey].length > 10 ? `${props.payload[categoryKey].substring(0, 10)}...` : props.payload[categoryKey]}>
+>>>>>>> 796b0e5 (email verify ,product detail)
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
+<<<<<<< HEAD
             <Tooltip formatter={(value: any) => typeof value === 'number' ? formatINR(value) : value} />
+=======
+            <Tooltip formatter={(value: any) => isCurrency && typeof value === 'number' ? formatINR(value) : value} />
+>>>>>>> 796b0e5 (email verify ,product detail)
             <Legend />
           </PieChart>
         );

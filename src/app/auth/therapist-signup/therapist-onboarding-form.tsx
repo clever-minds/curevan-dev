@@ -76,12 +76,20 @@ export const therapistOnboardingSchema = z.object({
   serviceRadiusKm: z.coerce.number().min(1, 'Service radius is required.'),
   line1: z.string().min(1, 'Address is required.'),
   line2: z.string().optional(),
-  city: z.string().min(1, 'City is required.'),
-  state: z.string().min(1, 'State is required.'),
-  pin: z.string().min(1, 'Pincode is required.'),
+  city: z.string().min(1, "City is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
+    message: "City should only contain letters and spaces",
+  }),
+  state: z.string().min(1, "State is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
+    message: "State should only contain letters and spaces",
+  }),
+  pin: z.string().min(1, 'Pincode is required.').refine((val) => /^\d*$/.test(val), {
+    message: "Pincode should only contain numbers",
+  }),
 
   // Professional Details
-  mobile: z.string(),
+  mobile: z.string().length(10, 'A valid 10-digit mobile number is required.').refine((val) => /^\d*$/.test(val), {
+    message: "Mobile number should only contain numbers",
+  }),
   qualification: z.string().min(1, 'Qualifications are required.'),
   registrationNo: z.string().min(1, 'Registration number is required.'),
   specialty: z.array(z.string())
@@ -564,9 +572,19 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                     />
                   </div>
                   <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    <FormFieldWrapper fieldName="city"><FormField name="city" control={form.control} render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Your city" {...field} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
+                    <FormFieldWrapper fieldName="city"><FormField name="city" control={form.control} render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Your city" {...field} onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val || /^[a-zA-Z\s]*$/.test(val)) {
+                          field.onChange(val);
+                      }
+                    }} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
                     <FormFieldWrapper fieldName="state"><FormField name="state" control={form.control} render={({ field }) => (<FormItem><FormLabel>State</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select your state" /></SelectTrigger></FormControl><SelectContent>{indianStates.map(state => <SelectItem key={state} value={state}>{state}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} /></FormFieldWrapper>
-                    <FormFieldWrapper fieldName="pin"><FormField name="pin" control={form.control} render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Your pincode" {...field} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
+                    <FormFieldWrapper fieldName="pin"><FormField name="pin" control={form.control} render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Your pincode" {...field} onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val || /^\d*$/.test(val)) {
+                          field.onChange(val);
+                      }
+                    }} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
                   </div>
                 </div>
               </CardContent></Card>
@@ -575,7 +593,12 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
           <TabsContent value="professional" className="space-y-6">
             <Card><CardHeader><CardTitle>Professional Details</CardTitle><CardDescription>Information for verification and records.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                <FormFieldWrapper fieldName="mobile"><FormField name="mobile" control={form.control} render={({ field }) => (<FormItem><FormLabel>Mobile Number</FormLabel><FormControl><Input type="tel" placeholder="Your mobile number" {...field} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
+                <FormFieldWrapper fieldName="mobile"><FormField name="mobile" control={form.control} render={({ field }) => (<FormItem><FormLabel>Mobile Number</FormLabel><FormControl><Input type="tel" placeholder="Your mobile number" {...field} onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.length <= 10 && (!val || /^\d*$/.test(val))) {
+                      field.onChange(val);
+                  }
+                }} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
                 <FormFieldWrapper fieldName="qualification"><FormField name="qualification" control={form.control} render={({ field }) => (<FormItem><FormLabel>Qualification(s)</FormLabel><FormControl><Textarea placeholder="Your degrees and certifications" {...field} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
                 <FormFieldWrapper fieldName="specialty">
                   <FormField

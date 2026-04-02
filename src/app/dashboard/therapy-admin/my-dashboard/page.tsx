@@ -38,22 +38,24 @@ import { useEffect, useState, useMemo } from "react";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { Price } from "@/components/money/price";
-import { getTherapyCategories } from "@/lib/repos/categories";
-import { listProfileChangeRequests } from "@/lib/repos/content";
+import { getPublicStats } from "@/lib/repos/stats";
 import type { ProfileChangeRequest, Appointment, PayoutItem } from '@/lib/types';
+import { listProfileChangeRequests } from "@/lib/repos/content";
 import { listAppointments } from "@/lib/repos/appointments";
 import { listPayoutItems } from "@/lib/repos/payouts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getSafeDate } from "@/lib/utils";
 
-const KpiCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
+const KpiCard = ({ title, value, icon: Icon, description, loading, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, isCurrency?: boolean }) => (
     <Card className="avoid-break">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{typeof value === 'number' ? <Price amount={value} /> : value}</div>
+            {loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-md" /> : (
+                <div className="text-2xl font-bold">{isCurrency && typeof value === 'number' ? <Price amount={value} /> : value}</div>
+            )}
             {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </CardContent>
     </Card>
@@ -78,23 +80,32 @@ export default function TherapyAdminDashboardPage() {
     const [profileChangeRequests, setProfileChangeRequests] = useState<ProfileChangeRequest[]>([]);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [payoutItems, setPayoutItems] = useState<PayoutItem[]>([]);
+    const [stats, setStats] = useState<Awaited<ReturnType<typeof getPublicStats>> | null>(null);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            const [requests, appointmentsData, payoutsData] = await Promise.all([
-                listProfileChangeRequests(),
-                listAppointments(),
-                listPayoutItems()
-            ]);
-            setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
-            setAppointments(appointmentsData);
-            setPayoutItems(payoutsData);
-            setLoading(false);
+            try {
+                const [requests, appointmentsData, payoutsData, statsData] = await Promise.all([
+                    listProfileChangeRequests(),
+                    listAppointments(filters),
+                    listPayoutItems(filters),
+                    getPublicStats()
+                ]);
+                setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
+                setAppointments(appointmentsData);
+                setPayoutItems(payoutsData);
+                setStats(statsData);
+            } catch (err) {
+                console.error("Fetch Data Error:", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
-    }, []);
+    }, [filters]);
 
     const kpis = useMemo(() => {
         const completedSessions = appointments.filter(a => a.status === 'Completed').length;
@@ -198,6 +209,7 @@ export default function TherapyAdminDashboardPage() {
                     showLocationFilters={true}
                     showSearch={true}
                     showTherapyFilters={true}
+                    onFilterChange={setFilters}
                  />
             </div>
 
@@ -207,10 +219,10 @@ export default function TherapyAdminDashboardPage() {
                     <p className="text-muted-foreground">For period: Last 90 Days</p>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    <KpiCard title="Sessions Completed" value={kpis.completedSessions} icon={TrendingUp} />
-                    <KpiCard title="Active Therapists" value="152" icon={Users} />
-                    <KpiCard title="PCR Lock Rate" value={kpis.pcrLockRate} icon={Percent} />
-                    <KpiCard title="No-Show Rate" value={kpis.noShowRate} icon={Calendar} />
+                    <KpiCard title="Sessions Completed" value={kpis.completedSessions} icon={TrendingUp} isCurrency={false} loading={loading} />
+                    <KpiCard title="Active Therapists" value={stats?.therapistsTotal ?? 0} icon={Users} isCurrency={false} loading={loading} />
+                    <KpiCard title="PCR Lock Rate" value={kpis.pcrLockRate} icon={Percent} loading={loading} />
+                    <KpiCard title="No-Show Rate" value={kpis.noShowRate} icon={Calendar} loading={loading} />
                 </div>
 
                 <ReportAiSummary 
@@ -224,10 +236,10 @@ export default function TherapyAdminDashboardPage() {
                 />
                 
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Sessions per day (90d)" type="line" data={sessionsData} categoryKey="date" valueKey="sessionCount" loading={loading} />
-                    <DashboardCard title="Bookings by Mode (90d)" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" loading={loading} />
-                    <DashboardCard title="Top 10 Services by Revenue (90d)" type="bar" data={topServicesData} categoryKey="name" valueKey="revenue" loading={loading} />
-                    <DashboardCard title="Payout Pipeline (Last 4 Weeks)" type="bar" data={payoutPipelineData} categoryKey="week" valueKey="paid" loading={loading} />
+                    <DashboardCard title="Sessions per day (90d)" type="line" data={sessionsData} categoryKey="date" valueKey="sessionCount" loading={loading} isCurrency={false} />
+                    <DashboardCard title="Bookings by Mode (90d)" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" loading={loading} isCurrency={false} />
+                    <DashboardCard title="Top 10 Services by Revenue (90d)" type="bar" data={topServicesData} categoryKey="name" valueKey="revenue" loading={loading} isCurrency={true} />
+                    <DashboardCard title="Payout Pipeline (Last 4 Weeks)" type="bar" data={payoutPipelineData} categoryKey="week" valueKey="paid" loading={loading} isCurrency={true} />
                 </div>
 
                  <ActionableTable title="Unlocked PCRs (>24h)" headers={['Booking', 'Therapist', 'Patient', 'Age', 'Action']}>

@@ -47,9 +47,9 @@ const nextConfig = {
         pathname: '/uploads/**',
       },
       {
-        protocol: 'http',
-        hostname: '192.168.29.207',
-        pathname: '/uploads/images/**',
+        protocol: 'https',
+        hostname: 'api.curevan.com',
+        pathname: '/uploads/**',
 
       }
     ],

@@ -54,65 +54,96 @@ console.log("CartSheet render - cart items:", cart);
             <SheetTrigger asChild>
                 {children}
             </SheetTrigger>
-            <SheetContent className="flex flex-col">
-                <SheetHeader>
-                    <SheetTitle>Shopping Cart ({cart.length})</SheetTitle>
-                     <SheetDescription>
+            <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden border-l border-muted">
+                <SheetHeader className="p-6 pb-0">
+                    <div className="flex items-center justify-between">
+                        <SheetTitle className="text-2xl font-bold font-headline">Shopping Cart ({cart.length})</SheetTitle>
+                    </div>
+                    <SheetDescription className="text-sm text-muted-foreground mt-1">
                         Review your items before proceeding to checkout.
                     </SheetDescription>
                 </SheetHeader>
+
                 {cart.length > 0 ? (
                     <>
-                        <ScrollArea className="flex-1 -mx-6">
-                            <div className="px-6">
+                        <ScrollArea className="flex-1 px-6 mt-6">
+                            <div className="space-y-6 pb-6">
                                 {cart.map(item => (
-                                    <div key={item.id} className="flex items-start gap-4 py-4">
-                                        <Image src={imageUrl(item.featuredImage)} alt={item.name} width={64} height={64} className="rounded-md object-cover" />
-                                        <div className="flex-1">
-                                            <p className="font-semibold">{item.name}</p>
-                                            <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                                            <p className="font-semibold mt-1"><Price amount={item.price} showDecimals /></p>
+                                    <div key={item.id} className="group relative flex items-center gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted/30 border shrink-0">
+                                            <Image 
+                                                src={imageUrl(item.featuredImage)} 
+                                                alt={item.name} 
+                                                fill 
+                                                className="object-cover" 
+                                            />
                                         </div>
-                                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.id)}>
+                                        <div className="flex-1 min-w-0 pr-8">
+                                            <p className="font-bold text-base leading-tight truncate-2-lines mb-1">{item.name}</p>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <span>Qty: {item.quantity}</span>
+                                            </div>
+                                            <p className="font-bold text-lg text-foreground mt-1">
+                                                <Price amount={item.price} showDecimals />
+                                            </p>
+                                        </div>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="absolute -top-1 -right-1 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors" 
+                                            onClick={() => removeFromCart(item.id)}
+                                        >
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 ))}
                             </div>
                         </ScrollArea>
-                        <SheetFooter className="mt-auto">
-                            <div className="w-full space-y-4">
-                                <Separator />
-                                <div className="space-y-1 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Subtotal</span>
-                                        <span><Price amount={subtotal} showDecimals /></span>
+                        
+                        <div className="p-6 bg-muted/30 border-t space-y-6">
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground font-medium uppercase tracking-wider">Subtotal</span>
+                                    <span className="font-semibold text-foreground tracking-tight"><Price amount={subtotal} showDecimals /></span>
+                                </div>
+                                {discount > 0 && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-muted-foreground flex items-center gap-1 font-medium uppercase tracking-wider">
+                                            <Tag className="w-4 h-4" /> 
+                                            Discount
+                                            {appliedCoupon?.code && <Badge variant="secondary" className="ml-2">{appliedCoupon.code}</Badge>}
+                                        </span>
+                                        <span className="text-primary font-bold tracking-tight">-<Price amount={discount} showDecimals /></span>
                                     </div>
-                                    {discount > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground flex items-center gap-1">
-                                                <Tag className="w-4 h-4" /> 
-                                                Discount
-                                                {appliedCoupon?.code && <Badge variant="secondary">{appliedCoupon.code}</Badge>}
-                                            </span>
-                                            <span className="text-primary">-<Price amount={discount} showDecimals /></span>
-                                        </div>
-                                    )}
-                                </div>
-                                <Separator />
-
-                                <div className="flex justify-between font-bold text-lg">
-                                    <p>Total</p>
-                                    <p><Price amount={total} showDecimals /></p>
-                                </div>
-                                <div className="grid grid-cols-1 gap-2">
-                                     <Button onClick={handleCheckout} disabled={total === 0 || isValidating}>
-                                        {isValidating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Validating...</> : 'Proceed to Checkout'}
-                                    </Button>
-                                    <Button variant="outline" onClick={clearCart}>Clear Cart</Button>
+                                )}
+                                <Separator className="bg-muted-foreground/10" />
+                                <div className="flex justify-between items-center py-2 text-xl">
+                                    <p className="font-bold font-headline uppercase tracking-tighter">Total</p>
+                                    <p className="font-black text-foreground tracking-tighter">
+                                        <Price amount={total} showDecimals />
+                                    </p>
                                 </div>
                             </div>
-                        </SheetFooter>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                <Button 
+                                    onClick={handleCheckout} 
+                                    className="h-14 rounded-2xl bg-[#6333ea] hover:bg-[#5228c2] text-lg font-bold shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
+                                    disabled={total === 0 || isValidating}
+                                >
+                                    {isValidating ? (
+                                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Validating...</>
+                                    ) : 'Proceed to Checkout'}
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={clearCart}
+                                    className="h-12 rounded-xl text-muted-foreground font-semibold hover:bg-muted"
+                                >
+                                    Clear Cart
+                                </Button>
+                            </div>
+                        </div>
                     </>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center">

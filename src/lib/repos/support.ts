@@ -42,7 +42,7 @@ export async function listSupportTickets(filters?: any): Promise<SupportTicket[]
       if (filters.supportStatus) params.status = filters.supportStatus;
       if (filters.supportTopic) params.topic = filters.supportTopic;
       if (filters.search) params.search = filters.search;
-      
+
       if (filters.dateRange?.from) params.startDate = filters.dateRange.from.toISOString();
       if (filters.dateRange?.to) params.endDate = filters.dateRange.to.toISOString();
 
@@ -102,7 +102,7 @@ export async function getSupportTicket(ticketId: string): Promise<SupportTicket 
     if (result && result.ticket) {
       const t = result.ticket;
       const rawMessages = result.messages || result.replies || t.messages || [];
-      
+
       return {
         ...t,
         id: t.id?.toString() || ticketId,

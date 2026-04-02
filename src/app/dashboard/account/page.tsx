@@ -27,29 +27,11 @@ import { Price } from "@/components/money/price";
 import { useEffect, useState } from "react";
 import type { Appointment, Product } from "@/lib/types";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listOrders } from "@/lib/repos/orders";
 import { listProducts } from "@/lib/repos/products";
 import { useToast } from '@/hooks/use-toast'; // ⭐ add this
 import { getUserProfile } from "@/lib/api/auth";
 export const dynamic = 'force-dynamic';
-
-const sessionData = [
-  { date: 'Week 1', sessionCount: 1 },
-  { date: 'Week 2', sessionCount: 2 },
-  { date: 'Week 3', sessionCount: 1 },
-  { date: 'Week 4', sessionCount: 1 },
-];
-const spendData = [
-    { name: 'Services', value: 7500 },
-    { name: 'Products', value: 2500 },
-];
-const mockPayments = [
-    { id: 'pay_1', date: '2024-07-08', type: 'Service', amount: 1500, status: 'Paid', link: '/dashboard/invoices?id=INV-BK001' },
-    { id: 'pay_2', date: '2024-07-05', type: 'Product', amount: 2500, status: 'Paid', link: '/dashboard/invoices?id=ORD001' },
-    { id: 'pay_3', date: '2024-07-03', type: 'Service', amount: 3000, status: 'Paid', link: '/dashboard/invoices?id=INV-BK002' },
-];
-const mockOrders = [
-    { id: 'ORD001', items: `TENS Unit...`, amount: 2500, status: 'Delivered', link: '/dashboard/orders' }
-];
 
 const DashboardSection = ({ id, title, children, className }: { id: string, title: string, children: React.ReactNode, className?: string }) => (
     <section id={id} className={cn("scroll-mt-24 space-y-4 avoid-break", className)}>
@@ -58,14 +40,14 @@ const DashboardSection = ({ id, title, children, className }: { id: string, titl
     </section>
 );
 
-const KpiCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
+const KpiCard = ({ title, value, icon: Icon, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, isCurrency?: boolean }) => (
     <Card className="avoid-break">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{typeof value === 'number' ? <Price amount={value} /> : value}</div>
+            <div className="text-2xl font-bold">{isCurrency && typeof value === 'number' ? <Price amount={value} /> : value}</div>
         </CardContent>
     </Card>
 )
@@ -73,6 +55,7 @@ const KpiCard = ({ title, value, icon: Icon }: { title: string, value: string | 
 export default function AccountPage() {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -84,12 +67,14 @@ export default function AccountPage() {
     async function fetchData() {
         if (!user) return;
         setLoading(true);
-        const [appointmentData, productData] = await Promise.all([
+        const [appointmentData, productData, orderData] = await Promise.all([
             listAppointmentsForUser(user.id, 'patient'),
-            listProducts()
+            listProducts(),
+            listOrders({ userId: user.id })
         ]);
-        setAppointments(appointmentData);
-        setProducts(productData);
+        setAppointments(appointmentData || []);
+        setProducts(productData || []);
+        setOrders(orderData || []);
         setLoading(false);
     }
     fetchData();
@@ -144,6 +129,78 @@ export default function AccountPage() {
       );
     case 'patient':
     default:
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const now = new Date();
+
+      const upcomingCount = appointments.filter(appt => 
+        (appt.status === 'Pending' || appt.status === 'Confirmed') && 
+        new Date(appt.date) >= now
+      ).length;
+
+      const servicesSpend = appointments
+        .filter(appt => 
+          appt.status === 'Completed' && 
+          new Date(appt.date) >= ninetyDaysAgo
+        )
+        .reduce((sum, appt) => sum + (appt.totalAmount || appt.serviceAmount || 0), 0);
+
+      const shopSpend = orders
+        .filter(order => 
+          order.status !== 'Cancelled' && 
+          new Date(order.createdAt) >= ninetyDaysAgo
+        )
+        .reduce((sum, order) => sum + (order.total || 0), 0);
+
+      const recentPayments = [
+        ...appointments
+          .filter(a => a.paymentStatus === 'Paid')
+          .map(a => ({
+            id: `appt_${a.id}`,
+            date: a.date,
+            type: 'Service',
+            amount: a.totalAmount || a.serviceAmount || 0,
+            status: 'Paid',
+            link: `/dashboard/invoices?id=${a.id}`
+          })),
+        ...orders
+          .filter(o => o.paymentStatus === 'Paid')
+          .map(o => ({
+            id: `order_${o.id}`,
+            date: o.createdAt,
+            type: 'Product',
+            amount: o.total || 0,
+            status: 'Paid',
+            link: `/dashboard/invoices?id=${o.id}`
+          }))
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+
+      const weeklyBookings = (() => {
+        const weeks: Record<string, number> = {};
+        for (let i = 0; i < 4; i++) {
+          const d = new Date();
+          d.setDate(now.getDate() - i * 7);
+          const label = `Week ${4 - i}`;
+          weeks[label] = 0;
+        }
+        appointments.forEach(appt => {
+          const apptDate = new Date(appt.date);
+          const diffDays = Math.floor((now.getTime() - apptDate.getTime()) / (1000 * 3600 * 24));
+          if (diffDays >= 0 && diffDays < 28) {
+            const weekIndex = 4 - Math.floor(diffDays / 7);
+            const label = `Week ${weekIndex}`;
+            if (weeks[label] !== undefined) weeks[label]++;
+          }
+        });
+        return Object.entries(weeks).map(([date, sessionCount]) => ({ date, sessionCount })).reverse();
+      })();
+
+      const dynamicSpendData = [
+        { name: 'Services', value: servicesSpend },
+        { name: 'Products', value: shopSpend },
+      ];
+
       return (
         <div className="space-y-8">
           <div className="flex flex-wrap items-center justify-between gap-4 no-print">
@@ -165,9 +222,9 @@ export default function AccountPage() {
 
              {/* KPIs */}
              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <KpiCard title="Upcoming Appointments" value="2" icon={CalendarDays} />
-                <KpiCard title="Services Spend (90d)" value={7500} icon={Wallet} />
-                <KpiCard title="Shop Spend (90d)" value={2500} icon={PackageOpen} />
+                <KpiCard title="Upcoming Appointments" value={upcomingCount} icon={CalendarDays} isCurrency={false} />
+                <KpiCard title="Services Spend (90d)" value={servicesSpend} icon={Wallet} isCurrency={true} />
+                <KpiCard title="Shop Spend (90d)" value={shopSpend} icon={PackageOpen} isCurrency={true} />
              </div>
 
              <ReportAiSummary 
@@ -182,8 +239,8 @@ export default function AccountPage() {
 
             <DashboardSection id="charts" title="Insights (Last 90 Days)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Bookings by Week" type="bar" data={sessionData} categoryKey="date" valueKey="sessionCount" />
-                    <DashboardCard title="Spend by Category" type="pie" data={spendData} categoryKey="name" valueKey="value" />
+                    <DashboardCard title="Bookings by Week" type="bar" data={weeklyBookings} categoryKey="date" valueKey="sessionCount" isCurrency={false} />
+                    <DashboardCard title="Spend by Category" type="pie" data={dynamicSpendData} categoryKey="name" valueKey="value" isCurrency={true} />
                 </div>
             </DashboardSection>
 
@@ -234,7 +291,7 @@ export default function AccountPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {mockPayments.map((payment) => (
+                        {recentPayments.length > 0 ? recentPayments.map((payment) => (
                             <TableRow key={payment.id}>
                                 <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{payment.type}</TableCell>
@@ -242,11 +299,15 @@ export default function AccountPage() {
                                 <TableCell><Badge variant="secondary" className="bg-green-100 text-green-800">{payment.status}</Badge></TableCell>
                                 <TableCell className="text-right">
                                      <Button variant="link" size="sm" asChild>
-                                        <Link href={`/dashboard/invoices?id=${payment.link.split("=").pop()}`}><Receipt className="mr-2"/>View Invoice</Link>
+                                        <Link href={payment.link}><Receipt className="mr-2"/>View Invoice</Link>
                                     </Button>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No recent payments found</TableCell>
+                            </TableRow>
+                        )}
                         </TableBody>
                     </Table>
                     </CardContent>

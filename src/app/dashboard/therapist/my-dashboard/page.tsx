@@ -57,14 +57,14 @@ const DashboardSection = ({ id, title, children, className }: { id: string, titl
     </section>
 );
 
-const KpiCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
+const KpiCard = ({ title, value, icon: Icon, description, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, isCurrency?: boolean }) => (
     <Card className="avoid-break">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{typeof value === 'number' ? <Price amount={value} /> : value}</div>
+            <div className="text-2xl font-bold">{isCurrency && typeof value === 'number' ? <Price amount={value} /> : value}</div>
             {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </CardContent>
     </Card>
@@ -177,11 +177,11 @@ export default function TherapistDashboard() {
 
             {/* KPIs */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <KpiCard title="Sessions Completed (90d)" value="128" icon={TrendingUp} />
+                <KpiCard title="Sessions Completed (90d)" value="128" icon={TrendingUp} isCurrency={false} />
                 <KpiCard title="PCR Lock Rate (90d)" value="92%" icon={Percent} />
-                <KpiCard title="Net Payout (90d)" value={128500} icon={Wallet} />
-                <KpiCard title="Product Commissions (90d)" value={8750} icon={Wallet} />
-                <KpiCard title="Unique Patients (90d)" value="42" icon={Users} />
+                <KpiCard title="Net Payout (90d)" value={128500} icon={Wallet} isCurrency={true} />
+                <KpiCard title="Product Commissions (90d)" value={8750} icon={Wallet} isCurrency={true} />
+                <KpiCard title="Unique Patients (90d)" value="42" icon={Users} isCurrency={false} />
                 <KpiCard title="Avg. Rating (90d)" value="4.9" icon={Star} />
             </div>
 
@@ -197,10 +197,10 @@ export default function TherapistDashboard() {
 
             <DashboardSection id="charts" title="Insights (Last 90 Days)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Sessions Per Day" type="line" data={sessionData} categoryKey="date" valueKey="sessionCount" />
-                    <DashboardCard title="Session Mode Split" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" />
-                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={weeklyEarningsData} categoryKey="week" valueKey="Service" className="lg:col-span-2" />
-                    <DashboardCard title="Top Services by Count" type="bar" data={topServicesData} categoryKey="name" valueKey="count" className="lg:col-span-2" />
+                    <DashboardCard title="Sessions Per Day" type="line" data={sessionData} categoryKey="date" valueKey="sessionCount" isCurrency={false} />
+                    <DashboardCard title="Session Mode Split" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" isCurrency={false} />
+                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={weeklyEarningsData} categoryKey="week" valueKey="Service" className="lg:col-span-2" isCurrency={true} />
+                    <DashboardCard title="Top Services by Count" type="bar" data={topServicesData} categoryKey="name" valueKey="count" className="lg:col-span-2" isCurrency={false} />
                 </div>
             </DashboardSection>
 

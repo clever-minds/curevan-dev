@@ -13,16 +13,24 @@ export async function getPublicStats(): Promise<{
   patientsServedTotal: number;
   productsDeliveredTotal: number;
 }> {
+    console.log("🔥 SERVER: Entering getPublicStats...");
   try {
-    const token =await getToken();
-     if (!token) {
-        throw new Error('Token missing, please login again');
-      }
-    const { data } = await serverApi.get('/api/stats/public', {
-      headers: { 
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Token missing, please login again');
+    }
+
+    const response = await serverApi.get('/api/stats/public', {
+      withCredentials: true,
+      headers: {
         Authorization: `Bearer ${token}`,
-       },
+      },
     });
+
+    console.log("RAW STATS RESPONSE:", response.data);
+
+    // Some APIs wrap results in a 'data' property
+    const data = response.data.data || response.data;
 
     return {
       usersTotal: data.usersTotal ?? 0,
@@ -32,7 +40,7 @@ export async function getPublicStats(): Promise<{
       productsDeliveredTotal: data.productsDeliveredTotal ?? 0,
     };
   } catch (error: any) {
-    console.error("Error fetching public stats via API:", error?.response || error?.message);
+    console.error("❌ Error fetching public stats via API:", error?.response?.data || error?.message);
     return {
       usersTotal: 0,
       therapistsTotal: 0,

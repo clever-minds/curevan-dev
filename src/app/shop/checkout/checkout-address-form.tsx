@@ -62,22 +62,36 @@ async function reverseGeocode(lat: number, lng: number): Promise<{
 
 const addressSchema = z.object({
   customerName: z.string().min(1, "Full name is required."),
-  customerPhone: z.string().min(10, "A valid phone number is required."),
+  customerPhone: z.string().length(10, "A valid 10-digit phone number is required.").refine((val) => /^\d*$/.test(val), {
+    message: "Phone number should only contain numbers",
+  }),
   customerEmail: z.string().email("Valid email is required"),
   shippingAddressId: z.string().min(1, "Please select a shipping address"),
   billingAddressId: z.string().optional(),
   useShippingAsBilling: z.boolean().default(true),
   newShippingAddress: z.object({
     line1: z.string().min(1, "Street address is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().min(1, "State is required"),
-    pin: z.string().min(1, "Pincode is required"),
+    city: z.string().min(1, "City is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
+      message: "City should only contain letters and spaces",
+    }),
+    state: z.string().min(1, "State is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
+      message: "State should only contain letters and spaces",
+    }),
+    pin: z.string().min(1, "Pincode is required").refine((val) => /^\d*$/.test(val), {
+      message: "Pincode should only contain numbers",
+    }),
   }).optional(),
   newBillingAddress: z.object({
     line1: z.string().min(1, "Street address is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().min(1, "State is required"),
-    pin: z.string().min(1, "Pincode is required"),
+    city: z.string().min(1, "City is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
+      message: "City should only contain letters and spaces",
+    }),
+    state: z.string().min(1, "State is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
+      message: "State should only contain letters and spaces",
+    }),
+    pin: z.string().min(1, "Pincode is required").refine((val) => /^\d*$/.test(val), {
+      message: "Pincode should only contain numbers",
+    }),
   }).optional(),
 }).refine(data => {
   if (data.shippingAddressId === 'new' && !data.newShippingAddress) {
@@ -303,7 +317,12 @@ function AddressModal({
                     <Input
                       type="tel"
                       value={formData?.phone || ''}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.length <= 10 && (!val || /^\d*$/.test(val))) {
+                            setFormData({ ...formData, phone: val });
+                        }
+                      }}
                       placeholder="10 digit number"
                       className="h-11 px-4 border-gray-300 rounded-xl focus:border-0 transition-all"
                       onFocus={(e) => {
@@ -383,7 +402,12 @@ function AddressModal({
                     <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
                     <Input
                       value={formData?.city || ''}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val || /^[a-zA-Z\s]*$/.test(val)) {
+                            setFormData({ ...formData, city: val });
+                        }
+                      }}
                       placeholder="City"
                       className="h-11 px-4 border-gray-300 rounded-xl focus:border-0 transition-all"
                       onFocus={(e) => {
@@ -421,7 +445,12 @@ function AddressModal({
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Pincode</label>
                     <Input
                       value={formData?.pincode || ''}
-                      onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val || /^\d*$/.test(val)) {
+                            setFormData({ ...formData, pincode: val });
+                        }
+                      }}
                       placeholder="6 digits"
                       className="h-11 px-4 border-gray-300 rounded-xl focus:border-0 transition-all"
                       onFocus={(e) => {
@@ -564,7 +593,11 @@ export function CheckoutAddressForm() {
               couponDiscount: discount,
               subtotal: subtotal,
               total: total,
+<<<<<<< HEAD
               referredTherapistId: commissionInfo?.referredTherapistId,
+=======
+              referredTherapistId: String(commissionInfo?.referredTherapistId || ""),
+>>>>>>> 796b0e5 (email verify ,product detail)
               paymentStatus: "Paid",
               paymentRef: paymentResponse.razorpay_payment_id,
               paymentGateway: "razorpay",

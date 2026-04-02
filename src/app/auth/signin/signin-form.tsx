@@ -4,6 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,11 +19,9 @@ import { useAuth } from '@/context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
 import Link from 'next/link';
-import { signInWithEmailAndPassword } from '@/lib/api/auth';
-import { getUserProfile } from '@/lib/api/auth';
+import { signInWithEmailAndPassword, getUserProfile } from '@/lib/api/auth';
 
 const signinFormSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -37,6 +36,19 @@ export function SigninForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Success toast for email verification
+  const hasShownVerifiedToast = useRef(false);
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true' && !hasShownVerifiedToast.current) {
+        toast({
+            title: "Email Verified Successfully!",
+            description: "You can now sign in to your account.",
+            variant: "default",
+        });
+        hasShownVerifiedToast.current = true;
+    }
+  }, [searchParams, toast]);
 
   const form = useForm<SigninFormValues>({
     resolver: zodResolver(signinFormSchema),
@@ -79,7 +91,15 @@ export function SigninForm() {
 
       const redirectUrl = searchParams.get('redirectUrl');
 
+<<<<<<< HEAD
       router.push(redirectUrl || '/dashboard');
+=======
+      // Resolve role-specific dashboard link
+      const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
+      const dashboardHref = resolveMyDashboardHref(roles);
+
+      router.push(redirectUrl || dashboardHref);
+>>>>>>> 796b0e5 (email verify ,product detail)
 
     } catch (error: any) {
       console.error("Firebase Sign In Error:", error);
