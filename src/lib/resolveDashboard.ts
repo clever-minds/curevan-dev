@@ -1,6 +1,7 @@
 
 
-'use client';
+
+
 
 /**
  * Resolves the primary dashboard link for a user based on their roles.

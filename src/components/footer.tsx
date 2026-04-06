@@ -39,14 +39,14 @@ const footerLinks = {
 };
 
 const XLogo = () => (
-    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.931L18.901 1.153zm-1.61 19.932h2.5l-10.8-12.076H7.13l10.16 12.076z" />
-    </svg>
+  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.931L18.901 1.153zm-1.61 19.932h2.5l-10.8-12.076H7.13l10.16 12.076z" />
+  </svg>
 );
 
 export default function Footer() {
   const { toast } = useToast();
-  
+
   const form = useForm<NewsletterFormValues>({
     resolver: zodResolver(newsletterSchema),
     defaultValues: { email: '' }
@@ -69,29 +69,29 @@ export default function Footer() {
           <div className="lg:col-span-5 space-y-4">
             <LogoLight />
             <p className="text-white/80 max-w-sm">
-                Curevan offers professional therapy services and quality wellness products delivered right to your door. Cure. Anywhere.
+              Curevan offers professional therapy services and quality wellness products delivered right to your door. Cure. Anywhere.
             </p>
             <div className="flex flex-col gap-2">
-                <p className="font-semibold">Subscribe to our newsletter</p>
-                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubscribe)} className="space-y-4">
-                      <div className="flex w-full max-w-sm items-start space-x-2">
-                        <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormControl>
-                                <Input type="email" placeholder="Email" className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/30 focus:ring-white/50" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <Button type="submit" variant="secondary" className="bg-white/90 text-primary hover:bg-white">Subscribe</Button>
-                      </div>
-                       <FormMessage className="text-destructive text-xs">{form.formState.errors.email?.message}</FormMessage>
-                    </form>
-                  </Form>
+              <p className="font-semibold">Subscribe to our newsletter</p>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubscribe)} className="space-y-4">
+                  <div className="flex flex-col sm:flex-row w-full max-w-sm items-stretch sm:items-start gap-3 sm:gap-2">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input type="email" placeholder="Email" className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/30 focus:ring-white/50 h-10" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" variant="secondary" className="bg-white/90 text-primary hover:bg-white h-10 whitespace-nowrap">Subscribe</Button>
+                  </div>
+                  <FormMessage className="text-destructive text-xs">{form.formState.errors.email?.message}</FormMessage>
+                </form>
+              </Form>
             </div>
           </div>
           <div className="lg:col-span-7 grid grid-cols-2 gap-8">
@@ -111,20 +111,20 @@ export default function Footer() {
             ))}
           </div>
         </div>
-        
+
         <div className="mt-12 pt-8 border-t border-white/20">
-             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="text-sm text-white/70 text-center md:text-left">
-                    <p>Copyright © {new Date().getFullYear()} Himaya Care Pvt. Ltd. All Rights Reserved.</p>
-                </div>
-                <div className="flex gap-4">
-                    <Link href="#" aria-label="Follow us on Facebook" className="text-white/80 hover:text-white"><Facebook className="w-5 h-5"/></Link>
-                    <Link href="#" aria-label="Follow us on X" className="text-white/80 hover:text-white"><XLogo/></Link>
-                    <Link href="#" aria-label="Follow us on Instagram" className="text-white/80 hover:text-white"><Instagram className="w-5 h-5"/></Link>
-                    <Link href="#" aria-label="Follow us on LinkedIn" className="text-white/80 hover:text-white"><Linkedin className="w-5 h-5"/></Link>
-                    <Link href="#" aria-label="Subscribe to our YouTube channel" className="text-white/80 hover:text-white"><Youtube className="w-5 h-5"/></Link>
-                </div>
-             </div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-sm text-white/70 text-center md:text-left">
+              <p>Copyright © {new Date().getFullYear()} Himaya Care Pvt. Ltd. All Rights Reserved.</p>
+            </div>
+            <div className="flex gap-4">
+              <Link href="#" aria-label="Follow us on Facebook" className="text-white/80 hover:text-white"><Facebook className="w-5 h-5" /></Link>
+              <Link href="#" aria-label="Follow us on X" className="text-white/80 hover:text-white"><XLogo /></Link>
+              <Link href="#" aria-label="Follow us on Instagram" className="text-white/80 hover:text-white"><Instagram className="w-5 h-5" /></Link>
+              <Link href="#" aria-label="Follow us on LinkedIn" className="text-white/80 hover:text-white"><Linkedin className="w-5 h-5" /></Link>
+              <Link href="#" aria-label="Subscribe to our YouTube channel" className="text-white/80 hover:text-white"><Youtube className="w-5 h-5" /></Link>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

@@ -24,7 +24,7 @@ import { useState, useEffect, useTransition } from "react";
 import type { PayoutBatch, Therapist } from "@/lib/types";
 import { listPayoutBatches } from "@/lib/repos/payouts";
 import { listTherapists } from "@/lib/repos/therapists";
-import { MoreHorizontal, FileDown, User, PauseCircle, PlayCircle } from "lucide-react";
+import { MoreHorizontal, FileDown, User, PauseCircle, PlayCircle, Banknote, AlertCircle, RefreshCw } from "lucide-react";
 import { getSafeDate, downloadCsv } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -109,14 +109,14 @@ export default function AdminPayoutsPage() {
     useEffect(() => {
         const fetchTherapists = async () => {
             const therapistData = await listTherapists();
-            setTherapists(therapistData);
+            setTherapists(therapistData || []);
         };
         fetchTherapists();
         fetchPayouts();
     }, [filters]);
 
-    const getTherapistName = (id: string) => {
-        return therapists.find(t => t.id === id)?.name || id;
+    const getTherapistName = (id: string | number) => {
+        return therapists.find(t => String(t.id) === String(id))?.name || String(id);
     };
 
     const handleExport = async () => {
@@ -145,12 +145,12 @@ export default function AdminPayoutsPage() {
 
     return (
         <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight font-headline">Therapist Payouts</h1>
-                <p className="text-muted-foreground">Monitor and manage therapist payout batches.</p>
+                <p className="text-muted-foreground text-sm">Monitor and manage therapist payout batches.</p>
             </div>
-            <Button onClick={handleExport}><FileDown className="mr-2"/>Export All</Button>
+            <Button onClick={handleExport} className="w-full sm:w-auto"><FileDown className="mr-2 h-4 w-4"/>Export All</Button>
         </div>
 
         <FilterBar 
@@ -165,44 +165,58 @@ export default function AdminPayoutsPage() {
                 <CardTitle>Payout Batches</CardTitle>
                 <CardDescription>Weekly payout batches sent to therapists.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Payout Date</TableHead>
-                            <TableHead>Period</TableHead>
-                            <TableHead>Therapist</TableHead>
-                            <TableHead>Gross</TableHead>
-                            <TableHead>Net</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Reference #</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {loading ? (
-                        <TableRow><TableCell colSpan={8}><Skeleton className="h-24 w-full" /></TableCell></TableRow>
-                    ) : payouts.map((payout) => (
-                        <TableRow key={payout.id}>
-                            <TableCell>{getSafeDate(payout.payoutDate)?.toLocaleDateString()}</TableCell>
-                            <TableCell>{`${getSafeDate(payout.weekStart)?.toLocaleDateString()} - ${getSafeDate(payout.weekEnd)?.toLocaleDateString()}`}</TableCell>
-                            <TableCell>{getTherapistName(payout.therapistId)}</TableCell>
-                            <TableCell><Price amount={payout.totals.gross / 100} showDecimals /></TableCell>
-                            <TableCell className="font-semibold"><Price amount={payout.totals.net / 100} showDecimals /></TableCell>
-                            <TableCell><Badge className={cn(getStatusBadgeClass(payout.status), "capitalize")}>{payout.status}</Badge></TableCell>
-                            <TableCell className="font-mono text-xs">{payout.payoutRef}</TableCell>
-                            <TableCell className="text-right">
-                                <ActionsMenu payout={payout} therapistName={getTherapistName(payout.therapistId)} onStatusChange={fetchPayouts} />
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                    {payouts.length === 0 && !loading && (
-                        <TableRow>
-                            <TableCell colSpan={8} className="text-center h-24">No payouts found for the selected filters.</TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+            <CardContent className="p-0 sm:p-6">
+                {payouts.length > 0 || loading ? (
+                    <div className="rounded-md border-x sm:border overflow-x-auto">
+                    <Table className="min-w-[800px] lg:min-w-full">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Payout Date</TableHead>
+                                <TableHead>Period</TableHead>
+                                <TableHead>Therapist</TableHead>
+                                <TableHead>Gross</TableHead>
+                                <TableHead>Net</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Reference #</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {loading ? (
+                            <TableRow><TableCell colSpan={8}><Skeleton className="h-24 w-full" /></TableCell></TableRow>
+                        ) : payouts.map((payout) => (
+                            <TableRow key={payout.id}>
+                                <TableCell>{getSafeDate(payout.payoutDate)?.toLocaleDateString()}</TableCell>
+                                <TableCell>{`${getSafeDate(payout.weekStart)?.toLocaleDateString()} - ${getSafeDate(payout.weekEnd)?.toLocaleDateString()}`}</TableCell>
+                                <TableCell>{getTherapistName(payout.therapistId)}</TableCell>
+                                <TableCell><Price amount={payout.totals.gross / 100} showDecimals /></TableCell>
+                                <TableCell className="font-semibold"><Price amount={payout.totals.net / 100} showDecimals /></TableCell>
+                                <TableCell><Badge className={cn(getStatusBadgeClass(payout.status), "capitalize")}>{payout.status}</Badge></TableCell>
+                                <TableCell className="font-mono text-xs">{payout.payoutRef}</TableCell>
+                                <TableCell className="text-right">
+                                    <ActionsMenu payout={payout} therapistName={getTherapistName(payout.therapistId)} onStatusChange={fetchPayouts} />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    </div>
+                ) : (
+                    <div className="py-24 flex flex-col items-center justify-center space-y-4 w-full text-center animate-in fade-in zoom-in duration-500">
+                        <div className="bg-muted p-6 rounded-full ring-8 ring-muted/20">
+                            <Banknote className="h-12 w-12 text-muted-foreground opacity-50" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold font-headline tracking-tight">No Payouts Found</h3>
+                            <p className="text-muted-foreground max-w-xs mx-auto text-sm leading-relaxed">
+                                There are no payout batches matching your current filter criteria.
+                            </p>
+                        </div>
+                        <Button variant="outline" className="mt-4 shadow-sm hover:shadow-md transition-all rounded-full px-6" onClick={() => { setFilters({}); fetchPayouts(); }}>
+                            <RefreshCw className="mr-2 h-4 w-4" /> Reset Filters
+                        </Button>
+                    </div>
+                )}
             </CardContent>
         </Card>
         </div>

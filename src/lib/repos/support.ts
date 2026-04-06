@@ -170,3 +170,24 @@ export async function closeSupportTicket(ticketId: number): Promise<ApiResponse>
     return { success: false, message: error?.response?.data?.message || 'Failed to close ticket.' };
   }
 }
+
+/**
+ * Submits a contact us form to the public endpoint.
+ * @param data { name, email, subject, message }
+ */
+export async function submitContactUs(data: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<ApiResponse> {
+  try {
+    const { data: response } = await serverApi.post('/api/support/contact-us', data);
+    return response;
+  } catch (error: any) {
+    const errorMsg = error?.response?.data?.message || error?.message || 'Failed to send message.';
+    const status = error?.response?.status ? ` (Status: ${error.response.status})` : '';
+    console.error("Error submitting contact-us via API:", error?.response?.data || error?.message);
+    return { success: false, message: `${errorMsg}${status}` };
+  }
+}

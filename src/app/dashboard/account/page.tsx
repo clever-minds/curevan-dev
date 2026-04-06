@@ -161,7 +161,7 @@ export default function AccountPage() {
             type: 'Service',
             amount: a.totalAmount || a.serviceAmount || 0,
             status: 'Paid',
-            link: `/dashboard/invoices?id=${a.id}`
+            link: `/dashboard/invoices?id=INV-${a.id}`
           })),
         ...orders
           .filter(o => o.paymentStatus === 'Paid')
@@ -171,7 +171,7 @@ export default function AccountPage() {
             type: 'Product',
             amount: o.total || 0,
             status: 'Paid',
-            link: `/dashboard/invoices?id=${o.id}`
+            link: `/dashboard/invoices?id=${o.invoiceId || o.id}`
           }))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5);

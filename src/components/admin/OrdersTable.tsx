@@ -23,11 +23,20 @@ import { Checkbox } from '../ui/checkbox';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { SupportFeedbackForm } from '../support-feedback-form';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../ui/dialog';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
 import { addDays, isBefore } from 'date-fns';
 import Link from 'next/link';
 import { listOrders, cancelOrder } from '@/lib/repos/orders';
 import { createShipment } from '@/lib/actions/shipment';
+import { requestReturnAction, initiateRefundAction, listReturnsAction } from '@/lib/actions';
+
+const isAddressComplete = (address: any) => {
+  if (!address) return false;
+  const required = ['line1', 'city', 'state', 'pin'];
+  return required.every(field => address[field] && address[field].toString().trim() !== '');
+};
 
 interface OrdersTableProps {
   scope: 'admin' | 'ecom-admin' | 'patient';
@@ -45,6 +54,8 @@ const getStatusBadgeVariant = (status?: Order['status']) => {
     case 'Placed':
     case 'Pending':
       return 'bg-yellow-100 text-yellow-800';
+    case 'Returned':
+      return 'bg-orange-100 text-orange-800';
     case 'Cancelled':
     case 'Refunded':
       return 'bg-red-100 text-red-800';
@@ -63,7 +74,7 @@ const getSafeDate = (date: any): Date | null => {
   return null;
 }
 
-const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order: Order, scope: OrdersTableProps['scope'], onRefresh?: () => void, asSheetItems?: boolean }) => {
+const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingReturns = [] }: { order: Order, scope: OrdersTableProps['scope'], onRefresh?: () => void, asSheetItems?: boolean, existingReturns?: any[] }) => {
   const { toast } = useToast();
   const isAdmin = scope === 'admin' || scope === 'ecom-admin';
   const isPatient = scope === 'patient';
@@ -71,6 +82,13 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
   const invoiceLink = `/dashboard/invoices?id=${order.invoiceId || order.id}`;
   const [isCreatingShipment, setIsCreatingShipment] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
+  const [isReturning, setIsReturning] = React.useState(false);
+  const [isRefunded, setIsRefunded] = React.useState(false);
+  const [showReturnDialog, setShowReturnDialog] = React.useState(false);
+  const [isReturnedLocally, setIsReturnedLocally] = React.useState(false);
+  const [returnReason, setReturnReason] = React.useState('');
+
+  const addressIncomplete = !isAddressComplete(order.shippingAddress);
 
   const handleCancelOrder = async () => {
     if (!confirm(`Are you sure you want to cancel order #${order.id}?`)) return;
@@ -99,6 +117,41 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
     setIsCreatingShipment(false);
   }
 
+  const handleReturnOrder = async () => {
+    if (!returnReason.trim()) {
+      toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for the return.' });
+      return;
+    }
+    setIsReturning(true);
+    const result = await requestReturnAction(order.id, { reason: returnReason });
+    if (result.success) {
+      toast({ title: 'Return Requested', description: result.message || `Your return request for order #${order.id} has been submitted.` });
+      setShowReturnDialog(false);
+      setIsReturnedLocally(true);
+      setReturnReason('');
+      if (onRefresh) onRefresh();
+    } else {
+      toast({ variant: 'destructive', title: 'Return Failed', description: result.message || 'Could not submit return request.' });
+    }
+    setIsReturning(false);
+  };
+
+  const handleInitiateRefund = async () => {
+    const amount = prompt(`Enter refund amount for order #${order.id}:`, (order.total).toString());
+    if (!amount) return;
+    const reason = prompt(`Enter reason for refund:`, "Admin initiated refund");
+    
+    setIsRefunded(true);
+    const result = await initiateRefundAction({ orderId: order.id, amount: parseFloat(amount), reason: reason || undefined });
+    if (result.success) {
+      toast({ title: 'Refund Initiated', description: result.message || `Refund for order #${order.id} has been processed.` });
+      if (onRefresh) onRefresh();
+    } else {
+      toast({ variant: 'destructive', title: 'Refund Failed', description: result.message || 'Could not process refund.' });
+    }
+    setIsRefunded(false);
+  };
+
   const isCancellable = () => {
     // Admins can cancel anytime, patients only if Placed/Paid/Pending
     if (isAdmin) return true;
@@ -106,11 +159,21 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
   };
 
   const isReturnable = () => {
-    if (order.status !== 'Delivered' || !order.deliveredAt) {
-      return false;
-    }
+    // Hide button if already Returned/Refunded/Cancelled or if it's not Delivered
+    if (order.status !== 'Delivered') return false;
+
+    // Check if a return already exists for this order (either locally or on the server)
+    if (isReturnedLocally) return false;
+    const hasExistingReturn = (existingReturns || []).some(r => r.orderId.toString() === order.id.toString());
+    if (hasExistingReturn) return false;
+
+    // If deliveredAt exists, enforce the 10-day window.
+    // Otherwise, allow return since the order is marked as Delivered.
+    if (!order.deliveredAt) return true;
+
     const deliveredAtDate = getSafeDate(order.deliveredAt);
-    if (!deliveredAtDate) return false;
+    if (!deliveredAtDate) return true;
+
     const returnDeadline = addDays(deliveredAtDate, 10);
     return isBefore(new Date(), returnDeadline);
   };
@@ -158,7 +221,50 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
         </Dialog>
       )}
 
-      {isPatient && isReturnable() && <DropdownMenuItem className="cursor-pointer"><Undo className="mr-2 h-4 w-4" />Return/Replace Items</DropdownMenuItem>}
+      {isPatient && isReturnable() && (
+        <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+          <DialogTrigger asChild>
+            <DropdownMenuItem 
+              onSelect={(e) => e.preventDefault()}
+              className="cursor-pointer"
+            >
+              <Undo className="mr-2 h-4 w-4" />
+              Return/Replace Items
+            </DropdownMenuItem>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Return/Replace Items</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for returning or replacing items in order #{order.id}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="return-reason">Reason for Return</Label>
+                <Textarea 
+                  id="return-reason" 
+                  placeholder="Tell us why you want to return these items..."
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowReturnDialog(false)}>Cancel</Button>
+              <Button 
+                onClick={handleReturnOrder} 
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={isReturning || !returnReason.trim()}
+              >
+                {isReturning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Submit Return Request
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {isAdmin && (
         <>
@@ -167,14 +273,22 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
           <DropdownMenuItem className="cursor-pointer"><Printer className="mr-2 h-4 w-4" />Print Packing Slip</DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleCreateShipment}
-            disabled={order.status === 'Shipped' || order.status === 'Delivered' || isCreatingShipment}
+            disabled={order.status === 'Shipped' || order.status === 'Delivered' || isCreatingShipment || addressIncomplete}
             className="cursor-pointer"
           >
             {isCreatingShipment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
-            Create Shipment
+            {addressIncomplete ? "Create Shipment (Fix Address First)" : "Create Shipment"}
           </DropdownMenuItem>
+
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-600 focus:text-red-700 cursor-pointer"><Undo className="mr-2 h-4 w-4" />Refund</DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={handleInitiateRefund}
+            disabled={isRefunded}
+            className="text-red-600 focus:text-red-700 cursor-pointer"
+          >
+            {isRefunded ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Undo className="mr-2 h-4 w-4" />}
+            Refund
+          </DropdownMenuItem>
         </>
       )}
     </>
@@ -194,7 +308,50 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
           <div className="py-4 space-y-2">
             {hasInvoice && <Button variant="outline" className="w-full justify-start" asChild><Link href={invoiceLink}><FileText className="mr-2" />View Invoice</Link></Button>}
             {isAdmin && <Button variant="outline" className="w-full justify-start" onClick={handleCreateShipment}><Truck className="mr-2" />Create Shipment</Button>}
-            {isPatient && isReturnable() && <Button variant="outline" className="w-full justify-start"><Undo className="mr-2" />Return/Replace</Button>}
+            {isPatient && isReturnable() && (
+              <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                  >
+                    <Undo className="mr-2" />
+                    Return/Replace
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Return/Replace Items</DialogTitle>
+                    <DialogDescription>
+                      Please provide a reason for returning or replacing items in order #{order.id}.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="return-reason-mobile">Reason for Return</Label>
+                      <Textarea 
+                        id="return-reason-mobile" 
+                        placeholder="Tell us why you want to return these items..."
+                        value={returnReason}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowReturnDialog(false)}>Cancel</Button>
+                    <Button 
+                      onClick={handleReturnOrder} 
+                      className="bg-teal-600 hover:bg-teal-700 text-white"
+                      disabled={isReturning || !returnReason.trim()}
+                    >
+                      {isReturning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Submit Return Request
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
             {isCancellable() && order.status !== 'Cancelled' && order.status !== 'Refunded' && (
               <Button
                 variant="destructive"
@@ -223,7 +380,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false }: { order:
 };
 
 
-const OrderCard = ({ order, scope }: { order: Order, scope: OrdersTableProps['scope'] }) => {
+const OrderCard = ({ order, scope, existingReturns = [] }: { order: Order, scope: OrdersTableProps['scope'], existingReturns?: any[] }) => {
   const createdAt = getSafeDate(order.createdAt);
 
   return (
@@ -238,13 +395,13 @@ const OrderCard = ({ order, scope }: { order: Order, scope: OrdersTableProps['sc
         </div>
         <div className="mt-4 space-y-1 text-sm">
           {scope !== 'patient' && <p><strong>Customer:</strong> {order.customerName}</p>}
-          <p><strong>Items:</strong> {order.items.length}</p>
-          <p><strong>Amount:</strong> <Price amount={order.total / 100} showDecimals /></p>
-          {scope !== 'patient' && <p><strong>Location:</strong> {order.shippingAddress.city}</p>}
+          <p><strong>Items:</strong> {order.items?.length || 0}</p>
+          <p><strong>Amount:</strong> <Price amount={order.total} showDecimals={false} /></p>
+          {scope !== 'patient' && <p><strong>Location:</strong> {order.shippingAddress?.city || '-'}</p>}
           <p><strong>Coupon:</strong> {order.couponCode || 'N/A'}</p>
         </div>
         <div className="mt-4 flex justify-end">
-          <ActionsMenu order={order} scope={scope} onRefresh={() => window.location.reload()} asSheetItems />
+          <ActionsMenu order={order} scope={scope} onRefresh={() => window.location.reload()} asSheetItems existingReturns={existingReturns} />
         </div>
       </CardContent>
     </Card>
@@ -254,17 +411,22 @@ const OrderCard = ({ order, scope }: { order: Order, scope: OrdersTableProps['sc
 
 export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
   const [orders, setOrders] = React.useState<Order[]>([]);
+  const [returns, setReturns] = React.useState<any[]>([]);
   const isMobile = useIsMobile();
   const [loading, setLoading] = React.useState(true);
 
   const fetchOrders = React.useCallback(async () => {
     setLoading(true);
-    const data = await listOrders(filters);
-    if (data) {
-      setOrders(data);
-    }
+    const [ordersData, returnsData] = await Promise.all([
+      listOrders(filters),
+      scope === 'patient' && filters.userId ? listReturnsAction({ userId: filters.userId }) : Promise.resolve([])
+    ]);
+
+    if (ordersData) setOrders(ordersData);
+    if (returnsData) setReturns(returnsData);
+
     setLoading(false);
-  }, [filters]);
+  }, [filters, scope]);
 
   React.useEffect(() => {
     fetchOrders();
@@ -287,9 +449,9 @@ export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
       o.taxableValue, o.cgst, o.sgst, o.igst, o.totalTax,
       o.status, o.paymentStatus, o.paymentTxnId,
       o.couponCode, o.referredTherapistId, o.commissionAmount, o.commissionState,
-      `${o.shippingAddress.line1}, ${o.shippingAddress.city}, ${o.shippingAddress.state} ${o.shippingAddress.pin}`,
-      `${o.billingAddress.line1}, ${o.billingAddress.city}, ${o.billingAddress.state} ${o.billingAddress.pin}`,
-      getSafeDate(o.deliveredAt)?.toISOString()
+      o.shippingAddress ? `${o.shippingAddress?.line1 || ''}, ${o.shippingAddress?.city || ''}, ${o.shippingAddress?.state || ''} ${o.shippingAddress?.pin || ''}` : '-',
+      o.billingAddress ? `${o.billingAddress?.line1 || ''}, ${o.billingAddress?.city || ''}, ${o.billingAddress?.state || ''} ${o.billingAddress?.pin || ''}` : '-',
+getSafeDate(o.deliveredAt)?.toISOString()
     ]);
     downloadCsv(headers, data, 'all-orders-export.csv');
   };
@@ -297,7 +459,7 @@ export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
   if (isMobile) {
     return (
       <div className="space-y-3">
-        {orders.map(order => <OrderCard key={order.id} order={order} scope={scope} />)}
+        {(orders || []).map(order => <OrderCard key={order.id} order={order} scope={scope} existingReturns={returns} />)}
       </div>
     )
   }
@@ -333,7 +495,7 @@ export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => {
+              {(orders || []).map((order) => {
                 const createdAt = getSafeDate(order.createdAt);
                 return (
                   <TableRow key={order.id}>
@@ -341,14 +503,23 @@ export function OrdersTable({ scope, filters = {} }: OrdersTableProps) {
                     <TableCell className="font-mono text-xs">{order.number} </TableCell>
                     <TableCell>{createdAt ? createdAt.toLocaleDateString() : 'N/A'}</TableCell>
                     {scope !== 'patient' && <TableCell className="font-medium">{order.customerName}</TableCell>}
-                    <TableCell className="text-center">{order.items.length}</TableCell>
-                    <TableCell className="text-right"><Price amount={order.total} showDecimals /></TableCell>
+                    <TableCell className="text-center">{order.items?.length || 0}</TableCell>
+                    <TableCell className="text-right"><Price amount={order.total} showDecimals={false} /></TableCell>
                     <TableCell><Badge variant="secondary">{order.paymentStatus}</Badge></TableCell>
                     <TableCell><Badge className={cn(getStatusBadgeVariant(order.status))} variant="secondary">{order.status}</Badge></TableCell>
                     <TableCell>{order.couponCode ? <Badge variant="outline">{order.couponCode}</Badge> : '-'}</TableCell>
-                    {scope !== 'patient' && <TableCell>{order.shippingAddress.city}</TableCell>}
+                    {scope !== 'patient' && (
+                       <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <span>{order.shippingAddress?.city || '-'}</span>
+                            {!isAddressComplete(order.shippingAddress) && (
+                              <Badge variant="destructive" className="text-[10px] py-0 h-4 w-fit">Incomplete</Badge>
+                            )}
+                          </div>
+                       </TableCell>
+                    )}
                     <TableCell className="text-right">
-                      <ActionsMenu order={order} scope={scope} onRefresh={fetchOrders} />
+                      <ActionsMenu order={order} scope={scope} onRefresh={fetchOrders} existingReturns={returns} />
                     </TableCell>
                   </TableRow>
                 )

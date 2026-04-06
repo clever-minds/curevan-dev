@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2, AlertCircle, XCircle } from 'lucide-react';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
 import Link from 'next/link';
 import { signInWithEmailAndPassword, getUserProfile } from '@/lib/api/auth';
@@ -36,6 +36,7 @@ export function SigninForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Success toast for email verification
   const hasShownVerifiedToast = useRef(false);
@@ -68,6 +69,7 @@ export function SigninForm() {
     //   return;
     // }
     setLoading(true);
+    setAuthError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(data.email, data.password);
       const user = userCredential.user;
@@ -99,10 +101,12 @@ export function SigninForm() {
 
     } catch (error: any) {
       console.error("Firebase Sign In Error:", error);
+      const errorMessage = error.message || 'Invalid credentials. Please try again.';
+      setAuthError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Sign In Failed',
-        description: error.message || 'Invalid credentials. Please try again.'
+        description: errorMessage
       });
     } finally {
       setLoading(false);
@@ -111,7 +115,29 @@ export function SigninForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {authError && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-semibold text-destructive">Unable to Sign In</p>
+              <p className="text-xs text-destructive/80 leading-relaxed font-medium">
+                {authError}
+              </p>
+              <button 
+                type="button"
+                onClick={() => setAuthError(null)}
+                className="text-[10px] font-bold uppercase tracking-widest text-destructive/60 hover:text-destructive transition-colors mt-2"
+              >
+                Dismiss
+              </button>
+            </div>
+            <button onClick={() => setAuthError(null)} type="button">
+              <XCircle className="w-4 h-4 text-destructive/40 hover:text-destructive transition-colors" />
+            </button>
+          </div>
+        )}
+
         <FormField
           control={form.control}
           name="email"
@@ -132,10 +158,8 @@ export function SigninForm() {
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Password</FormLabel>
-                <Link href="/auth/forgot-password" passHref legacyBehavior>
-                  <a className="text-sm font-medium text-primary hover:underline">
-                    Forgot Password?
-                  </a>
+                <Link href="/auth/forgot-password" stroke-width="2" className="text-sm font-medium text-primary hover:underline">
+                  Forgot Password?
                 </Link>
               </div>
               <FormControl>

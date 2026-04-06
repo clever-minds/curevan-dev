@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { createSupportTicket } from "@/lib/actions";
+import { submitContactUsAction } from "@/lib/actions";
 import { useTransition, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { RecaptchaVerifier } from "firebase/auth";
@@ -62,7 +62,7 @@ export default function ContactPage() {
 
   const onSubmit = (data: ContactFormValues) => {
     startTransition(async () => {
-      const result = await createSupportTicket(data);
+      const result = await submitContactUsAction(data);
       if (result.success) {
         toast({
           title: "Message Sent!",
@@ -73,7 +73,7 @@ export default function ContactPage() {
         toast({
           variant: "destructive",
           title: "Submission Failed",
-          description: result.error || "An unexpected error occurred.",
+          description: (result as any).message || result.error || "An unexpected error occurred.",
         });
       }
     });

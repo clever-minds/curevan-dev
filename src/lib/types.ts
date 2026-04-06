@@ -211,6 +211,17 @@ export interface Product {
   };
 }
 
+export interface Review {
+  id: number;
+  productId: number;
+  userId: number;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface ProductVariant {
   id: string;
   productId: string;
@@ -273,8 +284,8 @@ export interface Order {
     featuredImage: string
   }[];
   invoiceId: number;
-  shippingAddress: Address;
-  billingAddress: Address;
+  shippingAddress: Address | null;
+  billingAddress: Address | null;
 
 
   subtotal: number;
@@ -284,7 +295,7 @@ export interface Order {
   igst?: number;
   totalTax?: number;
   total: number;
-  status: 'Placed' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded';
+  status: 'Placed' | 'Pending' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'Refunded';
   createdAt: Date;
   deliveredAt?: string | null;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';

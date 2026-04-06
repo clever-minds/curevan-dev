@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
 import { getUserProfile } from '@/lib/api/auth';
@@ -30,6 +30,22 @@ export function SocialSigninButtons() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.curevan.com';
     window.location.href = `${apiUrl}/api/auth/google`;
   };
+
+  const socialError = useMemo(() => {
+    const error = searchParams.get('error');
+    if (!error) return null;
+    
+    const errorMap: Record<string, string> = {
+      'OAuthSignin': 'Could not start the login process with Google.',
+      'OAuthCallback': 'There was a problem during the Google login callback.',
+      'OAuthCreateAccount': 'Could not create a new account using Google.',
+      'EmailSignin': 'Signin failed. Please check your email and try again.',
+      'CredentialsSignin': 'The login credentials you provided are not valid.',
+      'default': 'An unexpected error occurred during Google sign-in.'
+    };
+    
+    return errorMap[error] || errorMap['default'];
+  }, [searchParams]);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -78,6 +94,14 @@ export function SocialSigninButtons() {
 
   return (
     <div className="space-y-4">
+      {socialError && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex gap-2 animate-in fade-in zoom-in duration-300">
+           <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+           <p className="text-xs text-destructive font-medium leading-relaxed">
+             {socialError}
+           </p>
+        </div>
+      )}
       <Button
         onClick={handleGoogleLogin}
         className="w-full"

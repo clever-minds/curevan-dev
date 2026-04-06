@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { getMediaUrl } from '@/lib/utils';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getKnowledgeBaseBySlug } from '@/lib/repos/content';
 import { getTherapistById } from '@/lib/repos/therapists';
@@ -80,12 +81,13 @@ export default async function ArticlePage({ params }: { params: { slug: string }
         <header className="mb-8">
           <div className="relative h-72 w-full mb-8 rounded-lg overflow-hidden">
             <Image
-              src={post.featuredImage as string}
+              src={getMediaUrl(post.featuredImage as string)}
               alt={post.title}
               fill
               className="object-cover"
               data-ai-hint={post.aiHint}
               priority
+              unoptimized
             />
           </div>
           {post.tags && (

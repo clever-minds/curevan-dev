@@ -39,40 +39,42 @@ import { getSafeDate } from "@/lib/utils";
 export const dynamic = 'force-dynamic';
 
 const KpiCard = ({ title, value, icon: Icon, description, loading, showCurrency = true }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, showCurrency?: boolean }) => (
-    <Card className="avoid-break">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+    <Card className="avoid-break shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 pt-4 px-3 sm:px-6 uppercase tracking-wider text-[10px] font-bold text-muted-foreground opacity-70">
+            <CardTitle className="text-[10px] leading-tight">{title}</CardTitle>
+            <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
         </CardHeader>
-        <CardContent>
-            {loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-md" /> : (
-                <div className="text-2xl font-bold">
+        <CardContent className="px-3 sm:px-6 pb-4 pt-1">
+            {loading ? <div className="h-6 sm:h-8 w-16 sm:w-24 bg-muted animate-pulse rounded-md" /> : (
+                <div className="text-lg sm:text-2xl font-bold tracking-tight">
                     {typeof value === 'number' && showCurrency ? <Price amount={value} /> : value}
                 </div>
             )}
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+            {description && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{description}</p>}
         </CardContent>
     </Card>
 );
 
 const ActionableTable = ({ title, description, headers, children, actionHref, actionText }: { title: string, description: string, headers: string[], children: React.ReactNode, actionHref: string, actionText: string }) => (
-    <Card>
-        <CardHeader>
-            <div className="flex justify-between items-start">
+    <Card className="shadow-sm overflow-hidden">
+        <CardHeader className="px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                    <CardTitle className="text-lg">{title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
+                    <CardTitle className="text-lg font-headline truncate">{title}</CardTitle>
+                    <CardDescription className="text-xs line-clamp-1">{description}</CardDescription>
                 </div>
-                <Button asChild variant="outline" size="sm" className="no-print">
+                <Button asChild variant="outline" size="sm" className="no-print w-full sm:w-auto h-8 text-xs font-bold uppercase tracking-widest">
                     <Link href={actionHref}>{actionText}</Link>
                 </Button>
             </div>
         </CardHeader>
-        <CardContent>
-            <Table>
-                <TableHeader><TableRow>{headers.map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
-                <TableBody>{children}</TableBody>
-            </Table>
+        <CardContent className="p-0 sm:p-6 sm:pt-0 overflow-hidden">
+            <div className="border-t sm:border sm:rounded-md bg-white/50 w-full max-w-[calc(100vw-2.5rem)] sm:max-w-full overflow-hidden">
+                <Table className="min-w-[500px] lg:min-w-full">
+                    <TableHeader className="bg-muted/30"><TableRow>{headers.map(h => <TableHead key={h} className="text-[10px] uppercase font-bold tracking-wider px-2 sm:px-4 first:pl-4">{h}</TableHead>)}</TableRow></TableHeader>
+                    <TableBody>{children}</TableBody>
+                </Table>
+            </div>
         </CardContent>
     </Card>
 );
@@ -206,7 +208,7 @@ export default function AdminDashboardPage() {
     }, [orders]);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 w-full max-w-full overflow-x-hidden px-1 sm:px-0">
             <div className="flex flex-wrap items-center justify-between gap-4 no-print">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight font-headline">Super Admin Dashboard</h1>
@@ -227,48 +229,48 @@ export default function AdminDashboardPage() {
                 />
             </div>
 
-            <div id="report" className="print-area space-y-12">
+            <div id="report" className="print-area space-y-12 w-full max-w-full overflow-hidden">
                 <div className="print-only hidden text-center mb-8">
                     <h1 className="text-3xl font-bold">Curevan Org Summary</h1>
                     <p className="text-muted-foreground">For period: Last 90 Days</p>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 w-full overflow-hidden">
                     <Link href="/dashboard/ecom-admin/my-dashboard">
-                        <Card className="hover:bg-muted/80 transition-all cursor-pointer group active:scale-[0.99] border-primary/10 hover:border-primary/30">
-                            <CardHeader className="flex-row items-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                                    <ShoppingBasket className="w-8 h-8 text-primary" />
+                        <Card className="hover:bg-muted/80 transition-all cursor-pointer group active:scale-[0.99] border-primary/10 hover:border-primary/30 shadow-sm">
+                            <CardHeader className="flex-row items-center gap-3 sm:gap-4 p-4 sm:p-6">
+                                <div className="p-2 sm:p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                                    <ShoppingBasket className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="group-hover:text-primary transition-colors">E-commerce Dashboard</CardTitle>
-                                        <Send className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <CardTitle className="group-hover:text-primary transition-colors text-base sm:text-lg truncate font-headline">E-commerce</CardTitle>
+                                        <Send className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform shrink-0" />
                                     </div>
-                                    <CardDescription>View detailed product sales, inventory, and fulfillment metrics.</CardDescription>
+                                    <CardDescription className="text-xs line-clamp-1 sm:line-clamp-none">Sales, inventory, & fulfillment.</CardDescription>
                                 </div>
                             </CardHeader>
                         </Card>
                     </Link>
                     <Link href="/dashboard/therapy-admin/my-dashboard">
-                        <Card className="hover:bg-muted/80 transition-all cursor-pointer group active:scale-[0.99] border-primary/10 hover:border-primary/30">
-                            <CardHeader className="flex-row items-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                                    <HeartPulse className="w-8 h-8 text-primary" />
+                        <Card className="hover:bg-muted/80 transition-all cursor-pointer group active:scale-[0.99] border-primary/10 hover:border-primary/30 shadow-sm">
+                            <CardHeader className="flex-row items-center gap-3 sm:gap-4 p-4 sm:p-6">
+                                <div className="p-2 sm:p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                                    <HeartPulse className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="group-hover:text-primary transition-colors">Therapy Ops Dashboard</CardTitle>
-                                        <Send className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <CardTitle className="group-hover:text-primary transition-colors text-base sm:text-lg truncate font-headline">Therapy Ops</CardTitle>
+                                        <Send className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform shrink-0" />
                                     </div>
-                                    <CardDescription>View detailed therapy appointments, PCR status, and therapist performance.</CardDescription>
+                                    <CardDescription className="text-xs line-clamp-1 sm:line-clamp-none">Appointments, PCRs, & therapists.</CardDescription>
                                 </div>
                             </CardHeader>
                         </Card>
                     </Link>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-5 w-full">
                     <KpiCard title="Total Users" value={stats?.usersTotal ?? 0} icon={Users} loading={loading} showCurrency={false} />
                     <KpiCard title="Active Therapists" value={stats?.therapistsTotal ?? 0} icon={UserCheck} loading={loading} showCurrency={false} />
                     <KpiCard title="Sessions Completed" value={stats?.patientsServedTotal ?? 0} icon={Calendar} loading={loading} showCurrency={false} />
@@ -286,8 +288,8 @@ export default function AdminDashboardPage() {
                     copy={() => console.log('copy')}
                 />
 
-                <div className="space-y-6">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-6 w-full overflow-hidden">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 w-full">
                         <DashboardCard title="Revenue vs Refunds (90d)" type="line" data={revenueData} categoryKey="date" valueKey="revenue" className="lg:col-span-2" loading={loading} isCurrency={true} />
                         <DashboardCard title="Bookings by Mode (90d)" type="pie" data={bookingsByModeData} categoryKey="name" valueKey="value" loading={loading} isCurrency={false} />
                     </div>
@@ -297,7 +299,7 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
 
-                <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6 w-full">
                     <ActionableTable
                         title="Pending Profile Approvals"
                         description="Review and approve/reject user profile changes."

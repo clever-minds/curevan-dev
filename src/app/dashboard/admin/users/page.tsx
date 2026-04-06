@@ -57,7 +57,7 @@ const ApprovalDialog = ({ request, onAction }: { request: ProfileChangeRequest, 
         onAction(); // Trigger a refetch in the parent
         setIsOpen(false); // Close dialog on success
       } else {
-        toast({ variant: 'destructive', title: 'Action Failed', description: result.error || result.message });
+        toast({ variant: 'destructive', title: 'Action Failed', description: (result as any).error || result.message });
       }
     });
   }
@@ -197,55 +197,60 @@ const ApprovalsTab = () => {
   const pendingRequests = requests.filter(r => r.status === 'pending');
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
+    <Card className="shadow-sm overflow-hidden">
+      <CardHeader className="px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <CardTitle>Pending Approvals ({pendingRequests.length})</CardTitle>
-            <CardDescription>Review and approve or reject profile change requests from users.</CardDescription>
+            <CardTitle className="text-lg font-headline">Pending Approvals ({pendingRequests.length})</CardTitle>
+            <CardDescription className="text-xs">Review and approve or reject profile change requests from users.</CardDescription>
           </div>
-          <Button variant="outline" onClick={handleExport}><FileDown className="mr-2" />Export All Requests</Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto h-8 text-xs font-bold uppercase tracking-widest no-print">
+            <FileDown className="mr-2 h-3.5 w-3.5" />
+            Export All Requests
+          </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Therapist</TableHead>
-              <TableHead>Section Changed</TableHead>
-              <TableHead>Date Submitted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pendingRequests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell className="font-medium">
-                  <Link href={`/dashboard/admin/users?search=${request.userId}`} className="hover:underline">{request.userId}</Link>
-                </TableCell>
-                <TableCell>{request.section}</TableCell>
-                <TableCell>{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '—'}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  {request.role === 'therapist' && (
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/therapists/${request.entityId}`} target="_blank">
-                        <UserIcon className="mr-2" /> View Profile
-                      </Link>
-                    </Button>
-                  )}
-                  <ApprovalDialog request={request} onAction={fetchRequests} />
-                </TableCell>
-              </TableRow>
-            ))}
-            {pendingRequests.length === 0 && (
+      <CardContent className="p-0 sm:p-6 sm:pt-0 overflow-hidden">
+        <div className="border-t sm:border sm:rounded-md bg-white/50 w-full max-w-[calc(100vw-2.5rem)] sm:max-w-full overflow-hidden">
+          <Table className="min-w-[600px] lg:min-w-full">
+            <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                  No pending therapist approvals.
-                </TableCell>
+                <TableHead className="text-[10px] uppercase font-bold tracking-wider px-2 sm:px-4 first:pl-4">Therapist</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold tracking-wider px-2 sm:px-4">Section Changed</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold tracking-wider px-2 sm:px-4">Date Submitted</TableHead>
+                <TableHead className="text-right text-[10px] uppercase font-bold tracking-wider px-2 sm:px-4">Actions</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {pendingRequests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium px-2 sm:px-4 first:pl-4">
+                    <Link href={`/dashboard/admin/users?search=${request.userId}`} className="hover:underline text-xs">{request.userId}</Link>
+                  </TableCell>
+                  <TableCell className="text-xs px-2 sm:px-4">{request.section}</TableCell>
+                  <TableCell className="text-xs px-2 sm:px-4">{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '—'}</TableCell>
+                  <TableCell className="text-right space-x-1 sm:space-x-2 px-2 sm:px-4 whitespace-nowrap">
+                    {request.role === 'therapist' && (
+                      <Button variant="ghost" size="sm" asChild className="h-8 px-2 text-[10px]">
+                        <Link href={`/therapists/${request.entityId}`} target="_blank">
+                          <UserIcon className="mr-1 h-3 w-3" /> View
+                        </Link>
+                      </Button>
+                    )}
+                    <ApprovalDialog request={request} onAction={fetchRequests} />
+                  </TableCell>
+                </TableRow>
+              ))}
+              {pendingRequests.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground h-24 text-sm">
+                    No pending therapist approvals.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   )
@@ -265,8 +270,8 @@ export default function AdminUsersPage() {
         listTherapists()
       ]);
       setPendingRequestCount(requestsData.filter(r => r.status === 'pending' && r.role === 'therapist').length);
-      setUsers(usersData);
-      setTherapists(therapistsData);
+      setUsers(usersData || []);
+      setTherapists(therapistsData || []);
     };
     fetchData();
   }, []);
@@ -288,7 +293,7 @@ export default function AdminUsersPage() {
   const handleTherapistExport = () => {
     const headers = ["ID", "Name", "Specialty", "Experience", "Rating", "Reviews", "Membership", "PAN", "Address"];
     const data = therapists.map(t => [
-      t.id, t.name, t.specialty, t.experience, t.rating, t.reviews,
+      t.id, t.name, t.specialty, t.experience_years, t.rating, t.reviews,
       t.membershipPlan || 'standard', t.tax?.pan || '', `${t?.city}, ${t?.state}`
     ]);
     downloadCsv(headers, data, 'therapists-export.csv');
@@ -318,9 +323,9 @@ export default function AdminUsersPage() {
             showAdminUserFilters={true}
             onFilterChange={setFilters}
           />
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={handleUserExport}><FileDown className="mr-2" />Export Users</Button>
-            <Button variant="outline" onClick={handleTherapistExport}><FileDown className="mr-2" />Export Therapists</Button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={handleUserExport} className="h-8 text-xs font-bold uppercase tracking-widest no-print"><FileDown className="mr-2 h-3.5 w-3.5" />Export Users</Button>
+            <Button variant="outline" size="sm" onClick={handleTherapistExport} className="h-8 text-xs font-bold uppercase tracking-widest no-print"><FileDown className="mr-2 h-3.5 w-3.5" />Export Therapists</Button>
           </div>
           <AdminUsersTable scope="admin" filters={filters} />
         </TabsContent>

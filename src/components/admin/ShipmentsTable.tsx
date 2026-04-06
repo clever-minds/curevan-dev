@@ -161,7 +161,7 @@ export function ShipmentsTable({ scope, filters = {} }: ShipmentsTableProps) {
   if (isMobile) {
       return (
           <div className="space-y-3">
-              {filteredShipments.map(shipment => <ShipmentCard key={shipment.id} shipment={shipment} scope={scope} />)}
+              {(filteredShipments || []).map(shipment => <ShipmentCard key={shipment.id} shipment={shipment} scope={scope} />)}
           </div>
       )
   }
@@ -187,7 +187,7 @@ export function ShipmentsTable({ scope, filters = {} }: ShipmentsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredShipments.map((shipment) => {
+              {(filteredShipments || []).map((shipment) => {
                 const createdAt = getSafeDate(shipment.createdAt);
                 const eta = getSafeDate(shipment.eta);
                 return (

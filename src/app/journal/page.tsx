@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { KnowledgeBase } from '@/lib/types';
 import { listJournalEntries } from "@/lib/repos/content";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, getMediaUrl } from "@/lib/utils";
 
 const PAGE_SIZE = 6; // Number of posts to show per page
 
@@ -75,26 +75,42 @@ export default function JournalPage() {
       {loading ? (
         <Skeleton className="h-96 w-full mb-16" />
       ) : featuredPost && (
-        <section className="mb-16">
+        <section className="mb-20">
           <Link href={`/journal/${featuredPost.slug}`}>
-            <Card className="grid md:grid-cols-2 overflow-hidden group border-2 hover:border-primary transition-all duration-300">
-                <CardContent className="p-8 flex flex-col justify-center">
-                    <Badge variant="secondary" className="w-fit mb-4">Featured Article</Badge>
-                    <CardTitle className="text-3xl font-bold font-headline mb-4 group-hover:text-primary transition-colors">{featuredPost.title}</CardTitle>
-                    <CardDescription className="text-base text-muted-foreground mb-6 line-clamp-3">{featuredPost.excerpt}</CardDescription>
-                    <div className="flex items-center gap-4 text-sm">
-                        <p className="font-semibold">{featuredPost.authorName}</p>
-                        <p className="text-muted-foreground">{new Date(featuredPost.publishedAt || featuredPost.createdAt).toLocaleDateString()}</p>
+            <Card className="group relative overflow-hidden border-none bg-gradient-to-br from-primary/5 via-background to-accent/10 shadow-2xl backdrop-blur-xl lg:grid lg:grid-cols-2 lg:min-h-[500px] transition-all duration-500 hover:shadow-primary/5 ring-1 ring-white/20">
+                <CardContent className="flex flex-col justify-center p-8 md:p-16">
+                    <div className="mb-6 flex animate-in fade-in slide-in-from-left duration-700">
+                        <Badge className="bg-primary hover:bg-primary px-4 py-1.5 text-xs font-bold tracking-[0.2em] uppercase">
+                            FEATURED ARTICLE
+                        </Badge>
                     </div>
+                    <h2 className="mb-6 font-headline text-4xl font-bold leading-[1.1] tracking-tight lg:text-5xl xl:text-6xl group-hover:text-primary transition-colors duration-300">
+                        {featuredPost.title}
+                    </h2>
+                    <p className="mb-8 text-xl leading-relaxed text-muted-foreground line-clamp-3 font-medium opacity-80">
+                        {featuredPost.excerpt}
+                    </p>
+                    <div className="flex items-center gap-6 mb-10 text-sm text-muted-foreground/60 font-semibold tracking-wide">
+                        <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary"/> 6 min read</span>
+                        <span className="w-1 h-1 rounded-full bg-border" />
+                        <span>{new Date(featuredPost.publishedAt || featuredPost.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <Button asChild size="lg" className="self-start rounded-full px-10 py-7 text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:scale-105 active:scale-95 bg-primary hover:bg-primary/90">
+                        <span>
+                            Read Article <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                    </Button>
                 </CardContent>
-                <div className="relative h-64 md:h-full min-h-[250px]">
+                <div className="relative h-[400px] lg:h-full lg:min-h-[500px] overflow-hidden">
                     <Image
-                        src={featuredPost.featuredImage as string}
+                        src={getMediaUrl(featuredPost.featuredImage as string)}
                         alt={featuredPost.title}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
                         data-ai-hint={featuredPost.aiHint}
+                        unoptimized
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent lg:bg-gradient-to-l opacity-80" />
                 </div>
             </Card>
           </Link>
@@ -144,37 +160,54 @@ export default function JournalPage() {
                 [...Array(6)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)
             ) : currentPosts.length > 0 ? (
                 currentPosts.map((post) => (
-                <Card key={post.id} className="flex flex-col overflow-hidden group transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <Card key={post.id} className="group relative flex flex-col overflow-hidden border-none bg-background/40 shadow-lg backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ring-1 ring-white/10">
                     <Link href={`/journal/${post.slug}`}>
                         <CardHeader className="p-0">
-                            <div className="relative h-48 w-full overflow-hidden">
+                            <div className="relative h-56 w-full overflow-hidden">
                                 <Image
-                                    src={post.featuredImage as string}
+                                    src={getMediaUrl(post.featuredImage as string)}
                                     alt={post.title}
                                     fill
-                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
                                     data-ai-hint={post.aiHint}
+                                    unoptimized
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                {post.tags?.[0] && (
+                                    <Badge className="absolute bottom-4 left-4 bg-primary/90 text-white border-none backdrop-blur-md font-bold tracking-wider text-[10px] uppercase px-3">
+                                        {post.tags[0]}
+                                    </Badge>
+                                )}
                             </div>
                         </CardHeader>
                     </Link>
-                    <CardContent className="flex-1 p-6">
-                    <div className="flex flex-wrap gap-2 mb-2">
-                        {post.tags?.map(tag => (
-                            <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                        ))}
-                    </div>
-                    <Link href={`/journal/${post.slug}`}>
-                        <CardTitle className="text-xl font-bold font-headline group-hover:text-primary transition-colors">{post.title}</CardTitle>
-                    </Link>
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 flex justify-between items-center">
-                        <div>
-                            <p className="text-sm font-semibold">{post.authorName}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(post.publishedAt || post.createdAt).toLocaleDateString()}</p>
+                    <CardContent className="flex-1 p-8">
+                        <div className="text-[10px] uppercase font-bold tracking-widest text-primary/70 mb-4 flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5"/> 5 min read • {new Date(post.publishedAt || post.createdAt).toLocaleDateString()}
                         </div>
-                        <Button asChild variant="ghost" size="sm">
-                            <Link href={`/journal/${post.slug}`}>Read More <ArrowRight className="ml-2 h-4 w-4"/></Link>
+                        <Link href={`/journal/${post.slug}`}>
+                            <CardTitle className="text-2xl font-bold font-headline leading-tight group-hover:text-primary transition-colors duration-300 mb-4">
+                                {post.title}
+                            </CardTitle>
+                        </Link>
+                        <p className="text-muted-foreground line-clamp-3 leading-relaxed font-medium opacity-80">
+                            {post.excerpt}
+                        </p>
+                    </CardContent>
+                    <CardFooter className="p-8 pt-0 flex justify-between items-center border-t border-white/5 mt-4 pt-6">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white text-xs font-bold ring-2 ring-background">
+                                {post.authorName?.charAt(0) || 'A'}
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold tracking-wide">{post.authorName}</p>
+                                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase">Author</p>
+                            </div>
+                        </div>
+                        <Button asChild variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary group/btn rounded-full px-4">
+                            <Link href={`/journal/${post.slug}`} className="text-xs font-bold tracking-widest uppercase">
+                                Explore <ArrowRight className="ml-2 h-3 w-3 group-hover/btn:translate-x-1 transition-transform"/>
+                            </Link>
                         </Button>
                     </CardFooter>
                 </Card>

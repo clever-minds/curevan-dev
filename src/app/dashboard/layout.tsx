@@ -47,13 +47,13 @@ export default function DashboardLayout({
   
   return (
     <Suspense fallback={<Skeleton className="w-full h-screen" />}>
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen w-full max-w-full overflow-hidden">
           <Sidebar>
             <SidebarContent>
               <DashboardNav />
             </SidebarContent>
           </Sidebar>
-          <main className="flex-1 bg-muted/30 p-4 md:p-6 lg:p-8">
+          <main className="flex-1 min-w-0 bg-muted/30 p-4 md:p-6 lg:p-8 overflow-y-auto">
             {children}
           </main>
         </div>

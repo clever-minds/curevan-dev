@@ -132,8 +132,8 @@ export default function BottomNav() {
                 )}
                </div>
               <span className={cn(
-                  "text-[11px] font-semibold transition-all duration-200 mt-0.5",
-                  isActive ? "opacity-100" : "opacity-100" // Always show label
+                  "text-[10px] sm:text-[11px] font-semibold transition-all duration-200 mt-0.5 px-0.5 truncate w-full text-center",
+                  isActive ? "opacity-100" : "opacity-90"
                 )}>
                 {label}
               </span>

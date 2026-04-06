@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert, PhoneOutgoing } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, getMediaUrl } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useCart } from '@/context/cart-context';
@@ -38,10 +38,10 @@ const XLogo = () => (
 const LogoWithText = () => (
      <Link href="/" className="group flex items-center gap-2 no-underline">
         <Logo />
-        <div className="flex flex-col items-start justify-center leading-none min-w-0">
-            <span className="font-bold text-lg md:text-xl whitespace-nowrap text-primary">Curevan</span>
-            <span className="font-semibold text-xs whitespace-nowrap text-accent">Cure. Anywhere.</span>
-        </div>
+    <div className="flex flex-col items-start justify-center leading-none min-w-0">
+        <span className="font-bold text-base md:text-lg lg:text-xl whitespace-nowrap text-primary">Curevan</span>
+        <span className="font-semibold text-[10px] md:text-xs whitespace-nowrap text-accent">Cure. Anywhere.</span>
+    </div>
      </Link>
   );
 
@@ -54,6 +54,8 @@ export default function Header() {
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [activeAlertCount, setActiveAlertCount] = useState(0);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { toast } = useToast();
   const [isSosSending, setIsSosSending] = useState(false);
@@ -162,13 +164,13 @@ export default function Header() {
           showTopBar ? "h-10 opacity-100" : "h-0 opacity-0 overflow-hidden"
           )}>
         <div className="container hidden h-full max-w-screen-2xl items-center justify-between lg:flex">
-            <div className="flex items-center gap-6 text-sm font-medium">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">
               <a href="mailto:care@curevan.com" className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
-                <Mail className="w-5 h-5" />
+                <Mail className="w-4 h-4" />
                 <span>care@curevan.com</span>
               </a>
               <a href="tel:+917990602143" className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
-                <Phone className="w-5 h-5" />
+                <Phone className="w-4 h-4" />
                 <span>+91 79 9060 2143</span>
               </a>
             </div>
@@ -233,20 +235,61 @@ export default function Header() {
 
             <div className="hidden md:block"><LogoWithText /></div>
 
-            <div className="flex items-center justify-end gap-0">
-              <Button variant="ghost" size="icon" aria-label="Search"><Search /></Button>
+            <div className="flex items-center justify-end gap-1 sm:gap-1.5 flex-1">
+              <div className={cn(
+                "flex items-center transition-all duration-300 overflow-hidden",
+                isSearchVisible ? "flex-1 opacity-100" : "w-0 opacity-0"
+              )}>
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  className="w-full h-8 px-3 rounded-md bg-muted border-none text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus={isSearchVisible}
+                />
+              </div>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 shrink-0" 
+                aria-label="Toggle Search"
+                onClick={() => {
+                  setIsSearchVisible(!isSearchVisible);
+                  if (isSearchVisible) setSearchQuery('');
+                }}
+              >
+                {isSearchVisible ? <Menu className="h-5 w-5 rotate-90" /> : <Search className="h-5 w-5" />}
+              </Button>
               
-              {user && (
-                <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="mr-1 animate-pulse bg-red-600 hover:bg-red-700 font-bold h-8 px-2"
-                    onClick={handleSosTrigger}
-                    disabled={isSosSending}
-                >
-                    <PhoneOutgoing className="w-4 h-4 mr-1" />
-                    {isSosSending ? '...' : 'SOS'}
-                </Button>
+              {!isSearchVisible && (
+                <>
+                  {user && (
+                    <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="mr-1 animate-pulse bg-red-600 hover:bg-red-700 font-bold h-8 w-8 sm:w-auto sm:px-3"
+                        onClick={handleSosTrigger}
+                        disabled={isSosSending}
+                        title="SOS Emergency"
+                    >
+                        <PhoneOutgoing className="w-4 h-4 sm:mr-1.5" />
+                        <span className="hidden sm:inline">{isSosSending ? '...' : 'SOS'}</span>
+                    </Button>
+                  )}
+                  
+                  <CartSheet>
+                    <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative p-0 h-10 w-10">
+                        <ShoppingCart className="w-8 h-8 sm:w-5 sm:h-5" />
+                        {isClient && cart.length > 0 && (
+                            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground transform translate-x-1 -translate-y-1">
+                                {cart.length}
+                            </span>
+                        )}
+                    </Button>
+                  </CartSheet>
+                </>
               )}
               
               {user ? (
@@ -254,7 +297,7 @@ export default function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative" aria-label="User Menu">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/100x100.png" alt={user?.name || 'User'} data-ai-hint="user avatar" />
+                        <AvatarImage src={getMediaUrl((user as any)?.image, "https://placehold.co/100x100.png?text=" + (user?.name?.charAt(0) || 'U'))} alt={user?.name || 'User'} data-ai-hint="user avatar" />
                         <AvatarFallback><User className="w-4 h-4"/></AvatarFallback>
                       </Avatar>
                     </Button>
@@ -285,7 +328,30 @@ export default function Header() {
         </div>
 
         <div className="hidden lg:flex flex-1 items-center justify-end gap-2">
-            <Button variant="ghost" size="icon" aria-label="Search"><Search /></Button>
+            <div className={cn(
+              "flex items-center transition-all duration-300 overflow-hidden",
+              isSearchVisible ? "w-64 opacity-100 mr-2" : "w-0 opacity-0"
+            )}>
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                className="w-full h-9 px-4 rounded-full bg-muted border-none text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus={isSearchVisible}
+              />
+            </div>
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                aria-label="Toggle Search"
+                onClick={() => {
+                  setIsSearchVisible(!isSearchVisible);
+                  if (isSearchVisible) setSearchQuery('');
+                }}
+            >
+              {isSearchVisible ? <Menu className="h-5 w-5 rotate-90" /> : <Search />}
+            </Button>
             
             {/* SOS button moved to after Book Now */}
             
@@ -316,7 +382,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User Menu">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://placehold.co/100x100.png" alt={user?.name || 'User'} data-ai-hint="user avatar" />
+                      <AvatarImage src={getMediaUrl((user as any)?.image, "https://placehold.co/100x100.png?text=" + (user?.name?.charAt(0) || 'U'))} alt={user?.name || 'User'} data-ai-hint="user avatar" />
                       <AvatarFallback><User className="w-4 h-4"/></AvatarFallback>
                     </Avatar>
                   </Button>

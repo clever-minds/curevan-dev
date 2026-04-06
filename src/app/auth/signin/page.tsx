@@ -1,4 +1,3 @@
-
 import { SigninForm } from "./signin-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -7,8 +6,18 @@ import { SocialSigninButtons } from "./social-signin-buttons";
 import { Button } from "@/components/ui/button";
 import { Phone } from "lucide-react";
 import { DebugLoginButtons } from "./debug-login-buttons";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { resolveMyDashboardHref } from "@/lib/resolveDashboard";
 
-export default function SigninPage() {
+export default async function SigninPage() {
+    const user = await getCurrentUser();
+
+    if (user) {
+        const dashboardHref = resolveMyDashboardHref(user.roles);
+        redirect(dashboardHref);
+    }
+
     return (
         <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-var(--header-height))] py-12">
             <Card className="w-full max-w-md">

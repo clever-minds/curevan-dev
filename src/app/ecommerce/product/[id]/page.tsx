@@ -39,6 +39,7 @@ import { useAuth } from '@/context/auth-context';
 import { fetchProductById, fetchPublicProducts } from '@/lib/repos/products';
 import type { Product } from '@/lib/types';
 import ProductCard from '@/components/product-card';
+import ProductReviews from '@/components/product-reviews';
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
@@ -409,6 +410,12 @@ export default function ProductDetailsPage() {
               >
                 Shipping & Returns
               </TabsTrigger>
+              <TabsTrigger 
+                value="reviews" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-4 h-auto text-lg font-bold"
+              >
+                Reviews ({product.rating || '4.8'})
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="pt-10 max-w-4xl">
               <div className="prose prose-slate max-w-none">
@@ -465,6 +472,11 @@ export default function ProductDetailsPage() {
                         </div>
                     </div>
                 </div>
+            </TabsContent>
+            <TabsContent value="reviews" className="pt-10">
+              <div className="w-full">
+                <ProductReviews productId={product.id} initialRating={product.rating} />
+              </div>
             </TabsContent>
           </Tabs>
         </div>

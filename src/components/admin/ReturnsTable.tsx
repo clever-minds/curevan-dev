@@ -23,6 +23,10 @@ import { Checkbox } from '../ui/checkbox';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { listReturns } from '@/lib/repos/returns';
 
+import { approveReturnAction, initiateRefundAction } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
 interface ReturnsTableProps {
   scope: 'admin' | 'ecom-admin';
   filters?: any;
@@ -58,14 +62,68 @@ const getSafeDate = (date: any): Date | null => {
     return null;
 }
 
-const ActionsMenu = ({ rma, scope, asSheetItems = false }: { rma: Return, scope: ReturnsTableProps['scope'], asSheetItems?: boolean }) => {
+const ActionsMenu = ({ rma, scope, onRefresh, asSheetItems = false }: { rma: Return, scope: ReturnsTableProps['scope'], onRefresh?: () => void, asSheetItems?: boolean }) => {
+  const { toast } = useToast();
+  const [isPending, setIsPending] = React.useState(false);
+
+  const handleApprove = async () => {
+    if (!confirm(`Approve return request for RMA #${rma.id}?`)) return;
+    setIsPending(true);
+    const res = await approveReturnAction(rma.id);
+    if (res.success) {
+      toast({ title: 'Return Approved', description: `RMA #${rma.id} has been approved.` });
+      if (onRefresh) onRefresh();
+    } else {
+      toast({ variant: 'destructive', title: 'Approval Failed', description: res.message });
+    }
+    setIsPending(false);
+  };
+
+  const handleIssueRefund = async () => {
+    const amount = prompt(`Enter refund amount for RMA #${rma.id}:`, rma.totalRefundAmount.toString());
+    if (!amount) return;
+    const reason = prompt(`Enter reason for refund:`, "Refund for return RMA #" + rma.id);
+    
+    setIsPending(true);
+    const result = await initiateRefundAction({ 
+      orderId: rma.orderId, 
+      amount: parseFloat(amount), 
+      reason: reason || undefined 
+    });
+    
+    if (result.success) {
+      toast({ title: 'Refund Initiated', description: `Refund for RMA #${rma.id} has been processed.` });
+      if (onRefresh) onRefresh();
+    } else {
+      toast({ variant: 'destructive', title: 'Refund Failed', description: result.message });
+    }
+    setIsPending(false);
+  };
+
   const content = (
     <>
-      <DropdownMenuItem><Package className="mr-2" />View Details</DropdownMenuItem>
-      <DropdownMenuItem><Check className="mr-2" />Approve</DropdownMenuItem>
-      <DropdownMenuItem><X className="mr-2" />Reject</DropdownMenuItem>
-      <DropdownMenuItem><Truck className="mr-2" />Schedule Pickup</DropdownMenuItem>
-      <DropdownMenuItem className="text-red-600 focus:text-red-700"><Undo className="mr-2" />Issue Refund</DropdownMenuItem>
+      <DropdownMenuItem className="cursor-pointer"><Package className="mr-2 h-4 w-4" />View Details</DropdownMenuItem>
+      
+      {rma.status === 'Requested' && (
+        <DropdownMenuItem onClick={handleApprove} disabled={isPending} className="cursor-pointer">
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+          Approve Request
+        </DropdownMenuItem>
+      )}
+
+      <DropdownMenuItem className="cursor-pointer"><X className="mr-2 h-4 w-4" />Reject Request</DropdownMenuItem>
+      <DropdownMenuItem className="cursor-pointer"><Truck className="mr-2 h-4 w-4" />Schedule Pickup</DropdownMenuItem>
+      
+      {rma.status !== 'Refunded' && (
+        <DropdownMenuItem 
+          onClick={handleIssueRefund} 
+          disabled={isPending}
+          className="text-red-600 focus:text-red-700 cursor-pointer"
+        >
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Undo className="mr-2 h-4 w-4" />}
+          Issue Refund
+        </DropdownMenuItem>
+      )}
     </>
   );
 
@@ -73,7 +131,7 @@ const ActionsMenu = ({ rma, scope, asSheetItems = false }: { rma: Return, scope:
     return (
       <Sheet>
         <SheetTrigger asChild>
-           <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+           <Button variant="ghost" size="icon" disabled={isPending}><MoreHorizontal /></Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="h-auto">
           <SheetHeader>
@@ -82,10 +140,23 @@ const ActionsMenu = ({ rma, scope, asSheetItems = false }: { rma: Return, scope:
           </SheetHeader>
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start"><Package className="mr-2" />View Details</Button>
-             <Button variant="outline" className="w-full justify-start"><Check className="mr-2" />Approve</Button>
-             <Button variant="outline" className="w-full justify-start"><X className="mr-2" />Reject</Button>
+             
+             {rma.status === 'Requested' && (
+               <Button variant="outline" onClick={handleApprove} disabled={isPending} className="w-full justify-start">
+                 {isPending ? <Loader2 className="mr-2 animate-spin" /> : <Check className="mr-2" />}
+                 Approve Request
+               </Button>
+             )}
+             
+             <Button variant="outline" className="w-full justify-start"><X className="mr-2" />Reject Request</Button>
              <Button variant="outline" className="w-full justify-start"><Truck className="mr-2" />Schedule Pickup</Button>
-             <Button variant="destructive" className="w-full justify-start"><Undo className="mr-2" />Issue Refund</Button>
+             
+             {rma.status !== 'Refunded' && (
+               <Button variant="destructive" onClick={handleIssueRefund} disabled={isPending} className="w-full justify-start">
+                 {isPending ? <Loader2 className="mr-2 animate-spin" /> : <Undo className="mr-2" />}
+                 Issue Refund
+               </Button>
+             )}
           </div>
         </SheetContent>
       </Sheet>
@@ -95,7 +166,7 @@ const ActionsMenu = ({ rma, scope, asSheetItems = false }: { rma: Return, scope:
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+        <Button variant="ghost" size="icon" disabled={isPending}><MoreHorizontal /></Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">{content}</DropdownMenuContent>
     </DropdownMenu>
@@ -103,7 +174,8 @@ const ActionsMenu = ({ rma, scope, asSheetItems = false }: { rma: Return, scope:
 };
 
 
-const ReturnCard = ({ rma, scope }: { rma: Return, scope: ReturnsTableProps['scope'] }) => {
+
+const ReturnCard = ({ rma, scope, onRefresh }: { rma: Return, scope: ReturnsTableProps['scope'], onRefresh?: () => void }) => {
     const createdAt = getSafeDate(rma.createdAt);
     
     return (
@@ -121,10 +193,10 @@ const ReturnCard = ({ rma, scope }: { rma: Return, scope: ReturnsTableProps['sco
                     <p><strong>Customer:</strong> {rma.customerName}</p>
                     <p><strong>Location:</strong> {rma.cityState}</p>
                     <p><strong>Reason:</strong> {rma.reason}</p>
-                    <p><strong>Amount:</strong> <Price amount={rma.totalRefundAmount} showDecimals /></p>
+                    <p><strong>Amount:</strong> <Price amount={rma.totalRefundAmount} showDecimals={false} /></p>
                 </div>
                 <div className="mt-4 flex justify-end">
-                    <ActionsMenu rma={rma} scope={scope} asSheetItems />
+                    <ActionsMenu rma={rma} scope={scope} onRefresh={onRefresh} asSheetItems />
                 </div>
             </CardContent>
         </Card>
@@ -135,13 +207,14 @@ export function ReturnsTable({ scope, filters = {} }: ReturnsTableProps) {
   const [returns, setReturns] = React.useState<Return[]>([]);
   const isMobile = useIsMobile();
 
-  React.useEffect(() => {
-    const fetchReturns = async () => {
-        const data = await listReturns(filters);
-        setReturns(data);
-    };
-    fetchReturns();
+  const fetchReturns = React.useCallback(async () => {
+    const data = await listReturns(filters);
+    setReturns(data);
   }, [filters]);
+
+  React.useEffect(() => {
+    fetchReturns();
+  }, [fetchReturns]);
 
   const filteredReturns = React.useMemo(() => {
     return returns;
@@ -150,7 +223,7 @@ export function ReturnsTable({ scope, filters = {} }: ReturnsTableProps) {
   if (isMobile) {
       return (
           <div className="space-y-3">
-              {filteredReturns.map(rma => <ReturnCard key={rma.id} rma={rma} scope={scope} />)}
+              {(filteredReturns || []).map(rma => <ReturnCard key={rma.id} rma={rma} scope={scope} onRefresh={fetchReturns} />)}
           </div>
       )
   }
@@ -176,7 +249,7 @@ export function ReturnsTable({ scope, filters = {} }: ReturnsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredReturns.map((rma) => {
+              {(filteredReturns || []).map((rma) => {
                  const createdAt = getSafeDate(rma.createdAt);
                 return (
                 <TableRow key={rma.id}>
@@ -185,13 +258,13 @@ export function ReturnsTable({ scope, filters = {} }: ReturnsTableProps) {
                   <TableCell className="font-mono text-xs">{rma.orderId}</TableCell>
                   <TableCell>{createdAt ? createdAt.toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell className="font-medium">{rma.customerName}</TableCell>
-                  <TableCell className="text-center">{rma.items.length}</TableCell>
+                  <TableCell className="text-center">{rma.items?.length || 0}</TableCell>
                   <TableCell>{rma.reason}</TableCell>
                   <TableCell><Badge className={cn(getStatusBadgeVariant(rma.status))} variant="secondary">{rma.status}</Badge></TableCell>
                   <TableCell><Badge variant="outline">{rma.refundStatus}</Badge></TableCell>
-                  <TableCell className="text-right"><Price amount={rma.totalRefundAmount} showDecimals /></TableCell>
+                  <TableCell className="text-right"><Price amount={rma.totalRefundAmount} showDecimals={false} /></TableCell>
                   <TableCell className="text-right">
-                    <ActionsMenu rma={rma} scope={scope} />
+                    <ActionsMenu rma={rma} scope={scope} onRefresh={fetchReturns} />
                   </TableCell>
                 </TableRow>
                 )

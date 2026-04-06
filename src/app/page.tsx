@@ -119,7 +119,7 @@ export default  function HomePage() {
       <section className="w-full h-[calc(100vh-var(--header-height))] max-h-[600px] bg-card relative overflow-hidden flex items-center justify-center">
         <AnimatedWave />
         <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline mb-4 text-white">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline mb-4 text-white leading-tight">
             Quality Healthcare, Delivered to Your Doorstep
           </h1>
           <p className="max-w-2xl mx-auto text-white/80 md:text-xl mb-8">
@@ -147,7 +147,7 @@ export default  function HomePage() {
                     </h2>
                     <p className="text-lg md:text-xl text-muted-foreground mt-8">Get professional healthcare delivered to your home in three simple steps.</p>
                 </div>
-                <div className="grid gap-8 md:grid-cols-3">
+                <div className="grid gap-6 md:gap-8 md:grid-cols-3">
                     <div className="group text-center p-6 rounded-2xl bg-card border border-border/50 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-2 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-0 bg-gradient-to-b from-primary/5 to-transparent transition-all duration-500 group-hover:h-full z-0"></div>
                         <div className="relative z-10">
@@ -260,7 +260,7 @@ export default  function HomePage() {
                   </h2>
                   <p className="text-lg md:text-xl text-muted-foreground mt-8">Whether you're looking to supplement your income or build a full-time practice, we have a plan that fits your goals.</p>
               </div>
-              <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-stretch max-w-4xl mx-auto">
                   {/* Free Plan Card */}
                   <Card className="flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
                       <CardHeader>

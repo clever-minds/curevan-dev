@@ -116,6 +116,12 @@
         animation: gradient-shift 10s ease infinite;
         background-size: 200% 200%;
     }
+
+    .bg-footer-dark {
+        background: radial-gradient(circle at top right, hsla(var(--primary), 0.15), transparent 400px),
+                    radial-gradient(circle at bottom left, hsla(var(--accent), 0.1), transparent 400px),
+                    hsl(240, 10%, 4%);
+    }
 }
 
 @keyframes gradient-shift {

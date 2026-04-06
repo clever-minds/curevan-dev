@@ -11,7 +11,7 @@ import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { curevanAssistant } from '@/ai/flows/chat-assistant';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { cn } from '@/lib/utils';
+import { cn, getMediaUrl } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { usePathname } from 'next/navigation';
 import { logAIFeedbackAction } from '@/lib/actions';
@@ -30,6 +30,8 @@ const getContextualWelcomeMessage = (pathname: string, name: string): string => 
     if (pathname.startsWith('/shop/checkout')) return "Need any help to complete your purchase?";
     if (pathname.startsWith('/dashboard/bookings')) return "Want an update on your booking?";
     if (pathname.startsWith('/therapists/')) return "Would you like to book this therapist?";
+    if (pathname.startsWith('/journal') || pathname.startsWith('/dashboard/admin/journal') || pathname.startsWith('/dashboard/my-journal')) return "Need help writing, researching, or summarizing a journal article?";
+    if (pathname.startsWith('/dashboard/new-post')) return "Shall I help you draft your new post or choose a catchy title?";
     
     return `Welcome, ${name}! How can I help you today?
 e.g., "What are my upcoming appointments?"`;
@@ -93,8 +95,9 @@ export function AIChatAssistant() {
     await logAIFeedbackAction({
         context: 'chat_assistant',
         interactionId: messageId,
+        number: messageId, // Required by AIFeedback interface
         rating,
-        query: messages.find(m => m.id === messageId)?.content, // simplistic association
+        query: messages.find(m => m.id === messageId)?.content,
         response: message.content
     });
 
@@ -156,7 +159,7 @@ export function AIChatAssistant() {
                     </div>
                     {message.role === 'user' && (
                     <Avatar className="w-8 h-8">
-                        <AvatarImage src="https://placehold.co/100x100.png" alt="@user" />
+                        <AvatarImage src={getMediaUrl((user as any)?.image, "https://placehold.co/100x100.png?text=" + (user?.name?.charAt(0) || 'U'))} alt={user?.name || 'User'} />
                         <AvatarFallback><User /></AvatarFallback>
                     </Avatar>
                     )}

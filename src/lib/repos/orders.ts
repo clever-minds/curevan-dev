@@ -26,6 +26,17 @@ export async function listOrders(filters?: { userId?: number }): Promise<Order[]
 
     return (data.data || []).map((order: any) => ({
       ...order,
+      // Handle mapping from backend fields (pincode/full_address) to frontend Address type (pin/line1)
+      shippingAddress: order.shippingAddress ? {
+        ...order.shippingAddress,
+        pin: order.shippingAddress.pin || order.shippingAddress.pincode || '',
+        line1: order.shippingAddress.line1 || order.shippingAddress.full_address || '',
+      } : null,
+      billingAddress: order.billingAddress ? {
+        ...order.billingAddress,
+        pin: order.billingAddress.pin || order.billingAddress.pincode || '',
+        line1: order.billingAddress.line1 || order.billingAddress.full_address || '',
+      } : null,
       createdAt: order.createdAt ? new Date(order.createdAt).toISOString() : '',
       deliveredAt: order.deliveredAt ? new Date(order.deliveredAt).toISOString() : null,
     }));
@@ -42,7 +53,7 @@ export async function getOrderById(id: number): Promise<Order | null> {
      if (!token) {
         throw new Error('Token missing, please login again');
       }
-    const { data } = await serverApi.get<{ data: Order }>(`/api/orders/${id}`, {
+    const { data } = await serverApi.get<{ data: any }>(`/api/orders/${id}`, {
       withCredentials: true,
        headers: {
             Authorization: `Bearer ${token}`, 
@@ -51,11 +62,21 @@ export async function getOrderById(id: number): Promise<Order | null> {
 
     if (!data?.data) return null;
 
+    const order = data.data;
     return {
-      ...data.data,
-    createdAt: data.data.createdAt ?? null,
-    deliveredAt: data.data.deliveredAt ?? null,
-
+      ...order,
+      shippingAddress: order.shippingAddress ? {
+        ...order.shippingAddress,
+        pin: order.shippingAddress.pin || order.shippingAddress.pincode || '',
+        line1: order.shippingAddress.line1 || order.shippingAddress.full_address || '',
+      } : null,
+      billingAddress: order.billingAddress ? {
+        ...order.billingAddress,
+        pin: order.billingAddress.pin || order.billingAddress.pincode || '',
+        line1: order.billingAddress.line1 || order.billingAddress.full_address || '',
+      } : null,
+      createdAt: order.createdAt ?? null,
+      deliveredAt: order.deliveredAt ?? null,
     };
   } catch (error: any) {
     console.error("ORDER FETCH ERROR:", error?.message);

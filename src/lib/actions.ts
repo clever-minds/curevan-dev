@@ -168,7 +168,8 @@ export async function generateMissingTherapistCodes(): Promise<Coupon[]> {
 import {
   createSupportTicket as createTicketRepo,
   replyToSupportTicket as replyTicketRepo,
-  closeSupportTicket as closeTicketRepo
+  closeSupportTicket as closeTicketRepo,
+  submitContactUs as submitContactUsRepo
 } from '@/lib/repos/support';
 
 /**
@@ -176,6 +177,13 @@ import {
  */
 export async function createSupportTicket(data: any) {
   return await createTicketRepo(data);
+}
+
+/**
+ * Submit contact us form
+ */
+export async function submitContactUsAction(data: any) {
+  return await submitContactUsRepo(data);
 }
 
 /**
@@ -327,4 +335,64 @@ export async function updateJournalStatus(
       message: error.response?.data?.message || 'Failed to update journal status.'
     };
   }
+}
+
+import { requestReturn, approveReturn, listReturns } from './repos/returns';
+import { listRefunds, getMyRefunds, initiateRefund } from './repos/refunds';
+
+/**
+ * Request a return for an order
+ */
+export async function requestReturnAction(orderId: number, data?: any) {
+  const res = await requestReturn(orderId, data);
+  if (res.success) {
+    revalidatePath('/dashboard/patient/orders');
+    revalidatePath('/dashboard/admin/returns');
+  }
+  return res;
+}
+
+/**
+ * Approve a return request (Admin)
+ */
+export async function approveReturnAction(returnId: string | number) {
+  const res = await approveReturn(returnId);
+  if (res.success) {
+    revalidatePath('/dashboard/admin/returns');
+    revalidatePath('/dashboard/ecom-admin/returns');
+  }
+  return res;
+}
+
+/**
+ * Initiate a refund (Admin)
+ */
+export async function initiateRefundAction(data: { orderId: string | number; amount: number; reason?: string }) {
+  const res = await initiateRefund(data);
+  if (res.success) {
+    revalidatePath('/dashboard/admin/orders');
+    revalidatePath('/dashboard/admin/refunds');
+  }
+  return res;
+}
+
+/**
+ * List refunds (Admin)
+ */
+export async function listRefundsAction(filters?: any) {
+  return await listRefunds(filters);
+}
+
+/**
+ * List user refunds
+ */
+export async function getMyRefundsAction() {
+  return await getMyRefunds();
+}
+
+/**
+ * List returns (Admin)
+ */
+export async function listReturnsAction(filters?: any) {
+  return await listReturns(filters);
 }
