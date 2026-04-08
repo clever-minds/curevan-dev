@@ -13,9 +13,9 @@ export async function changePassword(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   console.log("getCurrentUser",user);
-  if (!user || !user.email) {
-    return { success: false, error: "User not authenticated." };
-  }
+  // if (!user || !user.email) {
+  //   return { success: false, error: "User not authenticated." };
+  // }
   try {
     const validatedData = changePasswordSchema.parse(input);
     console.log("validatedData", validatedData);
