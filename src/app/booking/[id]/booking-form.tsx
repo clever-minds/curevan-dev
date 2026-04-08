@@ -613,8 +613,8 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       } else {
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to update address' });
       }
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'Something went wrong' });
     }
   };
 

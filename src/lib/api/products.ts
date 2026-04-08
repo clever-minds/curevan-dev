@@ -8,11 +8,13 @@ import { getToken } from "@/lib/auth";
 export async function listProducts() {
   try {
     const { data } = await api.get('/api/products/list');
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to fetch products');
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || 'Failed to fetch products'
-    );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch products';
+    throw new Error(errorMsg);
   }
 }
 
@@ -62,12 +64,14 @@ export async function createProducts(payload: {
         Authorization: `Bearer ${token}` // typical format for bearer tokens
       }
     });
+
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to add product');
+    }
     return data;
   } catch (error: any) {
-    console.log( error.response?.data?.message);
-    // throw new Error(
-    //   error.response?.data?.message || 'Failed to add product'
-    // );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to add product';
+    throw new Error(errorMsg);
   }
 }
 
@@ -79,18 +83,17 @@ export async function getProductById(id: number | string) {
     const token = await getToken(); // ✅ client only
 
     const { data } = await api.get(`/api/products/${id}`,{
-  headers: {
-    Authorization: `Bearer ${token}` // typical format for bearer tokens
-  }
-});
-      console.log("FETCHING PRODUCT BY ID:",id);
+      headers: {
+        Authorization: `Bearer ${token}` // typical format for bearer tokens
+      }
+    });
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to fetch product');
+    }
     return data;
   } catch (error: any) {
-        console.log("Error fetching product by ID:", error);
-
-    // throw new Error(
-    //   error.response?.data?.message || 'Failed to fetch product'
-    // );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch product';
+    throw new Error(errorMsg);
   }
 }
 
@@ -138,11 +141,13 @@ export async function updateProduct(
 ) {
   try {
     const { data } = await api.put(`/api/products/edit/${id}`, payload);
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to update product');
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || 'Failed to update product'
-    );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to update product';
+    throw new Error(errorMsg);
   }
 }
 
@@ -152,10 +157,12 @@ export async function updateProduct(
 export async function deleteProduct(id: number | string) {
   try {
     const { data } = await api.delete(`/api/products/delete/${id}`);
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to delete product');
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || 'Failed to delete product'
-    );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete product';
+    throw new Error(errorMsg);
   }
 }

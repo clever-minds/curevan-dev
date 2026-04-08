@@ -34,11 +34,18 @@ import { Pencil } from "lucide-react";
 import { updateCategory } from "@/lib/api/categories";
 
 
+import MediaPicker from "@/components/MediaPicker";
+import type { MediaItem } from "@/types/media";
+
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required."),
     description: z.string().min(1, "Description is required."),
-    image: z.string().url("Please enter a valid image URL."),
+    image: z.array(z.object({
+        id: z.number(),
+        url: z.string(),
+    })).min(1, "Please select an image."),
 });
+
 
 
 
@@ -73,7 +80,7 @@ export default function CategoryManager() {
     defaultValues: {
         name: "",
         description: "",
-        image: "https://placehold.co/600x400.png"
+        image: [{ id: -1, url: "https://placehold.co/600x400.png" }]
     }
   });
 
@@ -89,7 +96,7 @@ export default function CategoryManager() {
         await addProductCategory(token, {
             name: data.name,
             description: data.description,
-            image: data.image,
+            image_id: data.image[0].id,
             status: true
             });
 
@@ -99,11 +106,11 @@ export default function CategoryManager() {
         });
         form.reset(); // Clear the form
         fetchCategories(); // Re-fetch the categories to update the list
-      } catch (error) {
+      } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to create category. Please try again.",
+          description: error.message || "Failed to create category. Please try again.",
         });
       }
     });
@@ -138,7 +145,7 @@ const editForm = useForm<CategoryFormValues>({
   defaultValues: {
     name: "",
     description: "",
-    image: "",
+    image: [],
   },
 });
 const handleEditCategory = (category: ProductCategory) => {
@@ -146,7 +153,7 @@ const handleEditCategory = (category: ProductCategory) => {
   editForm.reset({
     name: category.name,
     description: category.description,
-    image: category.image,
+    image: category.image ? [{ id: category.image_id ?? -1, url: category.image }] : [],
   });
   setEditOpen(true);
 };
@@ -165,7 +172,7 @@ const onEditSubmit = (data: CategoryFormValues) => {
         {
           name: data.name,
           description: data.description,
-          image: data.image,
+          image_id: data.image[0].id,
           is_active: true,
         },
         token
@@ -206,7 +213,7 @@ const onEditSubmit = (data: CategoryFormValues) => {
                                     <div className="flex items-center gap-4">
                                         {category.image && (
                                         <Image
-                                            src={category.image}
+                                            src={category.image.startsWith("http") ? category.image : `${process.env.NEXT_PUBLIC_API_URL}${category.image}`}
                                             alt={category.name}
                                             width={40}
                                             height={40}
@@ -281,8 +288,14 @@ const onEditSubmit = (data: CategoryFormValues) => {
                                 name="image"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Image URL</FormLabel>
-                                    <FormControl><Input placeholder="https://placehold.co/600x400.png" {...field} /></FormControl>
+                                    <FormLabel>Category Image</FormLabel>
+                                    <FormControl>
+                                      <MediaPicker
+                                        value={field.value as MediaItem[]}
+                                        onChange={(media: MediaItem[]) => field.onChange(media)}
+                                        multiple={false}
+                                      />
+                                    </FormControl>
                                     <FormMessage />
                                     </FormItem>
                                 )}
@@ -341,9 +354,13 @@ const onEditSubmit = (data: CategoryFormValues) => {
           name="image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Category Image</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <MediaPicker
+                  value={field.value as MediaItem[]}
+                  onChange={(media: MediaItem[]) => field.onChange(media)}
+                  multiple={false}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -142,12 +142,12 @@ export function ProfileForm() {
                 description: 'Could not update your profile. Please try again.',
             });
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Profile update error:", error);
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Something went wrong while updating your profile.',
+            description: error.message || 'Something went wrong while updating your profile.',
         });
     } finally {
         setIsUpdating(false);

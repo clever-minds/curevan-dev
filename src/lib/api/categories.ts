@@ -24,8 +24,9 @@ export async function listProductCategories() {
   const data = await res.json();
         console.log(data);
 
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to fetch categories');
+  if (!res.ok || data.success === false) {
+    const errorMsg = data.message || data.error || (data.errors && Object.values(data.errors).flat().join(", ")) || 'Failed to fetch categories';
+    throw new Error(errorMsg);
   }
 
   return data;
@@ -39,7 +40,7 @@ export async function addProductCategory(
   payload: {
     name: string;
     description: string;
-    image: string;
+    image_id: number;
     status: boolean;
   }
 ) {
@@ -54,8 +55,9 @@ export async function addProductCategory(
 
   const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to add category');
+  if (!res.ok || data.success === false) {
+    const errorMsg = data.message || data.error || (data.errors && Object.values(data.errors).flat().join(", ")) || 'Failed to add category';
+    throw new Error(errorMsg);
   }
 
   return data;
@@ -69,7 +71,7 @@ export async function updateCategory(
   payload: {
     name?: string;
     description?: string;
-    image?: string;
+    image_id?: number;
     is_active?: boolean;
   },
   token: string
@@ -85,8 +87,9 @@ export async function updateCategory(
 
   const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to update category');
+  if (!res.ok || data.success === false) {
+    const errorMsg = data.message || data.error || (data.errors && Object.values(data.errors).flat().join(", ")) || 'Failed to update category';
+    throw new Error(errorMsg);
   }
 
   return data;
@@ -111,8 +114,9 @@ export async function deleteProductCategory(
 
   const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to delete category');
+  if (!res.ok || data.success === false) {
+    const errorMsg = data.message || data.error || (data.errors && Object.values(data.errors).flat().join(", ")) || 'Failed to delete category';
+    throw new Error(errorMsg);
   }
 
   return data;

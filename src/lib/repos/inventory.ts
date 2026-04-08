@@ -16,6 +16,9 @@ export async function listInventory(filters?: any): Promise<Inventory[]> {
         });
 
         console.log("Inventory Data:", data);
+        if (data && data.success === false) {
+           throw new Error(data.message || data.error || "Failed to fetch inventory");
+        }
 
         if (!data || data.empty) return [];
 
@@ -32,6 +35,6 @@ export async function listInventory(filters?: any): Promise<Inventory[]> {
 
     } catch (error: any) {
         console.error("Failed to fetch inventory:", error.message || error);
-        return []; // fallback empty array
+        throw new Error(error.response?.data?.message || error.message || "Failed to fetch inventory");
     }
 }

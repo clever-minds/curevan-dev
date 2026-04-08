@@ -42,6 +42,9 @@ export function DatePicker({ date, setDate, className }: DatePickerProps) {
           selected={date}
           onSelect={setDate}
           initialFocus
+          captionLayout="dropdown-buttons"
+          fromYear={1980}
+          toYear={2050}
         />
       </PopoverContent>
     </Popover>

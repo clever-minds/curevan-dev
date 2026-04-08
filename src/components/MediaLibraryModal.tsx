@@ -3,9 +3,10 @@
 import Image from "next/image";
 import MediaUploader from "./MediaUploader";
 import type { MediaItem, MediaFile } from "@/types/media";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createPortal } from "react-dom";
 
 export default function MediaLibraryModal({
   media,
@@ -26,12 +27,18 @@ export default function MediaLibraryModal({
   reloadMedia: () => void;
   multiple?: boolean;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   const MEDIA_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
 
   const toggleSelect = (item: MediaItem) => {
     if (!multiple) {
-      onSelect([item]);
+      setSelectedItems([item]);
       return;
     }
 
@@ -55,9 +62,11 @@ export default function MediaLibraryModal({
     onSelect(selectedItems);
   };
 
+  if (!mounted) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9999] flex justify-center items-center">
-      <div className="bg-white rounded w-[1000px] max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 z-[10000] flex justify-center items-center p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[1000px] max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
 
         {/* HEADER */}
         <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50/50">
@@ -92,13 +101,13 @@ export default function MediaLibraryModal({
         <div className="flex flex-1 overflow-hidden">
 
           {/* LEFT: MEDIA */}
-          <div className="flex-1 p-4 overflow-auto">
+          <div className="flex-1 p-6 overflow-auto min-w-0">
             {loading && <p className="text-sm text-gray-500">Loading...</p>}
             {!loading && media.length === 0 && (
               <p className="text-sm text-gray-500">No media found</p>
             )}
 
-            <div className="grid grid-cols-4 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-4">
               {media.map((item) => {
                 const isSelected = selectedItems.some((si) => si.id === item.id);
                 return (
@@ -113,11 +122,11 @@ export default function MediaLibraryModal({
                     )}
                   >
                     <Image
-                      src={`${MEDIA_BASE_URL}${item.url}`}
+                      src={item.url.startsWith("http") ? item.url : `${MEDIA_BASE_URL}${item.url}`}
                       width={150}
                       height={150}
                       alt=""
-                      className="h-28 w-full object-cover transition-transform group-hover:scale-105"
+                      className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                       unoptimized
                     />
                     
@@ -155,28 +164,26 @@ export default function MediaLibraryModal({
         </div>
 
         {/* FOOTER */}
-        {multiple && (
-          <div className="px-4 py-3 border-t bg-gray-50/50 flex justify-between items-center">
-            <p className="text-sm text-gray-500">
-              {selectedItems.length} items selected
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={selectedItems.length === 0}
-                className="px-6 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Confirm Selection
-              </button>
-            </div>
+        <div className="px-4 py-3 border-t bg-gray-50/50 flex justify-between items-center">
+          <p className="text-sm text-gray-500">
+            {selectedItems.length} items selected
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={selectedItems.length === 0}
+              className="px-6 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Confirm Selection
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

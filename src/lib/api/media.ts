@@ -10,11 +10,13 @@ export async function listMedia(token: string) {
         Authorization: `Bearer ${token}`,
       },
     });
+    if (data && data.success === false) {
+       throw new Error(data.message || data.error || "Failed to fetch media");
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch media"
-    );
+    const errorMsg = error.response?.data?.message || error.message || "Failed to fetch media";
+    throw new Error(errorMsg);
   }
 }
 
@@ -43,11 +45,14 @@ export async function uploadMedia(
       }
     );
 
+    if (data && data.success === false) {
+       throw new Error(data.message || data.error || "Failed to upload media");
+    }
+
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || "Failed to upload media"
-    );
+    const errorMsg = error.response?.data?.message || error.message || "Failed to upload media";
+    throw new Error(errorMsg);
   }
 }
 
@@ -62,11 +67,13 @@ export async function deleteMedia(id: number | string, token: string) {
         Authorization: `Bearer ${token}`,
       },
     });
+    if (data && data.success === false) {
+       throw new Error(data.message || data.error || "Failed to delete media");
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || "Failed to delete media"
-    );
+    const errorMsg = error.response?.data?.message || error.message || "Failed to delete media";
+    throw new Error(errorMsg);
   }
 }
 

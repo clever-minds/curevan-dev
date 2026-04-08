@@ -72,10 +72,10 @@ export async function createTherapistAction(
     });
     const result = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || result.success === false) {
       return {
         success: false,
-        error: result.message || 'Failed to create therapist.',
+        error: result.message || result.error || 'Failed to create therapist.',
       };
     }
 
@@ -143,10 +143,10 @@ export async function requestProfileUpdate(
 
     const result = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || result.success === false) {
       return {
         success: false,
-        error: result.message || 'Failed to submit update request.',
+        error: result.message || result.error || 'Failed to submit update request.',
       };
     }
 

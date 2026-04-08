@@ -39,33 +39,33 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-        setLoading(true);
-        const [productsData, inventoryData] = await Promise.all([
-          listProducts(),
-          listInventory()
-        ]);
+      setLoading(true);
+      const [productsData, inventoryData] = await Promise.all([
+        listProducts(),
+        listInventory()
+      ]);
 
-        setProducts(productsData);
-        setInventory(inventoryData);
-        setLoading(false);
+      setProducts(productsData);
+      setInventory(inventoryData);
+      setLoading(false);
     };
     fetchData();
   }, []);
   const handleDelete = async (id: number) => {
-      if (!confirm("Are you sure you want to delete this product?")) return;
+    if (!confirm("Are you sure you want to delete this product?")) return;
 
-      deleteProduct(id).then(() => {
-          setProducts(products.filter(p => p.id !== id));
-      }).catch((error) => {
-          alert("Failed to delete product: " + error.message);
-      });
-    };
+    deleteProduct(id).then(() => {
+      setProducts(products.filter(p => p.id !== id));
+    }).catch((error) => {
+      alert("Failed to delete product: " + error.message);
+    });
+  };
 
   const productInventory = useMemo(() => {
     const inventoryMap = new Map(inventory.map(item => [item.productId, item]));
     return products.map(product => {
       const inv = inventoryMap.get(product.id);
-      console.log("inventoryMap",inventoryMap);
+      console.log("inventoryMap", inventoryMap);
       return {
         ...product,
         onHand: inv?.onHand ?? product.stock,
@@ -79,55 +79,55 @@ export default function AdminProductsPage() {
     const { search, categories, brand, stockStatus }: any = filters;
 
     return productInventory.filter(p => {
-    console.log("featuredpro",p);
+      console.log("featuredpro", p);
 
-        const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = !categories || categories.length === 0 || categories.includes(p.categoryId);
-        const matchesBrand = !brand || p.brand?.toLowerCase().includes(brand.toLowerCase());
-        
-        let matchesStock = true;
-        if (stockStatus === 'in_stock') matchesStock = p.available > 0;
-        if (stockStatus === 'low_stock') matchesStock = p.available <= p.reorderPoint && p.available > 0;
-        if (stockStatus === 'out_of_stock') matchesStock = p.available <= 0;
+      const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = !categories || categories.length === 0 || categories.includes(p.categoryId);
+      const matchesBrand = !brand || p.brand?.toLowerCase().includes(brand.toLowerCase());
 
-        return matchesSearch && matchesCategory && matchesBrand && matchesStock;
+      let matchesStock = true;
+      if (stockStatus === 'in_stock') matchesStock = p.available > 0;
+      if (stockStatus === 'low_stock') matchesStock = p.available <= p.reorderPoint && p.available > 0;
+      if (stockStatus === 'out_of_stock') matchesStock = p.available <= 0;
+
+      return matchesSearch && matchesCategory && matchesBrand && matchesStock;
     })
   }, [productInventory, filters])
 
   const handleExport = () => {
     const headers = [
-        "ID", "Name", "SKU", "Category ID", "Brand", "Price", "MRP",
-        "On Hand Stock", "Reserved Stock", "Available Stock", "Reorder Point", 
-        "Active", "Coupon Excluded",
-        "HSN Code", "Manufacturer", "Country of Origin", "Packer", "Importer",
-        "Batch Number", "MFG Date", "Expiry Date",
-        "Short Description", "Long Description"
+      "ID", "Name", "SKU", "Category ID", "Brand", "Price", "MRP",
+      "On Hand Stock", "Reserved Stock", "Available Stock", "Reorder Point",
+      "Active", "Coupon Excluded",
+      "HSN Code", "Manufacturer", "Country of Origin", "Packer", "Importer",
+      "Batch Number", "MFG Date", "Expiry Date",
+      "Short Description", "Long Description"
     ];
-    
+
     const data = productInventory.map(p => [
-        p.id,
-        p.name,
-        p.sku,
-        p.categoryId,
-        p.brand || '',
-        p.price,
-        p.mrp || p.price,
-        p.onHand,
-        p.reserved,
-        p.available,
-        p.reorderPoint,
-        p.isActive ? 'Yes' : 'No',
-        p.isCouponExcluded ? 'Yes' : 'No',
-        p.hsnCode || '',
-        p.manufacturer || '',
-        p.countryOfOrigin || '',
-        p.packer || '',
-        p.importer || '',
-        p.batchNumber || '',
-        p.mfgDate || '',
-        p.expiryDate || '',
-        p.description,
-        p.longDescription || ''
+      p.id,
+      p.name,
+      p.sku,
+      p.categoryId,
+      p.brand || '',
+      p.price,
+      p.mrp || p.price,
+      p.onHand,
+      p.reserved,
+      p.available,
+      p.reorderPoint,
+      p.isActive ? 'Yes' : 'No',
+      p.isCouponExcluded ? 'Yes' : 'No',
+      p.hsnCode || '',
+      p.manufacturer || '',
+      p.countryOfOrigin || '',
+      p.packer || '',
+      p.importer || '',
+      p.batchNumber || '',
+      p.mfgDate || '',
+      p.expiryDate || '',
+      p.description,
+      p.longDescription || ''
     ]);
 
     downloadCsv(headers, data, 'curevan-product-master.csv');
@@ -136,25 +136,25 @@ export default function AdminProductsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-          <div>
-              <h1 className="text-2xl font-bold tracking-tight font-headline">Manage Store</h1>
-              <p className="text-muted-foreground">Manage your products and categories.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExport}><FileDown className="mr-2" /> Export Products</Button>
-            <Button asChild>
-              <Link href="/dashboard/admin/products/new">
-                  <PlusCircle className="mr-2" />
-                  Add New Product
-              </Link>
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight font-headline">Manage Store</h1>
+          <p className="text-muted-foreground">Manage your products and categories.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport}><FileDown className="mr-2" /> Export Products</Button>
+          <Button asChild>
+            <Link href="/dashboard/admin/products/new">
+              <PlusCircle className="mr-2" />
+              Add New Product
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <FilterBar 
-          onFilterChange={setFilters} 
-          showSearch 
-          showEcomFilters 
+      <FilterBar
+        onFilterChange={setFilters}
+        showSearch
+        showEcomFilters
       />
 
       <Tabs defaultValue="products">
@@ -184,52 +184,52 @@ export default function AdminProductsPage() {
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                        <TableRow>
-                            <TableCell colSpan={7}>
-                                <Skeleton className="w-full h-24" />
-                            </TableCell>
-                        </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={7}>
+                          <Skeleton className="w-full h-24" />
+                        </TableCell>
+                      </TableRow>
                     ) : filteredProducts.map((product) => {
-                       const isLowStock = product.available <= product.reorderPoint;
-                       return (
+                      const isLowStock = product.available <= product.reorderPoint;
+                      return (
                         <TableRow key={product.id} className={isLowStock ? 'bg-red-50 dark:bg-red-900/20' : ''}>
-                            <TableCell className="font-medium flex items-center gap-3">
-                                <Image src={product.featuredImage ? `${process.env.NEXT_PUBLIC_API_URL}${product.featuredImage}` : "/images/no-image.png"} alt={product.name} width={40} height={40} className="rounded-md object-cover" data-ai-hint={product.categoryId} />
-                                {product.name}
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="outline">{product.categoryId}</Badge>
-                            </TableCell>
-                            <TableCell><Price amount={product.price} showDecimals /></TableCell>
-                            <TableCell className="text-center">{product.onHand}</TableCell>
-                            <TableCell className="text-center">{product.reserved}</TableCell>
-                            <TableCell className="text-center font-bold">
-                                {isLowStock ? <Badge variant="destructive">{product.available}</Badge> : product.available}
-                            </TableCell>
-                            <TableCell className="text-right">
+                          <TableCell className="font-medium flex items-center gap-3">
+                            <Image src={product.featuredImage ? `${process.env.NEXT_PUBLIC_API_URL}${product.featuredImage}` : "/images/no-image.png"} alt={product.name} width={40} height={40} className="rounded-md object-cover" data-ai-hint={product.categoryId} />
+                            {product.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{product.categoryId}</Badge>
+                          </TableCell>
+                          <TableCell><Price amount={product.price} showDecimals /></TableCell>
+                          <TableCell className="text-center">{product.onHand}</TableCell>
+                          <TableCell className="text-center">{product.reserved}</TableCell>
+                          <TableCell className="text-center font-bold">
+                            {isLowStock ? <Badge variant="destructive">{product.available}</Badge> : product.available}
+                          </TableCell>
+                          <TableCell className="text-right">
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                              <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
+                                  <MoreVertical className="h-4 w-4" />
                                 </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild className="cursor-pointer">
-                                   <Link href={`/dashboard/admin/products/${product.id}/edit`}>
-                                      Edit
-                                    </Link>
+                                  <Link href={`/dashboard/admin/products/${product.id}/edit`}>
+                                    Edit
+                                  </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="cursor-pointer"> 
-                                  <Link href={`/products/${product.id}`}>
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                  <Link href={`/ecommerce/product/${product.id}`}>
                                     View on Store
                                   </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive"  onClick={() => handleDelete(product.id)}>Delete</DropdownMenuItem>
-                                </DropdownMenuContent>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(product.id)}>Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
                             </DropdownMenu>
-                            </TableCell>
+                          </TableCell>
                         </TableRow>
-                       )
+                      )
                     })}
                   </TableBody>
                 </Table>

@@ -200,12 +200,12 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.log('Error during finalization:', error);
       toast({
         variant: 'destructive',
-        title: 'Something went wrong',
-        description: 'Please try again1.',
+        title: 'Finalization Failed',
+        description: error.message || 'Something went wrong',
       });
     }
 
@@ -234,9 +234,13 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       } as any);
       toast({ title: 'PCR Submitted', description: 'Your report has been submitted for review and is now locked.' });
       form.reset({ ...data, status: 'submitted' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Submission error:", error);
-      toast({ variant: 'destructive', title: 'Submission Failed', description: 'Failed to submit the report.' });
+      toast({ 
+        variant: 'destructive', 
+        title: 'Submission Failed', 
+        description: error.message || 'Failed to submit the report.' 
+      });
     }
     setIsFinalizing(false);
   }

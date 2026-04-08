@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import type { MediaFile } from "@/types/media";
 import { uploadMedia } from "@/lib/api/media";
 import { getToken } from "@/lib/auth";
-
+import { useToast } from "@/hooks/use-toast";
 export default function MediaUploader({
   files,
   setFiles,
@@ -16,6 +16,7 @@ export default function MediaUploader({
   setFiles: React.Dispatch<React.SetStateAction<MediaFile[]>>;
   onUploaded: () => void;
 }) {
+  const { toast } = useToast();
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
       "image/*": [],
@@ -38,8 +39,13 @@ export default function MediaUploader({
         const token =await getToken();
         await uploadMedia(token as string, acceptedFiles);
         onUploaded();
-      } catch (e) {
+      } catch (e: any) {
         console.error("Upload failed", e);
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: e.message || "Something went wrong while uploading media.",
+        });
       }
     },
   });

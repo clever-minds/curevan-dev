@@ -172,6 +172,7 @@ export interface ProductCategory {
   name: string;
   description: string;
   image: string;
+  image_id?: number;
   isActive: boolean;
 }
 

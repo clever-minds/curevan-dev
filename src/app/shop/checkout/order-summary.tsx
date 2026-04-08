@@ -53,11 +53,11 @@ export function OrderSummary() {
           description: "Coupon not valid",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Something went wrong while applying coupon.",
+        description: error.message || "Something went wrong while applying coupon.",
       });
     } finally {
       setCouponLoading(false);

@@ -19,4 +19,26 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+  (response) => {
+    if (response.data && response.data.success === false) {
+      return Promise.reject({
+        message: response.data.message || response.data.error || "Operation failed",
+        ...response.data
+      });
+    }
+    return response;
+  },
+  (error) => {
+    const backendData = error.response?.data;
+    if (backendData) {
+      return Promise.reject({
+        message: backendData.message || backendData.error || error.message,
+        ...backendData
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

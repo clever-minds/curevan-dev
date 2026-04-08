@@ -7,11 +7,13 @@ import { getToken } from "@/lib/auth";
 export async function listCoupons() {
   try {
     const { data } = await api.get('/api/coupons/list');
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to fetch coupons');
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || 'Failed to fetch coupons'
-    );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch coupons';
+    throw new Error(errorMsg);
   }
 }
 
@@ -27,9 +29,14 @@ export async function getCouponById(id: number | string) {
         Authorization: `Bearer ${token}`
       }
     });
+
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to fetch coupon');
+    }
     return data;
   } catch (error: any) {
-    console.log("Error fetching coupon by ID:", error);
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch coupon';
+    throw new Error(errorMsg);
   }
 }
 
@@ -58,9 +65,14 @@ export async function createCoupon(payload: {
   try {
         console.log("createCoupon payload",payload);
     const { data } = await api.post('/api/coupons/add', payload);
+
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to add coupon');
+    }
     return data;
   } catch (error: any) {
-    console.log(error.response?.data?.message);
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to add coupon';
+    throw new Error(errorMsg);
   }
 }
 
@@ -91,11 +103,13 @@ export async function updateCoupon(
 ) {
   try {
     const { data } = await api.put(`/api/coupons/edit/${id}`, payload);
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to update coupon');
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || 'Failed to update coupon'
-    );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to update coupon';
+    throw new Error(errorMsg);
   }
 }
 
@@ -105,10 +119,12 @@ export async function updateCoupon(
 export async function deleteCoupon(id: number | string) {
   try {
     const { data } = await api.delete(`/api/coupons/delete/${id}`);
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to delete coupon');
+    }
     return data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || 'Failed to delete coupon'
-    );
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete coupon';
+    throw new Error(errorMsg);
   }
 }

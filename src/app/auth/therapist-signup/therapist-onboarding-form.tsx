@@ -449,7 +449,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'An unexpected error occurred',
+          description: (error as Error).message || 'An unexpected error occurred',
         });
       }
     });

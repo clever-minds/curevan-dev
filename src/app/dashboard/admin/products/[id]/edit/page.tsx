@@ -35,9 +35,9 @@ export default function EditProductPage() {
   return (
      <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight font-headline">Add New Product</h1>
+        <h1 className="text-2xl font-bold tracking-tight font-headline">Edit Product</h1>
         <p className="text-muted-foreground">
-          Fill out the form below to add a new product, service, or bundle to your store.
+          Update the product details, pricing, and inventory information.
         </p>
       </div>
       <Card>

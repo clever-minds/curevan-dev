@@ -239,14 +239,12 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
         throw new Error("Save failed");
       }
 
-    } catch (err) {
-
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Error Saving",
-        description: "Something went wrong.",
+        description: err.message || "Something went wrong.",
       });
-
     }
 
   }  // A simple slug generation utility

@@ -19,8 +19,8 @@ export async function signInWithEmailAndPassword(
   console.log(res);
   const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.message || 'Login failed');
+  if (!res.ok || data.success === false) {
+    throw new Error(data.message || data.error || 'Login failed');
   }
 
   return {
@@ -42,8 +42,8 @@ export async function getUserProfile(
 
   const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.message || 'Profile fetch failed');
+  if (!res.ok || data.success === false) {
+    throw new Error(data.message || data.error || 'Profile fetch failed');
   }
 
   return data;
@@ -62,6 +62,10 @@ export const getUserProfiledata = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
+
+    if (res.data && res.data.success === false) {
+       throw new Error(res.data.message || res.data.error || "Profile fetch failed");
+    }
 
     return res.data;
 
@@ -88,8 +92,8 @@ export async function createUserWithEmailAndPassword(
 
   const result = await res.json();
 
-  if (!res.ok) {
-    throw new Error(result.message || 'Registration failed');
+  if (!res.ok || result.success === false) {
+    throw new Error(result.message || result.error || 'Registration failed');
   }
 
   return result;
@@ -108,6 +112,10 @@ export async function loginWithOTP(data: {
         Authorization: `Bearer ${token}`,
       },
     });
+
+    if (res.data && res.data.success === false) {
+       throw new Error(res.data.message || res.data.error || "Login failed");
+    }
 
     return res.data;
 
@@ -131,6 +139,10 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
       },
     });
 
+    if (res.data && res.data.success === false) {
+       return null;
+    }
+
     return res.data;
 
   } catch (error) {
@@ -146,8 +158,8 @@ export async function verifyEmail(token: string) {
   });
 
   const result = await res.json();
-  if (!res.ok) {
-    throw new Error(result.message || 'Email verification failed');
+  if (!res.ok || result.success === false) {
+    throw new Error(result.message || result.error || 'Email verification failed');
   }
   return result;
 }

@@ -43,42 +43,42 @@ const productFormSchema = z.object({
   // Core Info
   productType: z.enum(['Physical', 'Digital', 'Service', 'Bundle'], { required_error: "Product type is required." }),
   title: z.string().min(3, 'Product title must be at least 3 characters.'),
-  subtitle: z.string().optional(),
+  subtitle: z.string().nullable().optional(),
   shortDescription: z.string().min(10, 'Short description must be at least 10 characters.'),
-  longDescription: z.string().optional(),
-  brand: z.string().optional(),
+  longDescription: z.string().nullable().optional(),
+  brand: z.string().nullable().optional(),
   sku: z.string().min(1, "SKU is required."),
   category: z.string().min(1, 'Please select a category.'),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).nullable().optional(),
   
   // Pricing & Taxes
   mrp: z.coerce.number().min(0, 'MRP must be a positive number.'),
   sellingPrice: z.coerce.number().min(0, 'Selling price must be a positive number.'),
   isTaxInclusive: z.boolean().default(true),
   isCouponExcluded: z.boolean().default(false).describe("Exclude this product from therapist coupon discounts."),
-  hsnCode: z.string().optional(),
-  sacCode: z.string().optional(),
-  gstSlab: z.coerce.number().optional(),
+  hsnCode: z.string().nullable().optional(),
+  sacCode: z.string().nullable().optional(),
+  gstSlab: z.coerce.number().nullable().optional(),
   
   // Inventory & Fulfillment
   trackInventory: z.boolean().default(true),
   stock: z.coerce.number().min(0, 'Stock cannot be negative.'),
   reorderPoint: z.coerce.number().min(0, 'Reorder point cannot be negative.').optional(),
   dimensions: z.object({
-    lengthCm: z.coerce.number().min(0, 'Length cannot be negative.').optional(),
-    widthCm: z.coerce.number().min(0, 'Width cannot be negative.').optional(),
-    heightCm: z.coerce.number().min(0, 'Height cannot be negative.').optional(),
-    weightKg: z.coerce.number().min(0, 'Weight cannot be negative.').optional(),
-  }).optional(),
+    lengthCm: z.coerce.number().min(0, 'Length cannot be negative.').nullable().optional(),
+    widthCm: z.coerce.number().min(0, 'Width cannot be negative.').nullable().optional(),
+    heightCm: z.coerce.number().min(0, 'Height cannot be negative.').nullable().optional(),
+    weightKg: z.coerce.number().min(0, 'Weight cannot be negative.').nullable().optional(),
+  }).nullable().optional(),
 
   // Manufacturing & Compliance
-  manufacturer: z.string().optional(),
-  packer: z.string().optional(),
-  importer: z.string().optional(),
-  countryOfOrigin: z.string().optional(),
-  batchNumber: z.string().optional(),
-  mfgDate: z.date().optional(),
-  expiryDate: z.date().optional(),
+  manufacturer: z.string().nullable().optional(),
+  packer: z.string().nullable().optional(),
+  importer: z.string().nullable().optional(),
+  countryOfOrigin: z.string().nullable().optional(),
+  batchNumber: z.string().nullable().optional(),
+  mfgDate: z.date().nullable().optional(),
+  expiryDate: z.date().nullable().optional(),
 
   // Media & Visibility
 images: z
@@ -137,22 +137,6 @@ export function ProductForm({
     };
     fetchCategories();
   }, []);
-  useEffect(() => {
-  if (initialData) {
-    console.log("Initial Data →", initialData);
-    form.reset({
-      ...initialData,
-      category: initialData.category ? String(initialData.category) : undefined,
-      gstSlab: initialData.gstSlab ?? undefined,
-      mfgDate: initialData.mfgDate ? new Date(initialData.mfgDate) : undefined,
-      expiryDate: initialData.expiryDate ? new Date(initialData.expiryDate) : undefined,
-       sacCode: initialData.sacCode || '',    // ✅ convert null → ''
-      hsnCode: initialData.hsnCode || '',    // if needed
-    });
-  }
-}, [initialData]);
-
-
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -169,6 +153,35 @@ export function ProductForm({
       reorderPoint: 0,
     },
   });
+
+  useEffect(() => {
+  if (initialData) {
+    console.log("Initial Data →", initialData);
+    form.reset({
+      ...initialData,
+      category: initialData.category ? String(initialData.category) : undefined,
+      gstSlab: initialData.gstSlab ?? undefined,
+      mfgDate: initialData.mfgDate ? new Date(initialData.mfgDate) : undefined,
+      expiryDate: initialData.expiryDate ? new Date(initialData.expiryDate) : undefined,
+      sacCode: initialData.sacCode || '',
+      hsnCode: initialData.hsnCode || '',
+      subtitle: initialData.subtitle || '',
+      longDescription: initialData.longDescription || '',
+      brand: initialData.brand || '',
+      manufacturer: initialData.manufacturer || '',
+      packer: initialData.packer || '',
+      importer: initialData.importer || '',
+      countryOfOrigin: initialData.countryOfOrigin || '',
+      batchNumber: initialData.batchNumber || '',
+      dimensions: {
+        lengthCm: initialData.dimensions?.lengthCm ?? undefined,
+        widthCm: initialData.dimensions?.widthCm ?? undefined,
+        heightCm: initialData.dimensions?.heightCm ?? undefined,
+        weightKg: initialData.dimensions?.weightKg ?? undefined,
+      }
+    });
+  }
+}, [initialData, form]);
 
   const productType = form.watch('productType');
 
@@ -235,33 +248,33 @@ export function ProductForm({
         const payload = {
             productType: data.productType,
             title: data.title,
-            subtitle: data.subtitle,
+            subtitle: data.subtitle ?? undefined,
+            tags: data.tags ?? undefined,
             shortDescription: data.shortDescription,
-            tags: data.tags,
-            longDescription: data.longDescription,
-            brand: data.brand,
+            longDescription: data.longDescription ?? undefined,
+            brand: data.brand ?? undefined,
             sku: data.sku,
             category: Number(data.category),
             mrp: data.mrp,
             sellingPrice: data.sellingPrice,
             isTaxInclusive: data.isTaxInclusive,
             isCouponExcluded: data.isCouponExcluded,
-            hsnCode: data.hsnCode,
-            sacCode: data.sacCode,
-            gstSlab: data.gstSlab,
+            hsnCode: data.hsnCode ?? undefined,
+            sacCode: data.sacCode ?? undefined,
+            gstSlab: data.gstSlab ?? undefined,
             status: data.status,
             stock: data.stock,
             reorderPoint: data.reorderPoint,
             image_ids: imageIds,
-            length_cm: data.dimensions?.lengthCm,
-            width_cm: data.dimensions?.widthCm,
-            height_cm: data.dimensions?.heightCm,
-            weight_kg: data.dimensions?.weightKg,
-            manufacturer: data.manufacturer,
-            country_of_origin: data.countryOfOrigin,
-            packer: data.packer,
-            importer: data.importer,
-            batch_number: data.batchNumber,
+            length_cm: data.dimensions?.lengthCm ?? undefined,
+            width_cm: data.dimensions?.widthCm ?? undefined,
+            height_cm: data.dimensions?.heightCm ?? undefined,
+            weight_kg: data.dimensions?.weightKg ?? undefined,
+            manufacturer: data.manufacturer ?? undefined,
+            country_of_origin: data.countryOfOrigin ?? undefined,
+            packer: data.packer ?? undefined,
+            importer: data.importer ?? undefined,
+            batch_number: data.batchNumber ?? undefined,
             manufacturing_date: data.mfgDate?.toISOString().split('T')[0],
             expiry_date: data.expiryDate?.toISOString().split('T')[0],
         };
@@ -285,12 +298,12 @@ export function ProductForm({
                 description: `The product could not be saved. Please try again.`,
             });
         }
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Something went wrong while saving the product.',
+            description: err.message || 'Something went wrong while saving the product.',
         });
     }
 }
@@ -305,11 +318,11 @@ export function ProductForm({
             <h3 className="text-lg font-medium font-headline">Core Information</h3>
             <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type</FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="shortDescription" render={({ field }) => (<FormItem><FormLabel>Short Description</FormLabel><FormControl><Textarea placeholder="A concise summary for product cards." rows={3} {...field} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="longDescription" render={({ field }) => (<FormItem><FormLabel>Full Description (Optional)</FormLabel><FormControl><AIRichText value={field.value || ''} onChange={field.onChange} placeholder="Detailed product description, specifications, and usage instructions..." context={{ entityType: 'post' }} /></FormControl><FormMessage /></FormItem>)}/>
             <div className="grid sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU</FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
             </div>
              <div className="grid sm:grid-cols-2 gap-4">
@@ -342,8 +355,8 @@ export function ProductForm({
               </div>
              <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Price includes tax?</FormLabel><FormDescription>Is GST already included in the selling price?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
              <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Exclude from Therapist Coupons</FormLabel><FormDescription>If enabled, this product will not be discounted by referral codes.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-            {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} /></FormControl><FormMessage /></FormItem>)}/>)}
-            <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} value={String(field.value)}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+            {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>)}
+            <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
         </div>
         <Separator />
         {(productType === 'Physical' || productType === 'Bundle') && (
@@ -357,10 +370,10 @@ export function ProductForm({
                  <h4 className="text-sm font-medium font-headline pt-2">Package Dimensions</h4>
                  <Alert><Info className="h-4 w-4" /><AlertDescription>These details are crucial for accurate shipping cost calculation.</AlertDescription></Alert>
                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <FormField control={form.control} name="dimensions.lengthCm" render={({ field }) => (<FormItem><FormLabel>Length (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 20" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="dimensions.widthCm" render={({ field }) => (<FormItem><FormLabel>Width (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 15" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="dimensions.heightCm" render={({ field }) => (<FormItem><FormLabel>Height (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 10" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="dimensions.weightKg" render={({ field }) => (<FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 1.5" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.lengthCm" render={({ field }) => (<FormItem><FormLabel>Length (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 20" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.widthCm" render={({ field }) => (<FormItem><FormLabel>Width (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 15" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.heightCm" render={({ field }) => (<FormItem><FormLabel>Height (cm)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 10" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="dimensions.weightKg" render={({ field }) => (<FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" min="0" step="any" placeholder="e.g. 1.5" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 </div>
             </div>
         )}
@@ -368,15 +381,15 @@ export function ProductForm({
         <div className="space-y-4">
             <h3 className="text-lg font-medium font-headline">Manufacturing & Compliance</h3>
             <div className="grid sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>Manufacturer</FormLabel><FormControl><Input placeholder="Manufacturer Name" {...field} /></FormControl></FormItem>)}/>
-                <FormField control={form.control} name="countryOfOrigin" render={({ field }) => (<FormItem><FormLabel>Country of Origin</FormLabel><FormControl><Input placeholder="e.g., India" {...field} /></FormControl></FormItem>)}/>
-                <FormField control={form.control} name="packer" render={({ field }) => (<FormItem><FormLabel>Packer (Optional)</FormLabel><FormControl><Input placeholder="Packer Name" {...field} /></FormControl></FormItem>)}/>
-                <FormField control={form.control} name="importer" render={({ field }) => (<FormItem><FormLabel>Importer (Optional)</FormLabel><FormControl><Input placeholder="Importer Name" {...field} /></FormControl></FormItem>)}/>
-                <FormField control={form.control} name="batchNumber" render={({ field }) => (<FormItem><FormLabel>Batch/Lot Number</FormLabel><FormControl><Input placeholder="e.g., A23-456" {...field} /></FormControl></FormItem>)}/>
+                <FormField control={form.control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>Manufacturer</FormLabel><FormControl><Input placeholder="Manufacturer Name" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
+                <FormField control={form.control} name="countryOfOrigin" render={({ field }) => (<FormItem><FormLabel>Country of Origin</FormLabel><FormControl><Input placeholder="e.g., India" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
+                <FormField control={form.control} name="packer" render={({ field }) => (<FormItem><FormLabel>Packer (Optional)</FormLabel><FormControl><Input placeholder="Packer Name" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
+                <FormField control={form.control} name="importer" render={({ field }) => (<FormItem><FormLabel>Importer (Optional)</FormLabel><FormControl><Input placeholder="Importer Name" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
+                <FormField control={form.control} name="batchNumber" render={({ field }) => (<FormItem><FormLabel>Batch/Lot Number</FormLabel><FormControl><Input placeholder="e.g., A23-456" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
-                <Controller control={form.control} name="mfgDate" render={({ field }) => (<FormItem><FormLabel>Manufacturing Date</FormLabel><DatePicker date={field.value} setDate={field.onChange} /></FormItem>)}/>
-                <Controller control={form.control} name="expiryDate" render={({ field }) => (<FormItem><FormLabel>Use Before/Expiry Date</FormLabel><DatePicker date={field.value} setDate={field.onChange} /></FormItem>)}/>
+                <Controller control={form.control} name="mfgDate" render={({ field }) => (<FormItem><FormLabel>Manufacturing Date</FormLabel><DatePicker date={field.value ?? undefined} setDate={field.onChange} /></FormItem>)}/>
+                <Controller control={form.control} name="expiryDate" render={({ field }) => (<FormItem><FormLabel>Use Before/Expiry Date</FormLabel><DatePicker date={field.value ?? undefined} setDate={field.onChange} /></FormItem>)}/>
             </div>
         </div>
         <Separator />
