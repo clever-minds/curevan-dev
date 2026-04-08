@@ -9,10 +9,10 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     // ✅ Remove 'await'
     const cookieStore = await cookies() // synchronous
     const token = cookieStore.get('token')?.value
-    console.error('token token:', token)
+    console.log('token token:', token)
 
     if (!token) return null
-console.log( " process.env.JWT_SECRET!",process.env.JWT_SECRET);
+    console.log(" process.env.JWT_SECRET!", process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string }
     if (!decoded?.id) return null
     console.log('Decoded user profile:', decoded.id)
