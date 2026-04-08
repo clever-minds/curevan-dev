@@ -1,27 +1,53 @@
 'use server'
 import { cookies } from 'next/headers'
-import jwt from 'jsonwebtoken'
 import type { UserProfile } from '@/lib/types'
-import { getUserById } from "@/lib/repos/users";
-import serverApi from "@/lib/repos/axios.server";
 export async function getCurrentUser(): Promise<UserProfile | null> {
   try {
-    // ✅ Remove 'await'
-    const cookieStore = await cookies() // synchronous
-    const token = cookieStore.get('token')?.value
-    console.error('token token:', token)
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
 
-    if (!token) return null
-console.log( " process.env.JWT_SECRET!",process.env.JWT_SECRET);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string }
-    if (!decoded?.id) return null
-    console.log('Decoded user profile:', decoded.id)
-    const userProfile = await getUserById(decoded.id)
-    console.log('Decoded user profile:', userProfile)
-    return userProfile || null
+    if (!token) {
+      console.log('No auth token found in cookies');
+      return null;
+    }
+
+    // Call the backend /me endpoint directly with the token
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', // Always get fresh data
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch user from backend:', response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    if (data.success === false || !data.data) {
+      console.error('Backend returned success:false or missing data:', data);
+      return null;
+    }
+
+    const user = data.data;
+    return {
+      id: user.id,
+      uid: user.uid,
+      name: user.name || "",
+      email: user.email || "",
+      role: user.role || "",
+      roles: user.roles || [],
+      createdAt: user.createdAt || null,
+      push_opt_in: user.push_opt_in ?? false,
+      email_opt_in: user.email_opt_in ?? false,
+    } as UserProfile;
+
   } catch (error) {
-    console.error('Invalid or expired token:', error)
-    return null
+    console.error('Error in getCurrentUser server action:', error);
+    return null;
   }
 }
 

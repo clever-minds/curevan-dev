@@ -25,9 +25,9 @@ export async function createShipment(
         actorId: user.uid, // for audit logging
       },
       {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
-         }, // maintain session/cookies
+        }, // maintain session/cookies
       }
     );
 
