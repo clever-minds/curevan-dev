@@ -39,8 +39,8 @@ const LogoWithText = () => (
      <Link href="/" className="group flex items-center gap-2 no-underline">
         <Logo />
     <div className="flex flex-col items-start justify-center leading-none min-w-0">
-        <span className="font-bold text-base md:text-lg lg:text-xl whitespace-nowrap text-primary">Curevan</span>
-        <span className="font-semibold text-[10px] md:text-xs whitespace-nowrap text-accent">Cure. Anywhere.</span>
+        <span className="font-bold text-sm sm:text-base md:text-lg lg:text-xl whitespace-nowrap text-primary">Curevan</span>
+        <span className="font-semibold text-[8px] sm:text-[10px] md:text-xs whitespace-nowrap text-accent">Cure. Anywhere.</span>
     </div>
      </Link>
   );
@@ -183,7 +183,7 @@ export default function Header() {
             </div>
         </div>
       </div>
-      <div className="container flex h-[var(--header-height)] max-w-screen-2xl items-center border-b">
+      <div className="container flex h-[var(--header-height)] max-w-screen-2xl items-center border-b px-2 sm:px-4 md:px-6">
         <div className="mr-4 hidden lg:flex">
           <div className="mr-6">
             <LogoWithText />
@@ -235,7 +235,7 @@ export default function Header() {
 
             <div className="hidden md:block"><LogoWithText /></div>
 
-            <div className="flex items-center justify-end gap-1 sm:gap-1.5 flex-1">
+            <div className="flex items-center justify-end gap-0.5 sm:gap-2 flex-1 min-w-0">
               <div className={cn(
                 "flex items-center transition-all duration-300 overflow-hidden",
                 isSearchVisible ? "flex-1 opacity-100" : "w-0 opacity-0"
@@ -253,14 +253,14 @@ export default function Header() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-9 w-9 shrink-0" 
+                className="h-8 w-8 sm:h-10 sm:w-10 shrink-0" 
                 aria-label="Toggle Search"
                 onClick={() => {
                   setIsSearchVisible(!isSearchVisible);
                   if (isSearchVisible) setSearchQuery('');
                 }}
               >
-                {isSearchVisible ? <Menu className="h-5 w-5 rotate-90" /> : <Search className="h-5 w-5" />}
+                {isSearchVisible ? <Menu className="h-3.5 w-3.5 sm:h-5 sm:w-5 rotate-90" /> : <Search className="h-3.5 w-3.5 sm:h-5 sm:w-5" />}
               </Button>
               
               {!isSearchVisible && (
@@ -269,7 +269,7 @@ export default function Header() {
                     <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="mr-1 animate-pulse bg-red-600 hover:bg-red-700 font-bold h-8 w-8 sm:w-auto sm:px-3"
+                        className="mr-0.5 sm:mr-1 animate-pulse bg-red-600 hover:bg-red-700 font-bold h-8 w-8 shrink-0 flex items-center justify-center p-0 sm:w-auto sm:px-3"
                         onClick={handleSosTrigger}
                         disabled={isSosSending}
                         title="SOS Emergency"
@@ -280,10 +280,10 @@ export default function Header() {
                   )}
                   
                   <CartSheet>
-                    <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative p-0 h-10 w-10">
-                        <ShoppingCart className="w-8 h-8 sm:w-5 sm:h-5" />
+                    <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative p-0 h-8 w-8 sm:h-10 sm:w-10">
+                        <ShoppingCart className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                         {isClient && cart.length > 0 && (
-                            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground transform translate-x-1 -translate-y-1">
+                            <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
                                 {cart.length}
                             </span>
                         )}
@@ -295,8 +295,8 @@ export default function Header() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative" aria-label="User Menu">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="relative h-7 w-7 sm:h-8 sm:w-8" aria-label="User Menu">
+                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                         <AvatarImage src={getMediaUrl((user as any)?.image, "https://placehold.co/100x100.png?text=" + (user?.name?.charAt(0) || 'U'))} alt={user?.name || 'User'} data-ai-hint="user avatar" />
                         <AvatarFallback><User className="w-4 h-4"/></AvatarFallback>
                       </Avatar>

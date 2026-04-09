@@ -22,24 +22,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ✅ Check auth on mount
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("Starting Auth Check...");
       try {
         setIsLoading(true);
-        const token = await getToken();
+        let token = await getToken();
+        
+        // Client-side fallback for IP addresses/testing
+        if (!token && typeof window !== 'undefined') {
+          token = localStorage.getItem('token');
+          console.log("Token from localStorage:", !!token);
+        }
+
+        console.log("Token check:", !!token);
 
         if (!token) {
-          throw new Error('Token missing, please login again');
+          console.log("No token found, user not logged in.");
+          setUser(null);
+          return;
         }
+
         const res = await api.get('/api/auth/me', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        // /api/me returns user directly
+        
+        console.log("Auth profile fetched successfully");
         setUser(res.data || null);
       } catch (error) {
         console.log("CheckAuth error:", error);
         setUser(null);
       } finally {
+        console.log("Auth check completed, setting isLoading to false");
         setIsLoading(false);
       }
     };

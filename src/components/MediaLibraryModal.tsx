@@ -121,14 +121,21 @@ export default function MediaLibraryModal({
                         : "border-gray-200 hover:border-blue-300"
                     )}
                   >
-                    <Image
-                      src={item.url.startsWith("http") ? item.url : `${MEDIA_BASE_URL}${item.url}`}
-                      width={150}
-                      height={150}
-                      alt=""
-                      className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
-                      unoptimized
-                    />
+                    {item.type === "video" || [".mp4", ".webm", ".ogg", ".mov", ".m4v"].some(ext => item.url.toLowerCase().endsWith(ext)) ? (
+                      <video
+                        src={item.url.startsWith("http") ? item.url : `${MEDIA_BASE_URL}${item.url}`}
+                        className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <Image
+                        src={item.url.startsWith("http") ? item.url : `${MEDIA_BASE_URL}${item.url}`}
+                        width={150}
+                        height={150}
+                        alt=""
+                        className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                        unoptimized
+                      />
+                    )}
                     
                     {isSelected && (
                       <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-0.5 shadow-md">
@@ -149,7 +156,7 @@ export default function MediaLibraryModal({
 
           {/* RIGHT: UPLOAD */}
           <div className="w-[280px] border-l p-4">
-            <h3 className="font-semibold mb-2">Upload New Image</h3>
+            <h3 className="font-semibold mb-2">Upload New Media</h3>
 
             <MediaUploader
               files={upload}

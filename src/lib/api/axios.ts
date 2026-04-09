@@ -6,11 +6,18 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 const api = axios.create({
   baseURL: API,
   withCredentials: true, 
+  timeout: 10000, // 10 seconds timeout
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = getCookie('token');
+    let token = getCookie('token');
+    
+    // Fallback to localStorage for IP-based access or non-cookie environments
+    if (!token && typeof window !== 'undefined') {
+      token = localStorage.getItem('token');
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

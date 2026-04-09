@@ -64,7 +64,6 @@ export default function RootLayout({
               <BottomNav />
               <AIChatAssistant />
               <CookieConsentBanner />
-              <LocationConsentDialog/>
             </CartProvider>
           </AuthProvider>
         </Suspense>

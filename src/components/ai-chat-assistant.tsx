@@ -114,10 +114,10 @@ export function AIChatAssistant() {
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
-          className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 w-16 h-16 rounded-full shadow-lg z-40 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity animate-pulse-strong"
+          className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-lg z-40 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity animate-pulse-strong p-0"
           size="icon"
         >
-          <Sparkles className="w-8 h-8" />
+          <Sparkles className="w-6 h-6 sm:w-8 sm:h-8" />
           <span className="sr-only">Open AI Assistant</span>
         </Button>
       </SheetTrigger>

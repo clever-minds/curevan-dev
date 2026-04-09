@@ -32,13 +32,18 @@ export default function MediaPicker({
       const token = await getToken();
       if (!token) return;
 
-      setLoading(true);
       const data = await listMedia(token);
+
+      const isVideo = (url: string) => {
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.m4v'];
+        return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+      };
 
       setLibrary(
         data.map((m: any) => ({
           id: m.id,
           url: m.file_path,
+          type: isVideo(m.file_path) ? "video" : "image",
         }))
       );
     } catch (error: any) {
@@ -62,18 +67,29 @@ export default function MediaPicker({
       <div className="flex gap-4 flex-wrap">
         {(value || []).map((img, index) => (
           <div key={img.id + img.url + index} className="relative group">
-            <Image
-              src={
-                img.url.startsWith("http") || img.url.startsWith("blob")
-                  ? img.url
-                  : `${MEDIA_BASE_URL}${img.url}`
-              }
-              width={120}
-              height={120}
-              alt=""
-              className="border-2 border-gray-100 rounded-xl object-cover shadow-sm transition-transform group-hover:scale-105"
-              unoptimized
-            />
+            {img.type === "video" || [".mp4", ".webm", ".ogg", ".mov", ".m4v"].some(ext => img.url.toLowerCase().endsWith(ext)) ? (
+              <video
+                src={
+                  img.url.startsWith("http") || img.url.startsWith("blob")
+                    ? img.url
+                    : `${MEDIA_BASE_URL}${img.url}`
+                }
+                className="w-[120px] h-[120px] border-2 border-gray-100 rounded-xl object-cover shadow-sm transition-transform group-hover:scale-105"
+              />
+            ) : (
+              <Image
+                src={
+                  img.url.startsWith("http") || img.url.startsWith("blob")
+                    ? img.url
+                    : `${MEDIA_BASE_URL}${img.url}`
+                }
+                width={120}
+                height={120}
+                alt=""
+                className="border-2 border-gray-100 rounded-xl object-cover shadow-sm transition-transform group-hover:scale-105"
+                unoptimized
+              />
+            )}
             {!disabled && (
               <button
                 type="button"

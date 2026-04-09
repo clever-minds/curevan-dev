@@ -77,7 +77,10 @@ export function SigninForm() {
         throw new Error("Auth token missing after login");
       }
       const token = user.token; // ✅ use directly
-      document.cookie = `token=${user.token}; path=/;`;
+      document.cookie = `token=${user.token}; path=/; max-age=31536000;`; // 1 year
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', user.token);
+      }
       const userProfile = await getUserProfile(token);
       console.log("userProfile",userProfile);
       if (!userProfile) {
@@ -158,7 +161,7 @@ export function SigninForm() {
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Password</FormLabel>
-                <Link href="/auth/forgot-password" stroke-width="2" className="text-sm font-medium text-primary hover:underline">
+                <Link href="/auth/forgot-password"  className="text-sm font-medium text-primary hover:underline">
                   Forgot Password?
                 </Link>
               </div>

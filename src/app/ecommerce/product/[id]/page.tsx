@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Package,
   Info,
-  RotateCcw
+  RotateCcw,
+  Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,6 +90,11 @@ export default function ProductDetailsPage() {
     getProductData();
   }, [id, router, toast]);
 
+  const isVideo = (url: string) => {
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.m4v'];
+    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  };
+
   const price = product?.price || 0;
   const therapistPrice = price * 0.90;
 
@@ -129,12 +135,7 @@ export default function ProductDetailsPage() {
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4 space-y-8">
-        <div className="flex gap-4">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-        <div className="grid md:grid-cols-2 gap-12">
+        <div className="grid lg:grid-cols-2 gap-12">
           <Skeleton className="aspect-square w-full rounded-2xl" />
           <div className="space-y-6">
             <Skeleton className="h-10 w-3/4" />
@@ -155,9 +156,9 @@ export default function ProductDetailsPage() {
   return (
     <div className="bg-background min-h-screen">
       {/* Breadcrumbs */}
-      <div className="border-b bg-muted/30">
-        <div className="container mx-auto py-4 px-4">
-          <Breadcrumb>
+      <div className="border-b bg-muted/30 overflow-x-auto scrollbar-hide py-2 sm:py-4">
+        <div className="container mx-auto px-4 min-w-max sm:min-w-0">
+          <Breadcrumb className="text-[10px] sm:text-sm">
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink href="/ecommerce">Marketplace</BreadcrumbLink>
@@ -169,8 +170,8 @@ export default function ProductDetailsPage() {
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="font-semibold text-primary">{product.name}</BreadcrumbPage>
+              <BreadcrumbItem className="min-w-0">
+                <BreadcrumbPage className="font-semibold text-primary truncate max-w-[150px] sm:max-w-none">{product.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -183,18 +184,29 @@ export default function ProductDetailsPage() {
           {/* Left Column: Image Gallery */}
           <div className="space-y-6">
             <div className="relative aspect-square overflow-hidden rounded-3xl bg-white border shadow-sm group">
-              <Image
-                src={product.images && product.images[activeImageIndex] 
-                  ? `${process.env.NEXT_PUBLIC_API_URL}${product.images[activeImageIndex]}` 
-                  : product.featuredImage 
-                    ? `${process.env.NEXT_PUBLIC_API_URL}${product.featuredImage}` 
-                    : "/images/no-image.png"
-                }
-                alt={product.name}
-                fill
-                priority
-                className="object-contain p-8 transition-transform duration-700 group-hover:scale-105"
-              />
+              {product.images && product.images[activeImageIndex] && isVideo(product.images[activeImageIndex]) ? (
+                <video
+                  src={`${process.env.NEXT_PUBLIC_API_URL}${product.images[activeImageIndex]}`}
+                  className="w-full h-full object-contain p-4"
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                />
+              ) : (
+                <Image
+                  src={product.images && product.images[activeImageIndex] 
+                    ? `${process.env.NEXT_PUBLIC_API_URL}${product.images[activeImageIndex]}` 
+                    : product.featuredImage 
+                      ? `${process.env.NEXT_PUBLIC_API_URL}${product.featuredImage}` 
+                      : "/images/no-image.png"
+                  }
+                  alt={product.name}
+                  fill
+                  priority
+                  className="object-contain p-8 transition-transform duration-700 group-hover:scale-105"
+                />
+              )}
               <div className="absolute top-6 left-6 flex flex-col gap-2">
                 <Badge className="bg-primary/95 text-white backdrop-blur-md px-3 py-1 text-sm font-semibold">
                   {product.categoryname}
@@ -211,44 +223,58 @@ export default function ProductDetailsPage() {
 
             {/* Thumbnails */}
             {product.images && product.images.length > 1 && (
-              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
-                      activeImageIndex === idx ? 'border-primary shadow-md' : 'border-transparent hover:border-muted-foreground/30'
+                    className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
+                      activeImageIndex === idx ? 'border-primary shadow-md scale-95' : 'border-transparent hover:border-muted-foreground/30'
                     }`}
                   >
-                    <Image
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${img}`}
-                      alt={`${product.name} thumbnail ${idx + 1}`}
-                      fill
-                      className="object-cover"
-                    />
+                    {isVideo(img) ? (
+                      <div className="w-full h-full bg-black/10 flex items-center justify-center relative">
+                        <video
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${img}`}
+                          className="w-full h-full object-cover opacity-80"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-white/90 rounded-full p-2 shadow-lg">
+                            <Play className="w-4 h-4 text-primary fill-primary" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Image
+                        src={`${process.env.NEXT_PUBLIC_API_URL}${img}`}
+                        alt={`${product.name} thumbnail ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
                   </button>
                 ))}
               </div>
             )}
             
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 pt-4">
-              <Card className="border-none bg-muted/40 text-center p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+              <Card className="border-none bg-muted/40 text-center p-3 sm:p-4">
                 <CardContent className="p-0 space-y-2">
-                  <ShieldCheck className="w-8 h-8 mx-auto text-primary" />
-                  <p className="text-xs font-bold uppercase tracking-wider">Quality Assured</p>
+                  <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-primary" />
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Quality Assured</p>
                 </CardContent>
               </Card>
-              <Card className="border-none bg-muted/40 text-center p-4">
+              <Card className="border-none bg-muted/40 text-center p-3 sm:p-4">
                 <CardContent className="p-0 space-y-2">
-                  <Truck className="w-8 h-8 mx-auto text-primary" />
-                  <p className="text-xs font-bold uppercase tracking-wider">India-wide Delivery</p>
+                  <Truck className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-primary" />
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">India-wide Delivery</p>
                 </CardContent>
               </Card>
-              <Card className="border-none bg-muted/40 text-center p-4">
+              <Card className="border-none bg-muted/40 text-center p-3 sm:p-4">
                 <CardContent className="p-0 space-y-2">
-                  <CheckCircle2 className="w-8 h-8 mx-auto text-primary" />
-                  <p className="text-xs font-bold uppercase tracking-wider">Verified Listing</p>
+                  <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-primary" />
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Verified Listing</p>
                 </CardContent>
               </Card>
             </div>
@@ -258,9 +284,9 @@ export default function ProductDetailsPage() {
           <div className="space-y-8 flex flex-col">
             <div className="space-y-4">
               {product.brand && (
-                <p className="text-primary font-bold tracking-widest uppercase text-sm">{product.brand}</p>
+                <p className="text-primary font-bold tracking-widest uppercase text-xs sm:text-sm">{product.brand}</p>
               )}
-              <h1 className="text-4xl md:text-5xl font-bold font-headline leading-tight">{product.name}</h1>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold font-headline leading-tight">{product.name}</h1>
               
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
@@ -278,36 +304,36 @@ export default function ProductDetailsPage() {
               </div>
             </div>
 
-            <div className="p-8 rounded-3xl bg-muted/30 border space-y-6">
+            <div className="p-5 sm:p-8 rounded-3xl bg-muted/30 border space-y-6">
               <div className="space-y-2">
                 {isTherapist ? (
                   <div className="space-y-4">
-                    <div className="flex items-baseline gap-4">
-                       <span className="text-4xl font-bold text-primary">
+                    <div className="flex items-baseline flex-wrap gap-x-4 gap-y-2">
+                       <span className="text-2xl sm:text-4xl font-bold text-primary">
                         <Price amount={therapistPrice} showDecimals />
                       </span>
-                      <span className="text-xl text-muted-foreground line-through decoration-destructive/50">
+                      <span className="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/50">
                         <Price amount={price} showDecimals />
                       </span>
                     </div>
-                    <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-bold border border-primary/20">
-                      <ShoppingCart className="w-4 h-4" />
+                    <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] sm:text-sm font-bold border border-primary/20">
+                      <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
                       10% Therapist Exclusive Discount Applied
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-4xl font-bold">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-2xl sm:text-4xl font-bold">
                       <Price amount={price} showDecimals />
                     </span>
                     {product.mrp && product.mrp > price && (
-                       <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 font-bold">
+                       <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 font-bold text-xs">
                          SAVE {Math.round(((product.mrp - price) / product.mrp) * 100)}%
                        </Badge>
                     )}
                   </div>
                 )}
-                {product.mrp && <p className="text-sm text-muted-foreground">MRP: <Price amount={product.mrp} showDecimals /> <span className="italic">(Incl. of all taxes)</span></p>}
+                {product.mrp && <p className="text-xs sm:text-sm text-muted-foreground">MRP: <Price amount={product.mrp} showDecimals /> <span className="italic">(Incl. of all taxes)</span></p>}
               </div>
 
               <div className="space-y-4">
@@ -333,8 +359,8 @@ export default function ProductDetailsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex gap-4">
-                    <div className="flex items-center border rounded-2xl bg-white h-14 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex items-center border rounded-2xl bg-white h-14 overflow-hidden shrink-0">
                        <Button variant="ghost" size="icon" className="h-full px-4 rounded-none border-r" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
                         <Minus className="w-4 h-4" />
                        </Button>
@@ -356,12 +382,12 @@ export default function ProductDetailsPage() {
                 )}
               </div>
               
-              <div className="flex items-center gap-4 text-sm font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
                 <div className={`flex items-center gap-2 ${product.stock > 0 ? 'text-green-600' : 'text-destructive'}`}>
                   {product.stock > 0 ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
                   <span>{product.stock > 0 ? 'In Stock (Ready to dispatch)' : 'Currently Unavailable'}</span>
                 </div>
-                <div className="h-4 w-[1px] bg-border" />
+                <div className="hidden sm:block h-4 w-[1px] bg-border" />
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="w-4 h-4" />
                   <span>Delivery in 3-5 days</span>
@@ -389,9 +415,9 @@ export default function ProductDetailsPage() {
         </div>
 
         {/* Product Details Tabs */}
-        <div className="mt-20 lg:mt-32">
+        <div className="mt-12 lg:mt-32">
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 gap-8">
+            <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 gap-6 sm:gap-8 overflow-x-auto scrollbar-hide flex-nowrap shrink-0">
               <TabsTrigger 
                 value="description" 
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-4 h-auto text-lg font-bold"

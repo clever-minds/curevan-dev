@@ -39,7 +39,7 @@ import type { MediaItem } from "@/types/media";
 
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required."),
-    description: z.string().min(1, "Description is required."),
+    description: z.string().min(1, "Description is required.").max(180, "Description must be 180 characters or less."),
     image: z.array(z.object({
         id: z.number(),
         url: z.string(),
@@ -80,7 +80,7 @@ export default function CategoryManager() {
     defaultValues: {
         name: "",
         description: "",
-        image: [{ id: -1, url: "https://placehold.co/600x400.png" }]
+        image: []
     }
   });
 
@@ -277,8 +277,19 @@ const onEditSubmit = (data: CategoryFormValues) => {
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl><Textarea placeholder="A short description..." {...field} /></FormControl>
+                                    <FormLabel className="flex justify-between items-center">
+                                        <span>Description</span>
+                                        <span className={`text-[10px] ${field.value?.length > 180 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                            {field.value?.length || 0}/180
+                                        </span>
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Textarea 
+                                            placeholder="A short description..." 
+                                            {...field} 
+                                            maxLength={180}
+                                        />
+                                    </FormControl>
                                     <FormMessage />
                                     </FormItem>
                                 )}
@@ -340,9 +351,17 @@ const onEditSubmit = (data: CategoryFormValues) => {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel className="flex justify-between items-center">
+                <span>Description</span>
+                <span className={`text-[10px] ${field.value?.length > 180 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {field.value?.length || 0}/180
+                </span>
+              </FormLabel>
               <FormControl>
-                <Textarea {...field} />
+                <Textarea 
+                    {...field} 
+                    maxLength={180}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

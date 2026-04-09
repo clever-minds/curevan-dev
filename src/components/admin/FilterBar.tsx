@@ -233,10 +233,6 @@ export function FilterBar({
                     </Select>
                 </div>
                  <div className="space-y-1">
-                    <Label>Brand</Label>
-                    <Input placeholder="Search by brand..." value={filters.brand} onChange={(e) => handleFilterChange('brand', e.target.value)} />
-                </div>
-                 <div className="space-y-1">
                     <Label>Stock Status</Label>
                     <Select onValueChange={(v) => handleFilterChange('stockStatus', v)} value={filters.stockStatus}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -245,20 +241,6 @@ export function FilterBar({
                             <SelectItem value="in_stock">In Stock</SelectItem>
                             <SelectItem value="low_stock">Low Stock</SelectItem>
                             <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                 <div className="space-y-1">
-                    <Label>Order Status</Label>
-                    <Select onValueChange={(v) => handleFilterChange('orderStatus', v)} value={filters.orderStatus}>
-                        <SelectTrigger><SelectValue placeholder="All Statuses" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="Placed">Placed</SelectItem>
-                            <SelectItem value="Packed">Packed</SelectItem>
-                            <SelectItem value="Shipped">Shipped</SelectItem>
-                            <SelectItem value="Delivered">Delivered</SelectItem>
-                            <SelectItem value="Cancelled">Cancelled</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

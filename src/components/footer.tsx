@@ -64,7 +64,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-footer-gradient text-white relative overflow-hidden">
-      <div className="container mx-auto px-4 md:px-6 py-12 relative z-10">
+      <div className="container mx-auto px-4 md:px-6 pt-12 pb-24 lg:pb-12 relative z-10">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-5 space-y-4">
             <LogoLight />
@@ -94,7 +94,7 @@ export default function Footer() {
               </Form>
             </div>
           </div>
-          <div className="lg:col-span-7 grid grid-cols-2 gap-8">
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-8">
             {Object.entries(footerLinks).map(([title, links]) => (
               <div key={title}>
                 <h3 className="font-bold mb-4">{title}</h3>

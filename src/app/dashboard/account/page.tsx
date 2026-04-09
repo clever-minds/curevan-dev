@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { FileDown, Edit, TrendingUp, CalendarDays, Wallet, Star, FileText, Receipt, PackageOpen } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import ReportAiSummary from "@/components/report/report-ai-summary";
+import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getUserProfiledata } from "@/lib/api/auth";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -24,13 +24,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/money/price";
-import { useEffect, useState } from "react";
 import type { Appointment, Product } from "@/lib/types";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
 import { listOrders } from "@/lib/repos/orders";
 import { listProducts } from "@/lib/repos/products";
-import { useToast } from '@/hooks/use-toast'; // ⭐ add this
-import { getUserProfile } from "@/lib/api/auth";
+import ReportAiSummary from "@/components/report/report-ai-summary";
+
 export const dynamic = 'force-dynamic';
 
 const DashboardSection = ({ id, title, children, className }: { id: string, title: string, children: React.ReactNode, className?: string }) => (
@@ -67,18 +66,28 @@ export default function AccountPage() {
     async function fetchData() {
         if (!user) return;
         setLoading(true);
-        const [appointmentData, productData, orderData] = await Promise.all([
-            listAppointmentsForUser(user.id, 'patient'),
-            listProducts(),
-            listOrders({ userId: user.id })
-        ]);
-        setAppointments(appointmentData || []);
-        setProducts(productData || []);
-        setOrders(orderData || []);
-        setLoading(false);
+        try {
+            const [appointmentData, productData, orderData] = await Promise.all([
+                listAppointmentsForUser(user.id, 'patient'),
+                listProducts(),
+                listOrders({ userId: user.id })
+            ]);
+            setAppointments(appointmentData || []);
+            setProducts(productData || []);
+            setOrders(orderData || []);
+        } catch (error) {
+            console.error("Dashboard data fetch error:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Data Load Error',
+                description: 'Failed to fetch dashboard data. Please refresh.',
+            });
+        } finally {
+            setLoading(false);
+        }
     }
     fetchData();
-  }, [user]);
+  }, [user, toast]);
 
   if (!user || loading) {
     return (

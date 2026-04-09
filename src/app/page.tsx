@@ -75,27 +75,43 @@ export default  function HomePage() {
 
   // 1️⃣ Get Current Location
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Geolocation requires a secure origin (https or localhost)
+    const isSecureOrigin = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (!isSecureOrigin) {
+      console.warn('Geolocation requires a secure origin (HTTPS or localhost). Current origin:', window.location.origin);
+      // Fallback location (e.g., Vadodara)
+      setLat(22.3072);
+      setLng(73.1812);
+      return;
+    }
+
     if (!navigator.geolocation) {
-      console.error('Geolocation not supported')
-      return
+      console.error('Geolocation not supported');
+      return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const userLat = position.coords.latitude
-        const userLng = position.coords.longitude
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
 
-        console.log('console Lat:', userLat)
-        console.log('console Lng:', userLng)
+        console.log('console Lat:', userLat);
+        console.log('console Lng:', userLng);
 
-        setLat(userLat)
-        setLng(userLng)
+        setLat(userLat);
+        setLng(userLng);
       },
       (error) => {
-        console.error(error.message)
+        console.error('Geolocation error:', error.message);
+        // Fallback on error
+        setLat(22.3072);
+        setLng(73.1812);
       }
-    )
-  }, [])
+    );
+  }, []);
 
   // 2️⃣ Fetch Data when lat/lng available
   useEffect(() => {

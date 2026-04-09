@@ -7,6 +7,16 @@ export default function GetLatLng() {
   const router = useRouter()
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check for secure origin
+    const isSecureOrigin = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (!isSecureOrigin) {
+      console.warn('Geolocation requires a secure origin.');
+      return;
+    }
+
     if (!navigator.geolocation) {
       console.log('Geolocation not supported')
       return
@@ -27,7 +37,7 @@ export default function GetLatLng() {
         console.log('Error:', error.message)
       }
     )
-  }, [])
+  }, [router])
 
   return null
 }

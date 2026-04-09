@@ -314,49 +314,52 @@ export function ProductForm({
       
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium font-headline">Core Information</h3>
-            <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type</FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="shortDescription" render={({ field }) => (<FormItem><FormLabel>Short Description</FormLabel><FormControl><Textarea placeholder="A concise summary for product cards." rows={3} {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="longDescription" render={({ field }) => (<FormItem><FormLabel>Full Description (Optional)</FormLabel><FormControl><AIRichText value={field.value || ''} onChange={field.onChange} placeholder="Detailed product description, specifications, and usage instructions..." context={{ entityType: 'post' }} /></FormControl><FormMessage /></FormItem>)}/>
-            <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-6">
+            <h3 className="text-lg font-medium font-headline border-b pb-2">Core Information</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU</FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            </div>
-             <div className="grid sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 <FormField
                     control={form.control}
                     name="tags"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tags <span className="text-muted-foreground">(Select or create new)</span></FormLabel>
+                            <FormLabel>Tags <span className="text-muted-foreground">(Select or create)</span></FormLabel>
                             <MultiSelect
                                 key={field.value?.join(',')}
                                 options={allTagsOptions}
                                 selected={field.value || []}
                                 onChange={field.onChange}
-                                placeholder="Select or type to create tags..."
+                                placeholder="Select or type..."
                             />
                             <FormMessage />
                         </FormItem>
                     )}
                 />
             </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+                <FormField control={form.control} name="shortDescription" render={({ field }) => (<FormItem><FormLabel>Short Description <span className="text-red-500">*</span></FormLabel><FormControl><Textarea placeholder="A concise summary for product cards." rows={3} {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="longDescription" render={({ field }) => (<FormItem><FormLabel>Full Description (Optional)</FormLabel><FormControl><AIRichText value={field.value || ''} onChange={field.onChange} placeholder="Detailed product description, specifications, and usage instructions..." context={{ entityType: 'post' }} /></FormControl><FormMessage /></FormItem>)}/>
+            </div>
         </div>
         <Separator />
-        <div className="space-y-4">
-             <h3 className="text-lg font-medium font-headline">Pricing, Taxes & Promotions</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP (₹)</FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 6000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price (₹)</FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 4999" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+        <div className="space-y-6">
+             <h3 className="text-lg font-medium font-headline border-b pb-2">Pricing, Taxes & Promotions</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP (₹) <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 6000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price (₹) <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 4999" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>)}
+                <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
               </div>
-             <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Price includes tax?</FormLabel><FormDescription>Is GST already included in the selling price?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-             <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Exclude from Therapist Coupons</FormLabel><FormDescription>If enabled, this product will not be discounted by referral codes.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-            {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>)}
-            <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+              <div className="grid sm:grid-cols-2 gap-4">
+                 <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel className="text-sm">Price includes tax?</FormLabel><FormDescription className="text-xs">Is GST already included?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                 <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel className="text-sm">Exclude from Coupons</FormLabel><FormDescription className="text-xs">Disable therapist referral codes?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+              </div>
         </div>
         <Separator />
         {(productType === 'Physical' || productType === 'Bundle') && (
@@ -378,9 +381,9 @@ export function ProductForm({
             </div>
         )}
         <Separator />
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium font-headline">Manufacturing & Compliance</h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-6">
+            <h3 className="text-lg font-medium font-headline border-b pb-2">Manufacturing & Compliance</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                 <FormField control={form.control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>Manufacturer</FormLabel><FormControl><Input placeholder="Manufacturer Name" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
                 <FormField control={form.control} name="countryOfOrigin" render={({ field }) => (<FormItem><FormLabel>Country of Origin</FormLabel><FormControl><Input placeholder="e.g., India" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
                 <FormField control={form.control} name="packer" render={({ field }) => (<FormItem><FormLabel>Packer (Optional)</FormLabel><FormControl><Input placeholder="Packer Name" {...field} value={field.value ?? ''} /></FormControl></FormItem>)}/>
@@ -400,7 +403,7 @@ export function ProductForm({
                 name="images"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Images</FormLabel>
+                    <FormLabel>Images <span className="text-red-500">*</span></FormLabel>
 
                     <FormControl>
                       <MediaPicker
@@ -413,7 +416,7 @@ export function ProductForm({
                   </FormItem>
                 )}
               />
-             <FormField control={form.control} name="status" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Status</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} key={field.value} defaultValue={field.value} className="flex space-x-4"><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Draft" /></FormControl><FormLabel className="font-normal">Draft</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Active" /></FormControl><FormLabel className="font-normal">Active</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Archived" /></FormControl><FormLabel className="font-normal">Archived</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)}/>
+             <FormField control={form.control} name="status" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Status <span className="text-red-500">*</span></FormLabel><FormControl><RadioGroup onValueChange={field.onChange} key={field.value} defaultValue={field.value} className="flex space-x-4"><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Draft" /></FormControl><FormLabel className="font-normal">Draft</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Active" /></FormControl><FormLabel className="font-normal">Active</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Archived" /></FormControl><FormLabel className="font-normal">Archived</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)}/>
         </div>
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline">Cancel</Button>
