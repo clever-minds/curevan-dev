@@ -18,12 +18,27 @@ interface FilterSidebarProps {
     categories: ProductCategory[];
     filters: any;
     setFilters: (filters: any) => void;
+    minPrice?: number;
+    maxPrice?: number;
     isMobile?: boolean;
     closeSheet?: () => void;
 }
 
-export function FilterSidebar({ categories, filters, setFilters, isMobile = false, closeSheet }: FilterSidebarProps) {
+export function FilterSidebar({ 
+    categories, 
+    filters, 
+    setFilters, 
+    minPrice = 0, 
+    maxPrice = 10000, 
+    isMobile = false, 
+    closeSheet 
+}: FilterSidebarProps) {
     const [localFilters, setLocalFilters] = React.useState(filters);
+
+    // Sync local filters when parent filters change (e.g., initial load)
+    React.useEffect(() => {
+        setLocalFilters(filters);
+    }, [filters]);
 
     const handleLocalFilterChange = (key: string, value: any) => {
         setLocalFilters((prev: any) => ({ ...prev, [key]: value }));
@@ -49,6 +64,14 @@ export function FilterSidebar({ categories, filters, setFilters, isMobile = fals
             setFilters(localFilters);
         }
     }, [localFilters, isMobile, setFilters]);
+
+    const step = React.useMemo(() => {
+        const range = maxPrice - minPrice;
+        if (range <= 100) return 1;
+        if (range <= 1000) return 10;
+        if (range <= 5000) return 100;
+        return 500;
+    }, [minPrice, maxPrice]);
 
     return (
         <div className="space-y-6 flex flex-col h-full">
@@ -94,8 +117,9 @@ export function FilterSidebar({ categories, filters, setFilters, isMobile = fals
                     <Slider
                         value={localFilters.price}
                         onValueChange={(value) => handleLocalFilterChange('price', value)}
-                        max={10000}
-                        step={500}
+                        min={minPrice}
+                        max={maxPrice}
+                        step={step}
                         className="my-4"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -139,7 +163,7 @@ export function FilterSidebar({ categories, filters, setFilters, isMobile = fals
                     className="w-full"
                     variant="outline"
                     onClick={() => {
-                        const clearedFilters = { search: '', category: 'all', price: [0, 10000], rating: 0 };
+                        const clearedFilters = { search: '', category: 'all', price: [minPrice, maxPrice], rating: 0 };
                         setLocalFilters(clearedFilters);
                         if (!isMobile) {
                             setFilters(clearedFilters);

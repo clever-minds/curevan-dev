@@ -51,9 +51,28 @@ function EcommerceContent() {
         setProducts(productsData);
         setProductCategories(categoriesData);
         setCoupons(couponsData);
+
+        if (productsData.length > 0) {
+            const prices = productsData.map(p => p.price);
+            const min = Math.floor(Math.min(...prices));
+            const max = Math.ceil(Math.max(...prices));
+            setFilters(prev => ({
+                ...prev,
+                price: [min, max]
+            }));
+        }
     };
     fetchData();
   }, []);
+
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (products.length === 0) return { minPrice: 0, maxPrice: 10000 };
+    const prices = products.map(p => p.price);
+    return {
+      minPrice: Math.floor(Math.min(...prices)),
+      maxPrice: Math.ceil(Math.max(...prices))
+    };
+  }, [products]);
 
   const handleApplyCoupon = useCallback((codeToApply: string) => {
     if (coupons.length === 0) {
@@ -109,7 +128,13 @@ function EcommerceContent() {
        <aside className="w-80 hidden lg:flex flex-col sticky top-[var(--header-height)] h-[calc(100vh-var(--header-height))]">
           <ScrollArea className="flex-1">
             <div className="p-8">
-              <FilterSidebar categories={productCategories} filters={filters} setFilters={setFilters} />
+              <FilterSidebar 
+                categories={productCategories} 
+                filters={filters} 
+                setFilters={setFilters} 
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+              />
             </div>
           </ScrollArea>
        </aside>
@@ -126,7 +151,7 @@ function EcommerceContent() {
                     <Info className="h-4 w-4" />
                     <AlertTitle>Have a therapist code?</AlertTitle>
                     <AlertDescription>You can apply it in your cart to get a discount on eligible products!</AlertDescription>
-                </Alert>
+                 </Alert>
             </div>
             
             <Card className="lg:hidden mb-4">
@@ -145,6 +170,8 @@ function EcommerceContent() {
                                     categories={productCategories} 
                                     filters={filters} 
                                     setFilters={setFilters} 
+                                    minPrice={minPrice}
+                                    maxPrice={maxPrice}
                                     isMobile={true}
                                     closeSheet={() => setIsSheetOpen(false)}
                                 />
