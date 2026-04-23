@@ -44,7 +44,8 @@ export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]
     return entries.map(entry => ({
       ...entry,
       featuredImage: (() => {
-          const img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(img)) img = img[0];
           if (typeof img === 'string') return img;
           if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
           return '';
@@ -109,7 +110,8 @@ export async function getPublicJournalEntryBySlug(slug: string): Promise<Knowled
     return {
       ...entry,
       featuredImage: (() => {
-          const img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(img)) img = img[0];
           if (typeof img === 'string') return img;
           if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
           return '';

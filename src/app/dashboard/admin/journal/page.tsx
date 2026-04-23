@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { MoreVertical, CheckCircle, XCircle, PlusCircle, FileDown } from "lucide-react";
+import { MoreVertical, CheckCircle, XCircle, PlusCircle, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { cn, getSafeDate, downloadCsv } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { updateJournalStatus } from "@/lib/actions";
 import { getToken } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/api/auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +33,7 @@ export default function AdminJournalPage() {
   const [posts, setPosts] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const router = useRouter();
   const fetchPosts = async () => {
@@ -41,7 +44,12 @@ export default function AdminJournalPage() {
   }
 
   useEffect(() => {
-    fetchPosts();
+    const init = async () => {
+        const u = await getCurrentUser();
+        setUser(u);
+        fetchPosts();
+    }
+    init();
   }, []);
   
   const handleStatusUpdate = async (postId: string, title: string, status: "published" | "draft") => {
@@ -116,11 +124,12 @@ export default function AdminJournalPage() {
   };
 
   const postsForReview = posts.filter(p => p.status === 'pending_review' || p.status === 'draft');
-  const handleEdit = (postId: number) => {
-          console.log(`Edit post ${postId}`);
+  const allPosts = posts; // Super admin sees everything
 
+  const handleEdit = (postId: number) => {
         router.push(`/dashboard/journal/${postId}`);
     }
+
   return (
      <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -138,91 +147,153 @@ export default function AdminJournalPage() {
           </Button>
         </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Posts Awaiting Review</CardTitle>
-          <CardDescription>A list of journal entries that need approval before publishing.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Categories</TableHead>
-                <TableHead>Date Submitted</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                    <TableCell colSpan={6}>
-                        <Skeleton className="h-20 w-full" />
-                    </TableCell>
-                </TableRow>
-              ) : postsForReview.map((post) => (
-                <TableRow key={post.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/journal/${post.slug}`} className="hover:underline" target="_blank">
-                        {post.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{post.authorName}</TableCell>
-                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {post.tags?.slice(0, 2).map(tag => (
-                        <Badge key={tag} variant="secondary" className="capitalize">{tag}</Badge>
-                      ))}
-                      {post.tags && post.tags.length > 2 && (
-                        <Badge variant="outline">+{post.tags.length - 2}</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{getSafeDate(post.createdAt)?.toLocaleDateString() || 'N/A'}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      variant={post.status === 'pending_review' ? 'default' : 'secondary'}
-                      className={cn(
-                          post.status === 'pending_review' && "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-                          post.status === 'draft' && "bg-gray-100 text-gray-800"
-                        )}
-                    >
-                      {post.status.replace('_', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={processingId === post.id}>
-                          {processingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleApprove(post.id, post.title)} className="text-green-600 focus:text-green-700">
-                          <CheckCircle className="mr-2 h-4 w-4" /> Approve & Publish
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleReject(post.id, post.title)} className="text-destructive focus:text-destructive">
-                          <XCircle className="mr-2 h-4 w-4" /> Reject
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(Number(post.id))}>Edit</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-                {postsForReview.length === 0 && !loading && (
+      <Tabs defaultValue="review" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="review">Awaiting Review ({postsForReview.length})</TabsTrigger>
+            <TabsTrigger value="all">All Posts ({allPosts.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="review">
+            <Card>
+                <CardHeader>
+                <CardTitle>Posts Awaiting Review</CardTitle>
+                <CardDescription>A list of journal entries that need approval before publishing.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
                     <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                            No posts are currently awaiting review.
-                        </TableCell>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Author</TableHead>
+                        <TableHead>Categories</TableHead>
+                        <TableHead>Date Submitted</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    </TableHeader>
+                    <TableBody>
+                    {loading ? (
+                        <TableRow>
+                            <TableCell colSpan={6}>
+                                <Skeleton className="h-20 w-full" />
+                            </TableCell>
+                        </TableRow>
+                    ) : postsForReview.map((post) => (
+                        <TableRow key={post.id}>
+                        <TableCell className="font-medium">
+                            <Link href={`/journal/${post.slug}`} className="hover:underline" target="_blank">
+                                {post.title}
+                            </Link>
+                        </TableCell>
+                        <TableCell>{post.authorName}</TableCell>
+                        <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                            {post.tags?.slice(0, 2).map(tag => (
+                                <Badge key={tag} variant="secondary" className="capitalize">{tag}</Badge>
+                            ))}
+                            {post.tags && post.tags.length > 2 && (
+                                <Badge variant="outline">+{post.tags.length - 2}</Badge>
+                            )}
+                            </div>
+                        </TableCell>
+                        <TableCell>{getSafeDate(post.createdAt)?.toLocaleDateString() || 'N/A'}</TableCell>
+                        <TableCell className="text-center">
+                            <Badge
+                            variant={post.status === 'pending_review' ? 'default' : 'secondary'}
+                            className={cn(
+                                post.status === 'pending_review' && "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
+                                post.status === 'draft' && "bg-gray-100 text-gray-800"
+                                )}
+                            >
+                            {post.status.replace('_', ' ')}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={processingId === post.id}>
+                                {processingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleApprove(post.id, post.title)} className="text-green-600 focus:text-green-700">
+                                <CheckCircle className="mr-2 h-4 w-4" /> Approve & Publish
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleReject(post.id, post.title)} className="text-destructive focus:text-destructive">
+                                <XCircle className="mr-2 h-4 w-4" /> Reject
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(Number(post.id))}>Edit</DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                        {postsForReview.length === 0 && !loading && (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                    No posts are currently awaiting review.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="all">
+            <Card>
+                <CardHeader>
+                <CardTitle>All Journal Entries</CardTitle>
+                <CardDescription>Comprehensive list of all posts in the system.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Author</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {loading ? (
+                        <TableRow>
+                            <TableCell colSpan={5}>
+                                <Skeleton className="h-20 w-full" />
+                            </TableCell>
+                        </TableRow>
+                    ) : allPosts.map((post) => (
+                        <TableRow key={post.id}>
+                        <TableCell className="font-medium max-w-[300px] truncate">
+                            <Link href={`/journal/${post.slug}`} className="hover:underline" target="_blank">
+                                {post.title}
+                            </Link>
+                        </TableCell>
+                        <TableCell>{post.authorName}</TableCell>
+                        <TableCell>
+                            <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className={cn(
+                                post.status === 'published' && "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
+                                post.status === 'pending_review' && "bg-yellow-100 text-yellow-800",
+                                post.status === 'draft' && "bg-gray-100 text-gray-800"
+                            )}>
+                                {post.status.replace('_', ' ')}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>{getSafeDate(post.createdAt)?.toLocaleDateString() || 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(Number(post.id))}>Edit</Button>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
