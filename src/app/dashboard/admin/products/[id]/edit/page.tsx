@@ -78,6 +78,11 @@ export default function EditProductPage() {
               batchNumber: product.batch_number,
               mfgDate: product.manufacturing_date ? new Date(product.manufacturing_date) : undefined,
               expiryDate: product.expiry_date ? new Date(product.expiry_date) : undefined,
+              additionalFeatures: product.additional_features?.map((f: any) => ({
+                title: f.title,
+                value: f.value,
+                isHighlighted: f.is_highlighted,
+              })) || [],
             }}
           />
           </CardContent>

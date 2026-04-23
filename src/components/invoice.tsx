@@ -74,18 +74,17 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
 
     const taxGroupings = invoice.items.reduce((acc: any, item) => {
         const rate = item.gstRate || 0;
-        const taxable = item.taxableValue || (item.price * item.quantity);
-        const cgst = item.cgst || 0;
-        const sgst = item.sgst || 0;
-        const igst = item.igst || 0;
+        const isIgst = (item.igst || 0) > 0;
+        const type = isIgst ? 'IGST' : 'CGST_SGST';
+        const key = `${rate}_${type}`;
 
-        if (!acc[rate]) {
-            acc[rate] = { rate, taxable: 0, cgst: 0, sgst: 0, igst: 0 };
+        if (!acc[key]) {
+            acc[key] = { rate, type, taxable: 0, cgst: 0, sgst: 0, igst: 0 };
         }
-        acc[rate].taxable += taxable;
-        acc[rate].cgst += cgst;
-        acc[rate].sgst += sgst;
-        acc[rate].igst += igst;
+        acc[key].taxable += (item.taxableValue || (item.price * item.quantity));
+        acc[key].cgst += (item.cgst || 0);
+        acc[key].sgst += (item.sgst || 0);
+        acc[key].igst += (item.igst || 0);
         return acc;
     }, {});
 
@@ -121,18 +120,18 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                 <div className="grid grid-cols-2 border-b border-gray-400">
                     <div className="grid grid-cols-[110px_1fr] border-r border-gray-400">
                         <div className="p-1 px-2 border-r border-gray-400 space-y-1 font-bold">
-                            <p className="# ">#</p>
-                            <p className="Invoice Date ">Invoice Date</p>
-                            <p className="Terms ">Terms</p>
-                            <p className="Due Date ">Due Date</p>
-                            <p className="E-Way Bill# ">E-Way Bill#</p>
+                            <p>Invoice #</p>
+                            <p>Invoice Date</p>
+                            <p>Terms</p>
+                            <p>Due Date</p>
+                            <p>E-Way Bill#</p>
                         </div>
                         <div className="p-1 px-2 space-y-1 font-bold">
-                            <p className=": INV-230279 font-black">: {invoice.invoiceNumber}</p>
-                            <p className=": 06 December 2025 ">: {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                            <p className=": Due on Receipt ">: Due on Receipt</p>
-                            <p className=": 06 December 2025 ">: {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                            <p className=": 612016444691 ">: -</p>
+                            <p className="font-black">: {invoice.invoiceNumber}</p>
+                            <p>: {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                            <p>: Due on Receipt</p>
+                            <p>: {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                            <p>: -</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-[110px_1fr]">
@@ -140,7 +139,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                             Place Of Supply
                         </div>
                         <div className="p-1 px-2 font-bold flex items-center">
-                            : {invoice.placeOfSupply} (State Code: {invoice.supplier.address.pin.substring(0, 2)})
+                            : {invoice.placeOfSupply}
                         </div>
                     </div>
                 </div>
@@ -264,7 +263,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                         <div>
                             <p className="font-bold text-[9px] uppercase text-gray-400 mb-1 tracking-widest">Total In Words</p>
                             <p className="font-black italic text-xs leading-tight capitalize text-gray-900 border-l-2 border-black pl-3 py-1 bg-gray-50/50 rounded-r">
-                                Indian Rupee {invoice.amountInWords}
+                                Indian Rupee {numberToWords(invoice.totalAmount)}
                             </p>
                         </div>
 
@@ -300,37 +299,33 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                     </div>
 
                     <div className="flex flex-col bg-gray-50/10 h-full">
-                        <div className="grid grid-cols-[140px_1fr] border-b border-gray-400 p-0 text-xs">
-                            <div className="p-2 border-r border-gray-400 font-bold space-y-2 text-[10px] text-gray-500 text-right pr-4 uppercase">
+                        <div className="grid grid-cols-[140px_1fr] border-b border-gray-400 p-0 text-xs shadow-sm">
+                            <div className="p-2 border-r border-gray-400 font-bold space-y-3 text-right pr-4 text-[10px] text-gray-500 uppercase tracking-tight">
                                 <p>SUB TOTAL</p>
-                                {Object.values(taxGroupings).length > 0 ? Object.values(taxGroupings).map((tax: any) => (
-                                    <div key={tax.rate} className="space-y-2">
-                                        {tax.igst > 0 ? (
+                                {Object.values(taxGroupings).map((tax: any) => (
+                                    <React.Fragment key={`${tax.rate}_${tax.type}`}>
+                                        {tax.type === 'IGST' ? (
                                             <p>IGST {tax.rate}%</p>
                                         ) : (
                                             <>
-                                                <p>CGST {(tax.rate || 0) / 2}%</p>
-                                                <p>SGST {(tax.rate || 0) / 2}%</p>
+                                                <p>CGST {tax.rate / 2}%</p>
+                                                <p>SGST {tax.rate / 2}%</p>
                                             </>
                                         )}
-                                    </div>
-                                )) : (
-                                    <>
-                                        <p>CGST 0%</p>
-                                        <p>SGST 0%</p>
-                                    </>
-                                )}
+                                    </React.Fragment>
+                                ))}
+                                <p>SHIPPING</p>
                                 {(invoice as any).discount > 0 && <p className="text-primary font-black">DISCOUNT { (invoice as any).couponCode ? `(${ (invoice as any).couponCode })` : '' }</p>}
                                 <div className="pt-4 mt-2 border-t border-gray-200">
                                     <p className="text-sm font-black text-black tracking-tighter">TOTAL</p>
                                     <p className="text-sm font-black text-black mt-2">BALANCE DUE</p>
                                 </div>
                             </div>
-                            <div className="p-2 text-right font-black space-y-2 text-xs text-black tracking-tight">
+                            <div className="p-2 text-right font-black space-y-3 text-xs text-black tracking-tight bg-white/50">
                                 <p><Price amount={invoice.subtotal || 0} showDecimals /></p>
-                                {Object.values(taxGroupings).length > 0 ? Object.values(taxGroupings).map((tax: any) => (
-                                    <div key={tax.rate} className="space-y-2">
-                                        {tax.igst > 0 ? (
+                                {Object.values(taxGroupings).map((tax: any) => (
+                                    <React.Fragment key={`val_${tax.rate}_${tax.type}`}>
+                                        {tax.type === 'IGST' ? (
                                             <p><Price amount={tax.igst || 0} showDecimals /></p>
                                         ) : (
                                             <>
@@ -338,13 +333,9 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                                                 <p><Price amount={tax.sgst || 0} showDecimals /></p>
                                             </>
                                         )}
-                                    </div>
-                                )) : (
-                                    <>
-                                        <p><Price amount={invoice.cgstTotal || 0} showDecimals /></p>
-                                        <p><Price amount={invoice.sgstTotal || 0} showDecimals /></p>
-                                    </>
-                                )}
+                                    </React.Fragment>
+                                ))}
+                                <p className="text-gray-400">FREE</p>
                                 {(invoice as any).discount > 0 && <p className="text-primary">- <Price amount={(invoice as any).discount} showDecimals /></p>}
                                 <div className="pt-4 mt-2 border-t border-gray-300">
                                     <p className="text-sm font-black text-black"><Price amount={invoice.totalAmount || 0} showDecimals /></p>

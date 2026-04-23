@@ -1,7 +1,7 @@
 
 'use client';
 
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Star, MessageSquare, MapPin } from 'lucide-react';
 import { BookingForm } from './booking-form';
@@ -15,14 +15,16 @@ import { getTherapistById } from '@/lib/repos/therapists';
 
 export const dynamic = 'force-dynamic';
 
-export default function BookingPage({ params }: { params: { id: string } }) {
+export default function BookingPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [therapist, setTherapist] = useState<Therapist | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchTherapist() {
       try {
-        const t = await getTherapistById(params.id);
+        const t = await getTherapistById(id);
         if (!t) {
             notFound();
         }
@@ -35,7 +37,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       }
     }
     fetchTherapist();
-  }, [params.id]);
+  }, [id]);
 
 
   if (loading) {

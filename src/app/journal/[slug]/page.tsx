@@ -10,22 +10,22 @@ import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { getMediaUrl } from '@/lib/utils';
 import type { Metadata, ResolvingMetadata } from 'next';
-import { getKnowledgeBaseBySlug } from '@/lib/repos/content';
+import { getPublicJournalEntryBySlug } from '@/lib/repos/content';
 import { getTherapistById } from '@/lib/repos/therapists';
 import TherapistCard from '@/components/therapist-card';
 
 export const dynamic = 'force-dynamic';
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const slug = params.slug
-  const post = await getKnowledgeBaseBySlug(slug);
+  const { slug } = await params
+  const post = await getPublicJournalEntryBySlug(slug);
 
   if (!post) {
     return {
@@ -52,8 +52,9 @@ export async function generateMetadata(
   }
 }
 
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
-  const post = await getKnowledgeBaseBySlug(params.slug);
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const post = await getPublicJournalEntryBySlug(slug);
 
   if (!post) {
     notFound();
@@ -120,9 +121,10 @@ export default async function ArticlePage({ params }: { params: { slug: string }
           </div>
         </header>
 
-        <div className="prose dark:prose-invert max-w-none text-lg">
-          <p>{post.content}</p>
-        </div>
+        <div 
+          className="prose dark:prose-invert max-w-none text-lg"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
 
         {youtubeVideoId && (
             <div className="mt-8">

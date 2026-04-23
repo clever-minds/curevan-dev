@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 // New simplified sidebar structure
 const Sidebar = ({ children, className }: { children: React.ReactNode, className?: string }) => {
     return (
-        <aside className={cn("w-[280px] flex-shrink-0 h-screen sticky top-0 bg-animated-gradient-sidebar text-white flex-col hidden lg:flex", className)}>
+        <aside className={cn("w-[280px] fixed left-0 top-0 h-screen bg-animated-gradient-sidebar text-white flex-col hidden lg:flex z-20", className)}>
             {children}
         </aside>
     )
@@ -20,7 +20,7 @@ const SidebarContent = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden p-4", className)}
+      className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden p-4 pt-[calc(var(--header-height)+40px)]", className)}
       {...props}
     />
   )

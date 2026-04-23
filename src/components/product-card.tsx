@@ -89,7 +89,17 @@ export default function ProductCard({ product }: { product: Product }) {
               <Badge className="mt-1" variant="destructive">10% Therapist Discount</Badge>
             </div>
           ) : (
-            <p className="text-2xl font-bold"><Price amount={price} showDecimals /></p>
+            <div className="space-y-1">
+              {product.mrp && product.mrp > price && (
+                <p className="text-xs text-muted-foreground line-through">
+                  MRP: <Price amount={product.mrp} showDecimals />
+                </p>
+              )}
+              <p className="text-2xl font-bold">
+                <Price amount={price} showDecimals />
+                {!product.isTaxInclusive && <span className="text-xs font-medium text-muted-foreground ml-1">+ GST</span>}
+              </p>
+            </div>
           )}
         </div>
         {quantityInCart > 0 ? (

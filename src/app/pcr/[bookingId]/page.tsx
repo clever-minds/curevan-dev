@@ -5,7 +5,8 @@ import { CheckCircle } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
-export default function NewPcrPage({ params }: { params: { bookingId: string } }) {
+export default async function NewPcrPage({ params }: { params: Promise<{ bookingId: string }> }) {
+  const { bookingId } = await params;
   return (
      <div className="space-y-6">
        <div className="space-y-2">
@@ -16,9 +17,9 @@ export default function NewPcrPage({ params }: { params: { bookingId: string } }
                 Session Verified
             </Badge>
         </div>
-        <p className="text-muted-foreground">Booking ID: {params.bookingId}. Complete the form to document the patient encounter.</p>
+        <p className="text-muted-foreground">Booking ID: {bookingId}. Complete the form to document the patient encounter.</p>
       </div>
-      <PcrForm bookingId={params.bookingId} />
+      <PcrForm bookingId={bookingId} />
     </div>
   );
 }

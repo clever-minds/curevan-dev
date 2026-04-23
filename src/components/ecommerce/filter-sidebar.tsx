@@ -36,8 +36,18 @@ export function FilterSidebar({
     const [localFilters, setLocalFilters] = React.useState(filters);
 
     // Sync local filters when parent filters change (e.g., initial load)
+    // We only sync if the values have actually changed to avoid infinite loops
     React.useEffect(() => {
-        setLocalFilters(filters);
+        const hasChanged = 
+            filters.search !== localFilters.search || 
+            filters.category !== localFilters.category ||
+            filters.rating !== localFilters.rating ||
+            filters.price[0] !== localFilters.price[0] ||
+            filters.price[1] !== localFilters.price[1];
+            
+        if (hasChanged) {
+            setLocalFilters(filters);
+        }
     }, [filters]);
 
     const handleLocalFilterChange = (key: string, value: any) => {
@@ -105,7 +115,7 @@ export function FilterSidebar({
                         </div>
                     {categories.map(category => (
                         <div key={category.id} className="flex items-center space-x-2">
-                            <RadioGroupItem value={category.id} id={`cat-${category.id}`} />
+                            <RadioGroupItem value={String(category.id)} id={`cat-${category.id}`} />
                             <Label htmlFor={`cat-${category.id}`} className="font-normal">{category.name}</Label>
                         </div>
                     ))}

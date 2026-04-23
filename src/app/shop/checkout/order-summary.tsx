@@ -19,7 +19,7 @@ export function OrderSummary() {
   const [couponLoading, setCouponLoading] = useState(false);
   const { toast } = useToast();
 
-  const { subtotal, discount, total } = getCartTotal();
+  const { subtotal, discount, totalGst, total, totalWithTax, gstToPay } = getCartTotal();
 
   const handleApplyCoupon = useCallback(async (codeToApply: string) => {
     if (!codeToApply.trim()) return;
@@ -85,9 +85,14 @@ export function OrderSummary() {
               />
               <div className="flex-1">
                 <p className="font-semibold">{item.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  Qty: {item.quantity}
-                </p>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
+                  {item.gstAmount !== undefined && item.gstAmount > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      GST ({item.gstPercent}%): <Price amount={item.gstAmount * item.quantity} showDecimals />
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="font-semibold">
                 <Price amount={item.price * item.quantity} showDecimals />
@@ -159,6 +164,27 @@ export function OrderSummary() {
             <span className="text-muted-foreground">Shipping</span>
             <span>Free</span>
           </div>
+
+          {gstToPay > 0 && (
+            <div className="flex justify-between font-medium text-destructive">
+              <span className="flex items-center gap-1">
+                GST (Additional)
+                <span className="text-[10px] lowercase font-normal text-muted-foreground">(Tax Excluded Products)</span>
+              </span>
+              <span>
+                +<Price amount={gstToPay} showDecimals />
+              </span>
+            </div>
+          )}
+
+          {totalGst - gstToPay > 0 && (
+             <div className="flex justify-between text-[11px] text-muted-foreground italic">
+               <span>Includes GST (Paid)</span>
+               <span>
+                 <Price amount={totalGst - gstToPay} showDecimals />
+               </span>
+             </div>
+          )}
         </div>
 
         <Separator />
@@ -167,7 +193,7 @@ export function OrderSummary() {
         <div className="flex justify-between font-bold text-lg">
           <p>Total</p>
           <p>
-            <Price amount={total} showDecimals />
+            <Price amount={totalWithTax} showDecimals />
           </p>
         </div>
 

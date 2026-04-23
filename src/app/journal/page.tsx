@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useMemo } from "react";
 import type { KnowledgeBase } from '@/lib/types';
-import { listJournalEntries } from "@/lib/repos/content";
+import { listPublicJournalEntries } from "@/lib/repos/content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, getMediaUrl } from "@/lib/utils";
 
@@ -26,7 +26,7 @@ export default function JournalPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const posts = await listJournalEntries({ status: 'published' });
+      const posts = await listPublicJournalEntries();
       setAllPosts(posts);
       setLoading(false);
     };
@@ -36,8 +36,8 @@ export default function JournalPage() {
   const filteredPosts = useMemo(() => {
     return allPosts
       .filter(post => {
-        const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesTag = !selectedTag || post.tags?.includes(selectedTag);
+        const matchesSearch = (post.title || '').toLowerCase().includes((searchQuery || '').toLowerCase());
+        const matchesTag = !selectedTag || (post.tags || []).includes(selectedTag);
         return matchesSearch && matchesTag;
       });
   }, [allPosts, searchQuery, selectedTag]);
@@ -87,9 +87,10 @@ export default function JournalPage() {
                     <h2 className="mb-6 font-headline text-4xl font-bold leading-[1.1] tracking-tight lg:text-5xl xl:text-6xl group-hover:text-primary transition-colors duration-300">
                         {featuredPost.title}
                     </h2>
-                    <p className="mb-8 text-xl leading-relaxed text-muted-foreground line-clamp-3 font-medium opacity-80">
-                        {featuredPost.excerpt}
-                    </p>
+                    <div 
+                        className="mb-8 text-xl leading-relaxed text-muted-foreground line-clamp-3 font-medium opacity-80"
+                        dangerouslySetInnerHTML={{ __html: featuredPost.excerpt }}
+                    />
                     <div className="flex items-center gap-6 mb-10 text-sm text-muted-foreground/60 font-semibold tracking-wide">
                         <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary"/> 6 min read</span>
                         <span className="w-1 h-1 rounded-full bg-border" />
@@ -190,9 +191,10 @@ export default function JournalPage() {
                                 {post.title}
                             </CardTitle>
                         </Link>
-                        <p className="text-muted-foreground line-clamp-3 leading-relaxed font-medium opacity-80">
-                            {post.excerpt}
-                        </p>
+                        <div 
+                            className="text-muted-foreground line-clamp-3 leading-relaxed font-medium opacity-80"
+                            dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                        />
                     </CardContent>
                     <CardFooter className="p-8 pt-0 flex justify-between items-center border-t border-white/5 mt-4 pt-6">
                         <div className="flex items-center gap-3">
@@ -212,12 +214,12 @@ export default function JournalPage() {
                     </CardFooter>
                 </Card>
             ))
-            ) : (
+            ) : filteredPosts.length === 0 ? (
                 <div className="md:col-span-2 lg:col-span-3 text-center py-16">
                     <h3 className="text-2xl font-semibold">No Articles Found</h3>
                     <p className="text-muted-foreground mt-2">Try adjusting your search or filter.</p>
                 </div>
-            )}
+            ) : null}
         </div>
         {otherPosts.length > visibleCount && (
             <div className="mt-12 text-center">

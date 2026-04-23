@@ -89,20 +89,27 @@ const getSafeDate = (date?: string | Date | null): string => {
 async function generateGoodsInvoiceData(order: any, invoice: any) {
   // Use most accurate totals from either 'invoice' (offical record) or 'source' (order data)
   const totalAmount = Number(order.total || (invoice.total_amount_paise / 100) || 0);
-  const cgstTotal = Number(order.cgst || invoice.cgst_amount || 0);
-  const sgstTotal = Number(order.sgst || invoice.sgst_amount || 0);
-  const igstTotal = Number(order.igst || invoice.igst_amount || 0);
-  const totalTax = cgstTotal + sgstTotal + igstTotal;
+  const cgstTotal = Number(order.cgst || ((invoice.cgst_amount || 0) / 100) || 0);
+  const sgstTotal = Number(order.sgst || ((invoice.sgst_amount || 0) / 100) || 0);
+  const igstTotal = Number(order.igst || ((invoice.igst_amount || 0) / 100) || 0);
+  const totalTaxFromApi = cgstTotal + sgstTotal + igstTotal;
   
-  const orderSubtotal = Number(order.subtotal || order.taxable_value || (totalAmount - totalTax));
+  const orderSubtotal = Number(order.subtotal || order.taxable_value || (totalAmount - totalTaxFromApi));
   const orderDiscount = Number(order.coupon_discount || order.couponDiscount || 0);
   
   // Map items using already calculated backend values
   let calculatedSubtotal = 0;
   const items = (order.items || []).map((item: any) => {
     const qty = Number(item.qty || item.quantity || 1);
-    const unitPriceExcl = Number(item.price_excl_gst || item.price || 0);
-    const gstRate = Number(item.tax_rate_pct || 0);
+    const gstRate = Number(item.tax_rate_pct || item.gstPercent || 0);
+    const isInclusive = item.is_tax_inclusive !== undefined ? Boolean(item.is_tax_inclusive) : (item.isTaxInclusive !== undefined ? Boolean(item.isTaxInclusive) : false);
+    
+    // Determine the unit price excluding GST
+    let unitPriceExcl = Number(item.price_excl_gst);
+    if (isNaN(unitPriceExcl) || unitPriceExcl === 0) {
+        const rawPrice = Number(item.price || 0);
+        unitPriceExcl = isInclusive ? (rawPrice / (1 + (gstRate / 100))) : rawPrice;
+    }
     
     // Taxable Value for the line (Rate * Qty)
     const lineTaxableValue = Number(item.taxable_value || (unitPriceExcl * qty));
@@ -114,14 +121,14 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
     const itemIgst = Number(item.igst || 0);
     const itemTotalTax = itemCgst + itemSgst + itemIgst;
 
-    // Fallback: Calculate if backend didn't provide item-level taxes but provided rate
+    // Fallback: Calculate tax based on gstRate if missing
     let finalCgst = itemCgst;
     let finalSgst = itemSgst;
     let finalIgst = itemIgst;
 
     if (itemTotalTax === 0 && gstRate > 0) {
       const calculatedTax = (lineTaxableValue * (gstRate / 100));
-      if (igstTotal > 0) {
+      if (igstTotal > 0 || (order.shipping_address?.state && order.shipping_address?.state !== supplierDetails.address.state)) {
         finalIgst = calculatedTax;
       } else {
         finalCgst = calculatedTax / 2;
@@ -144,6 +151,21 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
     };
   });
 
+  // Calculate internal sum of taxes from items
+  const itemsCgst = items.reduce((sum, i) => sum + i.cgst, 0);
+  const itemsSgst = items.reduce((sum, i) => sum + i.sgst, 0);
+  const itemsIgst = items.reduce((sum, i) => sum + i.igst, 0);
+  const totalItemsTax = itemsCgst + itemsSgst + itemsIgst;
+
+  // Final totals resolution: Use the larger of the two to ensure no missing tax
+  const finalCgstTotal = Math.max(cgstTotal, itemsCgst);
+  const finalSgstTotal = Math.max(sgstTotal, itemsSgst);
+  const finalIgstTotal = Math.max(igstTotal, itemsIgst);
+  const finalTotalTax = finalCgstTotal + finalSgstTotal + finalIgstTotal;
+
+  // Source of Truth for the Final Amount
+  const resolvedTotal = totalAmount || (calculatedSubtotal + finalTotalTax - orderDiscount);
+
   return {
     ...invoice,
     supplier: supplierDetails,
@@ -155,17 +177,17 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
     invoiceNumber: invoice.invoice_number || invoice.invoiceNumber || `INV-${invoice.id}`,
     issuedAt: getSafeDate(invoice.issued_at || invoice.issuedAt),
     invoiceDate: getSafeDate(invoice.issued_at || invoice.issuedAt),
-    placeOfSupply: "Gujarat",
+    placeOfSupply: order.shipping_address?.state || order.shippingAddress?.state || "Gujarat",
     items,
     subtotal: calculatedSubtotal, // Sum of all item "Amount"
-    totalTax,
-    cgstTotal,
-    sgstTotal,
-    igstTotal,
+    totalTax: finalTotalTax,
+    cgstTotal: finalCgstTotal,
+    sgstTotal: finalSgstTotal,
+    igstTotal: finalIgstTotal,
     discount: orderDiscount,
     couponCode: order.coupon_code || order.couponCode || null,
-    totalAmount: totalAmount,
-    amountInWords: numberToWords(totalAmount)
+    totalAmount: resolvedTotal,
+    amountInWords: numberToWords(resolvedTotal)
   };
 }
 
@@ -173,28 +195,40 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
 
 
 function generateServiceInvoiceData(appointment: Appointment, invoice: InvoiceType) {
-  const totalAmount = invoice.totalAmountPaise;
-  const subtotal = (appointment.serviceAmount || totalAmount / 1.18) * 100;
-  const totalTax = totalAmount - subtotal;
+  // Convert Paise to Rupees for consistency
+  const totalAmountRupees = (invoice as any).total_amount_paise ? ((invoice as any).total_amount_paise / 100) : (invoice.totalAmountPaise / 100);
+  const subtotalRupees = appointment.serviceAmount || (totalAmountRupees / 1.18);
+  const totalTaxRupees = totalAmountRupees - subtotalRupees;
 
   return {
+    ...invoice,
     supplier: supplierDetails,
-    customer: { name: appointment.patientName, billingAddress: appointment.serviceAddress!, shippingAddress: appointment.serviceAddress! },
-    invoiceNumber: invoice.invoiceNumber,
-    invoiceDate: getSafeDate(invoice.issuedAt as any),
-    placeOfSupply: `${appointment.serviceAddress?.city}, ${appointment.serviceAddress?.state}`,
+    customer: { 
+      name: appointment.patientName, 
+      billingAddress: normalizeAddress(appointment.serviceAddress), 
+      shippingAddress: normalizeAddress(appointment.serviceAddress) 
+    },
+    invoiceNumber: (invoice as any).invoice_number || invoice.invoiceNumber || `INV-${invoice.id}`,
+    invoiceDate: getSafeDate((invoice as any).issued_at || invoice.issuedAt as any),
+    placeOfSupply: `${appointment.serviceAddress?.city || ''}, ${appointment.serviceAddress?.state || ''}`,
     items: [{
       id: appointment.id,
-      name: appointment.therapyType,
+      name: appointment.therapyType || 'Physiotherapy Service',
       quantity: 1,
-      price: subtotal,
+      price: subtotalRupees,
       gstRate: 18,
       hsnCode: '99834',
-      cgst: totalTax / 2,
-      sgst: totalTax / 2,
+      cgst: totalTaxRupees / 2,
+      sgst: totalTaxRupees / 2,
+      taxableValue: subtotalRupees
     }],
-    subtotal, totalTax, cgstTotal: totalTax / 2, sgstTotal: totalTax / 2, igstTotal: 0,
-    totalAmount, amountInWords: numberToWords(totalAmount / 100)
+    subtotal: subtotalRupees, 
+    totalTax: totalTaxRupees, 
+    cgstTotal: totalTaxRupees / 2, 
+    sgstTotal: totalTaxRupees / 2, 
+    igstTotal: 0,
+    totalAmount: totalAmountRupees, 
+    amountInWords: numberToWords(totalAmountRupees)
   };
 }
 

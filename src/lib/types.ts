@@ -210,6 +210,10 @@ export interface Product {
     heightCm: number;
     weightKg: number;
   };
+  gstPercent?: number;
+  gstAmount?: number;
+  isTaxInclusive: boolean;
+  additionalFeatures?: { title: string; value: string; isHighlighted?: boolean }[];
 }
 
 export interface Review {

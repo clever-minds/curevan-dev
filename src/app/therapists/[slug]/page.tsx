@@ -4,7 +4,7 @@ import { TherapistProfileClient } from './therapist-profile';
 import type { Therapist } from '@/lib/types';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getTherapistBySlug } from '@/lib/repos/therapists';
-import { listJournalEntries } from '@/lib/repos/content';
+import { listPublicJournalEntries } from '@/lib/repos/content';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const slug = params.slug
+  const { slug } = await params
 
   const therapist = await getTherapistBySlug(slug);
 
@@ -46,9 +46,9 @@ export async function generateMetadata(
 }
 
 // This is now an async Server Component
-export default async function TherapistProfilePage({ params }: { params: { slug: string } }) {
+export default async function TherapistProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   // We can directly use the slug from params here
-  const slug = params.slug;
+  const { slug } = await params;
   const therapist = await getTherapistBySlug(slug);
         console.log("getTherapistBySlug params2",therapist);
 
@@ -57,7 +57,7 @@ export default async function TherapistProfilePage({ params }: { params: { slug:
   }
 
   // Fetch authored posts here on the server
-  const authoredPosts = await listJournalEntries({ authorId: therapist.id, status: 'published' });
+  const authoredPosts = await listPublicJournalEntries({ authorId: therapist.id, status: 'published' });
 
   // We pass all fetched data as props to the client component
   return <TherapistProfileClient therapist={therapist} authoredPosts={authoredPosts} />;

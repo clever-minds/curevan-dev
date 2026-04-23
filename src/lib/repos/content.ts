@@ -6,12 +6,15 @@ import type {
   Invoice, CreditNote, PatientProfile, AIFeedback
 } from "../types";
 import { getToken } from "@/lib/auth";
+import { getSafeDate } from "@/lib/utils";
 
 /**
  * Generic API response wrapper
  */
 interface ApiResponse<T> {
   data: T;
+  success?: boolean;
+  message?: string;
 }
 
 /**
@@ -25,23 +28,36 @@ export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]
     const response = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
       "/api/general/knowledge-base/list",
       {
-        params: filters,
+        params: { contentType: "post", ...filters },
         withCredentials: true,
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
-        },
+        } : {},
       }
     );
 
-    const entries = response.data?.data ?? []; // ← fallback to empty array if undefined
+    const rawData = response.data?.data ?? response.data ?? [];
+    const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
     console.log("Journal Entries API response:", entries);
 
     return entries.map(entry => ({
       ...entry,
-      createdAt: entry.createdAt || (entry as any).created_at,
-      updatedAt: entry.updatedAt || (entry as any).updated_at,
-      publishedAt: entry.publishedAt ? new Date(entry.publishedAt).toISOString() : undefined,
+      featuredImage: (() => {
+          const img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (typeof img === 'string') return img;
+          if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
+          return '';
+      })(),
+      authorName: (() => {
+          const author = entry.authorName || (entry as any).author_name || (entry as any).author;
+          if (typeof author === 'string') return author;
+          if (author && typeof author === 'object') return (author as any).name || (author as any).displayName || (author as any).full_name || 'Anonymous';
+          return 'Anonymous';
+      })(),
+      createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
+      updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
+      publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
     }));
   } catch (error: any) {
     console.log("JOURNAL LIST ERROR:", error?.message);
@@ -49,25 +65,95 @@ export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]
   }
 }
 
+export async function listPublicJournalEntries(filters?: any): Promise<KnowledgeBase[]> {
+  try {
+    const response = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
+      "/api/general/knowledge-base/post-get-public",
+      {
+        params: { ...filters },
+      }
+    );
+
+    const rawData = response.data?.data ?? response.data ?? [];
+    const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
+
+    return entries.map(entry => ({
+      ...entry,
+      featuredImage: entry.featuredImage || (entry as any).featured_image || (entry as any).image || '',
+      authorName: entry.authorName || (entry as any).author_name || 'Anonymous',
+      createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
+      updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
+      publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
+    }));
+  } catch (error: any) {
+    console.log("PUBLIC JOURNAL LIST ERROR:", error?.message);
+    return [];
+  }
+}
+
+export async function getPublicJournalEntryBySlug(slug: string): Promise<KnowledgeBase | null> {
+  try {
+    const response = await serverApi.get<ApiResponse<KnowledgeBase[]>>(
+      "/api/general/knowledge-base/post-get-public",
+      {
+        params: { slug },
+      }
+    );
+
+    const rawData = response.data?.data ?? response.data ?? [];
+    const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
+
+    const entry = entries.find((e: any) => e.slug === slug);
+    if (!entry) return null;
+
+    return {
+      ...entry,
+      featuredImage: (() => {
+          const img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (typeof img === 'string') return img;
+          if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
+          return '';
+      })(),
+      authorName: (() => {
+          const author = entry.authorName || (entry as any).author_name || (entry as any).author;
+          if (typeof author === 'string') return author;
+          if (author && typeof author === 'object') return (author as any).name || (author as any).displayName || (author as any).full_name || 'Anonymous';
+          return 'Anonymous';
+      })(),
+      createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
+      updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
+      publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
+    };
+  } catch (error: any) {
+    console.log("PUBLIC JOURNAL DETAIL ERROR:", error?.message);
+    return null;
+  }
+}
+
+
+
 export async function getKnowledgeBaseBySlug(slug: string): Promise<KnowledgeBase | null> {
   try {
     const token = await getToken();
     const { data } = await serverApi.get<ApiResponse<KnowledgeBase[]>>("/api/general/knowledge-base/get-by-slug", {
       params: { slug },
       withCredentials: true,
-      headers: {
+      headers: token ? {
         Authorization: `Bearer ${token}`,
-      },
+      } : {},
     });
 
-    if (!data.data || data.data.length === 0) return null;
+    const rawData = data.data ?? data;
+    const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
-    const entry = data.data[0];
+    if (entries.length === 0) return null;
+
+    const entry = entries[0] as KnowledgeBase;
     return {
       ...entry,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt,
-      publishedAt: entry.publishedAt ? new Date(entry.publishedAt).toISOString() : undefined,
+      createdAt: getSafeDate(entry.createdAt) || new Date(),
+      updatedAt: getSafeDate(entry.updatedAt) || new Date(),
+      publishedAt: entry.publishedAt ? getSafeDate(entry.publishedAt)?.toISOString() : undefined,
     };
   } catch (error: any) {
     console.error("knowledge-base GET ERROR:", error?.message);
@@ -83,22 +169,21 @@ export async function getKnowledgeBaseById(id: number): Promise<KnowledgeBase | 
       `/api/general/knowledge-base/get-by-id/${id}`,
       {
         withCredentials: true,
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
-        },
+        } : {},
       }
     );
 
-    if (!data.data) return null;
-
-    const entry = data.data;
+    const entry = data.data ?? (data as any);
+    if (!entry) return null;
 
     return {
       ...entry,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt,
+      createdAt: getSafeDate(entry.createdAt) || new Date(),
+      updatedAt: getSafeDate(entry.updatedAt) || new Date(),
       publishedAt: entry.publishedAt
-        ? new Date(entry.publishedAt).toISOString()
+        ? getSafeDate(entry.publishedAt)?.toISOString()
         : undefined,
     };
   } catch (error: any) {
@@ -121,19 +206,22 @@ export async function listTrainings(): Promise<KnowledgeBase[]> {
       "/api/general/knowledge-base/list",
       {
         withCredentials: true,
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
-        },
+        } : {},
         params: {
           contentType: "training",
         },
       }
     );
-    return data.data.map(item => ({
+    const rawData = data.data ?? data;
+    const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
+
+    return entries.map(item => ({
       ...item,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      publishedAt: item.publishedAt ? new Date(item.publishedAt).toISOString() : undefined,
+      createdAt: getSafeDate(item.createdAt) || new Date(),
+      updatedAt: getSafeDate(item.updatedAt) || new Date(),
+      publishedAt: item.publishedAt ? getSafeDate(item.publishedAt)?.toISOString() : undefined,
     }));
   } catch (error: any) {
     console.error("TRAININGS LIST ERROR:", error?.message);
@@ -153,20 +241,23 @@ export async function listDocumentation(): Promise<KnowledgeBase[]> {
       "/api/general/knowledge-base/list",
       {
         withCredentials: true,
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
-        },
+        } : {},
         params: {
           contentType: "documentation",
         },
       }
     );
 
-    return data.data.map(item => ({
+    const rawData = data.data ?? data;
+    const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
+
+    return entries.map(item => ({
       ...item,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      publishedAt: item.publishedAt,
+      createdAt: getSafeDate(item.createdAt) || new Date(),
+      updatedAt: getSafeDate(item.updatedAt) || new Date(),
+      publishedAt: item.publishedAt ? getSafeDate(item.publishedAt)?.toISOString() : undefined,
     }));
   } catch (error: any) {
     console.error("DOCUMENTATION LIST ERROR:", error?.message);

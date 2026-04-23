@@ -29,23 +29,38 @@ export async function getCart(): Promise<CartItem[] | null> {
 
 
     // API returns array of items
-    const cartArray: CartItem[] = (data.data || []).map((item: any) => ({
-      productId: item.productId,
-      id: item.productId,
-      name: item.name || `Product ${item.productId}`,
-      price: item.price || 0,
-      description: item.description || '',
-      categoryId: item.categoryId || 0,
-      featuredImage: item.featuredImage || '',
-      isActive: item.isActive ?? true,
-      isCouponExcluded: item.isCouponExcluded ?? false,
-      rating: item.rating || 0,
-      sku: item.sku || '',
-      stock: item.stock || 0,
-      reorderPoint: item.reorderPoint || 0,
-      hsnCode: item.hsnCode || '',
-      quantity: item.quantity || 1,
-    }));
+    const cartArray: CartItem[] = (data.data || []).map((item: any) => {
+      const price = Number(item.sellingPrice || item.selling_price || item.price || 0);
+      const percent = Number(item.gstPercent || item.gst_percent || item.gst_slab || item.gstSlab || 0);
+      const isTaxInclusive = item.isTaxInclusive !== undefined ? Boolean(Number(item.isTaxInclusive)) : (item.is_tax_inclusive !== undefined ? Boolean(Number(item.is_tax_inclusive)) : false);
+
+      return {
+        productId: Number(item.productId || item.product_id),
+        id: Number(item.productId || item.product_id),
+        name: item.name || item.title || `Product ${item.productId || item.product_id}`,
+        price: price,
+        description: item.description || '',
+        categoryId: item.categoryId || item.category_id || 0,
+        featuredImage: item.featuredImage || item.featured_image || '',
+        isActive: item.isActive ?? true,
+        isCouponExcluded: item.isCouponExcluded ?? item.is_coupon_excluded ?? false,
+        rating: item.rating || 0,
+        sku: item.sku || '',
+        stock: item.stock || item.onHand || 0,
+        reorderPoint: item.reorderPoint || item.reorder_point || 0,
+        hsnCode: item.hsnCode || item.hsn_code || '',
+        quantity: Number(item.quantity || 0),
+        gstPercent: percent,
+        gstAmount: (() => {
+           if (item.gstAmount || item.gst_amount) return Number(item.gstAmount || item.gst_amount);
+           if (percent > 0) {
+             return isTaxInclusive ? (price * (percent / (100 + percent))) : (price * (percent / 100));
+           }
+           return 0;
+        })(),
+        isTaxInclusive: isTaxInclusive,
+      };
+    });
     console.log("Cart API response123:", cartArray);
 
     return cartArray;
@@ -133,10 +148,10 @@ export async function clearCart(): Promise<boolean> {
   }
 }
 
-export async function removeCartItem(cartItemId: number): Promise<boolean> {
+export async function removeCartItemByProductId(productId: number): Promise<boolean> {
   try {
-    const token =await getToken();
-    await serverApi.delete(`/api/cart/remove/${cartItemId}`, {
+    const token = await getToken();
+    await serverApi.delete(`/api/cart/remove/${productId}`, {
        headers: {
         withCredentials: true,
         Authorization: `Bearer ${token}`

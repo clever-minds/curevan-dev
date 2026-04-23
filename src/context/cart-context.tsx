@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import type { Product, Coupon, CartItem } from '@/lib/types';
 import { useAuth } from './auth-context';
-import { getCart, saveCart, clearCart as clearFirestoreCart,removeCartItem, validateCartStock } from '@/lib/repos/cart';
+import { getCart, saveCart, clearCart as clearFirestoreCart, removeCartItemByProductId, validateCartStock } from '@/lib/repos/cart';
 
 interface CartContextType {
   cart: CartItem[];
@@ -18,7 +18,7 @@ interface CartContextType {
   removeFromCart: (productId: number) => Promise<void>;
   updateQuantity: (productId: number, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
-  getCartTotal: () => { subtotal: number; discount: number; total: number };
+  getCartTotal: () => { subtotal: number; discount: number; totalGst: number; gstToPay: number; total: number; totalWithTax: number };
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
   appliedCoupon: Coupon | null;
@@ -57,38 +57,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const data = await getCart(); // returns array like [{id, userId, productId, quantity}]
+      const data = await getCart();
       console.log('Cart API response:', data);
 
       if (!data || data.length === 0) {
         setCart([]);
         setAppliedCoupon(null);
-        setIsCartLoaded(true);
         return;
       }
 
-      // Map API data to CartItem with placeholders
-      const normalizedCart: CartItem[] = data.map((item: any) => ({
-        productId: Number(item.productId),
-        id: Number(item.id),
-        name: item.name, // placeholder, replace with real data later
-        price: item.price, // placeholder price
-        description: '',
-        categoryId: item.categoryId,
-        featuredImage: item.featuredImage || '',
-        isActive: true,
-        isCouponExcluded: false,
-        rating: 0,
-        sku: '',
-        stock: 10,
-        reorderPoint: 0,
-        categoryname: item.categoryname || '',
-        hsnCode: item.hsnCode || '',
-        quantity: Number(item.quantity),
-      }));
-
-      setCart(normalizedCart);
-      setAppliedCoupon(null); // your API does not return coupon info for now
+      setCart(data as CartItem[]);
+      setAppliedCoupon(null);
     } catch (err) {
       console.error('Failed to load cart:', err);
       setCart([]);
@@ -170,10 +149,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // -------------------------------
   // Remove item from cart
   // -------------------------------
-  const removeFromCart = async (id: number) => {
+  const removeFromCart = async (productId: number) => {
     if (!user) return;
     try {
-      await removeCartItem(id);
+      await removeCartItemByProductId(productId);
       await loadCart();
     } catch (err) {
       console.error('Failed to remove from cart:', err);
@@ -197,7 +176,7 @@ const updateQuantity = async (
   if (!cartItem) return;
 
   if (quantity <= 0) {
-    return removeFromCart(cartItem.id);
+    return removeFromCart(productId);
   }
 
   try {
@@ -269,7 +248,7 @@ const updateQuantity = async (
   // -------------------------------
   const getCartTotal = useCallback(() => {
     const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
-
+    
     let discount = 0;
     if (appliedCoupon) {
       if (appliedCoupon.discountType === 'percent') {
@@ -277,18 +256,45 @@ const updateQuantity = async (
           (total, item) => (item.isCouponExcluded ? total : total + item.price * item.quantity),
           0
         );
-        discount = eligibleSubtotal * appliedCoupon.value;
+        discount = eligibleSubtotal * (appliedCoupon.value / 100);
       } else if (appliedCoupon.discountType === 'flat') {
         discount = appliedCoupon.value;
       }
     }
 
     const isTherapist = user?.role === 'therapist';
-    const postCouponSubtotal = subtotal - discount;
-    const therapistDiscount = isTherapist ? postCouponSubtotal * 0.1 : 0;
+    const therapistDiscount = isTherapist ? (subtotal - discount) * 0.1 : 0;
+    const finalDiscount = discount + therapistDiscount;
+    const taxableAmount = subtotal - finalDiscount;
 
-    const total = postCouponSubtotal - therapistDiscount;
-    return { subtotal, discount: discount + therapistDiscount, total };
+    // Calculate GST based on discounted taxable amount
+    // We assume discount is spread proportionally across all items
+    const discountRatio = subtotal > 0 ? taxableAmount / subtotal : 1;
+
+    const totalGst = cart.reduce((total, item) => {
+        const itemGst = (item.gstAmount || 0) * item.quantity * discountRatio;
+        return total + itemGst;
+    }, 0);
+
+    // Only add GST to total if it is EXCLUDED from price
+    const gstToPay = cart.reduce((total, item) => {
+      if (!item.isTaxInclusive) {
+        const itemGst = (item.gstAmount || 0) * item.quantity * discountRatio;
+        return total + itemGst;
+      }
+      return total;
+    }, 0);
+
+    const totalWithTax = taxableAmount + gstToPay;
+
+    return { 
+      subtotal, 
+      discount: finalDiscount, 
+      totalGst, 
+      gstToPay,
+      total: totalWithTax, 
+      totalWithTax 
+    };
   }, [cart, appliedCoupon, user]);
 
   // -------------------------------

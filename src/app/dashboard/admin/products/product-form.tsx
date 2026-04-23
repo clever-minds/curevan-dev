@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Save, PackagePlus, Info } from 'lucide-react';
+import { Save, PackagePlus, Info, Plus, Minus, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ProductCategory } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -90,6 +91,11 @@ images: z
   )
   .min(1, 'At least one image is required'),
   status: z.enum(['Draft', 'Active', 'Archived'], { required_error: 'Please select a status.'}),
+  additionalFeatures: z.array(z.object({
+      title: z.string().min(1, 'Title is required'),
+      value: z.string().min(1, 'Value is required'),
+      isHighlighted: z.boolean().default(false)
+  })).optional(),
 }).refine(data => {
     if (data.mrp !== undefined && data.sellingPrice !== undefined) {
         return data.sellingPrice <= data.mrp;
@@ -151,7 +157,13 @@ export function ProductForm({
       trackInventory: true,
       stock: 0,
       reorderPoint: 0,
+      additionalFeatures: [],
     },
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "additionalFeatures" as any
   });
 
   useEffect(() => {
@@ -178,7 +190,8 @@ export function ProductForm({
         widthCm: initialData.dimensions?.widthCm ?? undefined,
         heightCm: initialData.dimensions?.heightCm ?? undefined,
         weightKg: initialData.dimensions?.weightKg ?? undefined,
-      }
+      },
+      additionalFeatures: (initialData as any).additionalFeatures || []
     });
   }
 }, [initialData, form]);
@@ -277,6 +290,11 @@ export function ProductForm({
             batch_number: data.batchNumber ?? undefined,
             manufacturing_date: data.mfgDate?.toISOString().split('T')[0],
             expiry_date: data.expiryDate?.toISOString().split('T')[0],
+            additional_features: data.additionalFeatures?.map(f => ({
+                title: f.title,
+                value: f.value,
+                is_highlighted: f.isHighlighted
+            })) ?? [],
         };
 
         if (productId) {
@@ -344,6 +362,72 @@ export function ProductForm({
             
             <div className="grid grid-cols-1 gap-4">
                 <FormField control={form.control} name="shortDescription" render={({ field }) => (<FormItem><FormLabel>Short Description <span className="text-red-500">*</span></FormLabel><FormControl><Textarea placeholder="A concise summary for product cards." rows={3} {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <div className="space-y-4">
+                    <FormLabel>Additional Features / Specifications <span className="text-muted-foreground">(Key-Value Pairs)</span></FormLabel>
+                    <div className="space-y-3">
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="flex gap-2 items-start">
+                                <FormField
+                                    control={form.control}
+                                    name={`additionalFeatures.${index}.title` as any}
+                                    render={({ field }) => (
+                                        <div className="flex-1">
+                                            <FormControl>
+                                                <Input {...field} placeholder="Label (e.g. Material)" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </div>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`additionalFeatures.${index}.value` as any}
+                                    render={({ field }) => (
+                                        <div className="flex-1">
+                                            <FormControl>
+                                                <Input {...field} placeholder="Value (e.g. Plastic)" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </div>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`additionalFeatures.${index}.isHighlighted` as any}
+                                    render={({ field }) => (
+                                        <div className="flex flex-col items-center gap-1 pt-2">
+                                            <FormControl>
+                                                <Checkbox 
+                                                    checked={field.value} 
+                                                    onCheckedChange={field.onChange} 
+                                                />
+                                            </FormControl>
+                                            <span className="text-[10px] text-muted-foreground font-bold uppercase">Highlight</span>
+                                        </div>
+                                    )}
+                                />
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => remove(index)}
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => append({ title: "", value: "", isHighlighted: false })}
+                        className="mt-2"
+                    >
+                        <Plus className="h-4 w-4 mr-2" /> Add Specification
+                    </Button>
+                </div>
                 <FormField control={form.control} name="longDescription" render={({ field }) => (<FormItem><FormLabel>Full Description (Optional)</FormLabel><FormControl><AIRichText value={field.value || ''} onChange={field.onChange} placeholder="Detailed product description, specifications, and usage instructions..." context={{ entityType: 'post' }} /></FormControl><FormMessage /></FormItem>)}/>
             </div>
         </div>
@@ -354,7 +438,7 @@ export function ProductForm({
                 <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP (₹) <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 6000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price (₹) <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 4999" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>)}
-                <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} key={field.value} value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                  <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel className="text-sm">Price includes tax?</FormLabel><FormDescription className="text-xs">Is GST already included?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
@@ -416,7 +500,7 @@ export function ProductForm({
                   </FormItem>
                 )}
               />
-             <FormField control={form.control} name="status" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Status <span className="text-red-500">*</span></FormLabel><FormControl><RadioGroup onValueChange={field.onChange} key={field.value} defaultValue={field.value} className="flex space-x-4"><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Draft" /></FormControl><FormLabel className="font-normal">Draft</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Active" /></FormControl><FormLabel className="font-normal">Active</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Archived" /></FormControl><FormLabel className="font-normal">Archived</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)}/>
+             <FormField control={form.control} name="status" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Status <span className="text-red-500">*</span></FormLabel><FormControl><RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4"><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Draft" /></FormControl><FormLabel className="font-normal">Draft</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Active" /></FormControl><FormLabel className="font-normal">Active</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Archived" /></FormControl><FormLabel className="font-normal">Archived</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)}/>
         </div>
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline">Cancel</Button>

@@ -56,6 +56,7 @@ export async function createProducts(payload: {
   batch_number?: string;
   manufacturing_date?: string; // ISO string "YYYY-MM-DD"
   expiry_date?: string;        // ISO string "YYYY-MM-DD"
+  additional_features?: string[];
 }) {
   try {
     const token = await getToken();
@@ -137,6 +138,7 @@ export async function updateProduct(
   batch_number?: string;
   manufacturing_date?: string; // ISO string "YYYY-MM-DD"
   expiry_date?: string;        // ISO string "YYYY-MM-DD"
+  additional_features?: string[];
   }
 ) {
   try {

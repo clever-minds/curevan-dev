@@ -12,6 +12,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from './ui/form';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 const newsletterSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -46,6 +48,8 @@ const XLogo = () => (
 
 export default function Footer() {
   const { toast } = useToast();
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith('/dashboard');
 
   const form = useForm<NewsletterFormValues>({
     resolver: zodResolver(newsletterSchema),
@@ -63,7 +67,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-footer-gradient text-white relative overflow-hidden">
+    <footer className={cn("bg-footer-gradient text-white relative overflow-hidden transition-all duration-300", isDashboard && "lg:ml-[280px]")}>
       <div className="container mx-auto px-4 md:px-6 pt-12 pb-24 lg:pb-12 relative z-10">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-5 space-y-4">

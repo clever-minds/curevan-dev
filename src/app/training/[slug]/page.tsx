@@ -21,7 +21,7 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const slug = params.slug
+  const { slug } = await params
   const allTrainings = await listTrainings();
   const training = allTrainings.find((t) => t.slug === slug);
 
@@ -38,9 +38,10 @@ export async function generateMetadata(
   }
 }
 
-export default async function TrainingDetailPage({ params }: { params: { slug: string } }) {
+export default async function TrainingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const allTrainings = await listTrainings();
-  const training = allTrainings.find((t) => t.slug === params.slug);
+  const training = allTrainings.find((t) => t.slug === slug);
 
   if (!training) {
     notFound();

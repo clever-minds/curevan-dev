@@ -1,6 +1,6 @@
 
 import { MetadataRoute } from 'next';
-import { listJournalEntries } from '@/lib/repos/content';
+import { listPublicJournalEntries } from '@/lib/repos/content';
 import { listTherapists } from '@/lib/repos/therapists';
 import { getTherapyCategories } from '@/lib/repos/categories';
 
@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   // Dynamic routes for journal entries
-  const allPosts = await listJournalEntries();
+  const allPosts = await listPublicJournalEntries();
   const postRoutes = allPosts
     .filter(post => post.status === 'published' && post.publishedAt)
     .map((post) => {
