@@ -636,7 +636,7 @@ export default function ProductDetailsPage() {
                 value="reviews" 
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-4 h-auto text-lg font-bold"
               >
-                Reviews (4.8 - {150 + reviewCount}+ Real Reviews)
+                Reviews ({averageRating} - {reviews.length} Customer Reviews)
               </TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="pt-10 max-w-4xl">
