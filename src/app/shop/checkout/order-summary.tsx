@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Price } from "@/components/money/price";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { useState, useCallback } from "react";
@@ -19,7 +20,7 @@ export function OrderSummary() {
   const [couponLoading, setCouponLoading] = useState(false);
   const { toast } = useToast();
 
-  const { subtotal, discount, totalGst, total, totalWithTax, gstToPay } = getCartTotal();
+  const { subtotal, discount, offerDiscount, couponDiscount, totalGst, total, totalWithTax, gstToPay, shippingCost, message } = getCartTotal();
 
   const handleApplyCoupon = useCallback(async (codeToApply: string) => {
     if (!codeToApply.trim()) return;
@@ -148,21 +149,47 @@ export function OrderSummary() {
             </span>
           </div>
 
-          {discount > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground flex items-center gap-1">
-                <Tag className="w-4 h-4" />
-                Coupon ({appliedCoupon?.code})
+          {offerDiscount > 0 && (
+            <div className="flex justify-between text-green-600 font-medium">
+              <span className="flex items-center gap-1">
+                Offer Discount
               </span>
-              <span className="text-primary">
-                -<Price amount={discount} showDecimals />
+              <span>
+                -<Price amount={offerDiscount} showDecimals />
               </span>
             </div>
           )}
 
+          {couponDiscount > 0 && (
+            <div className="flex justify-between text-primary font-medium">
+              <span className="flex items-center gap-1">
+                <Tag className="w-4 h-4" />
+                Coupon ({appliedCoupon?.code})
+              </span>
+              <span>
+                -<Price amount={couponDiscount} showDecimals />
+              </span>
+            </div>
+          )}
+
+          {message && (
+            <p className={cn(
+              "text-[11px] font-medium",
+              message.includes("not applicable") ? "text-destructive" : "text-green-600"
+            )}>
+              {message}
+            </p>
+          )}
+
           <div className="flex justify-between">
             <span className="text-muted-foreground">Shipping</span>
-            <span>Free</span>
+            <span>
+              {shippingCost > 0 ? (
+                <Price amount={shippingCost} showDecimals />
+              ) : (
+                "Free"
+              )}
+            </span>
           </div>
 
           {gstToPay > 0 && (

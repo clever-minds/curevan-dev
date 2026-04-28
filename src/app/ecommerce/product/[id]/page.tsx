@@ -47,6 +47,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { fetchProductById, fetchPublicProducts } from '@/lib/repos/products';
 import { fetchProductReviews } from '@/lib/repos/reviews';
+import { getActiveOffers } from '@/lib/repos/offers';
+import { estimateShipping, ShippingEstimate } from '@/lib/repos/shipment';
+import { calculateProductPrice, Offer } from '@/lib/pricing';
 import type { Product, Review } from '@/lib/types';
 import ProductCard from '@/components/product-card';
 import ProductReviews from '@/components/product-reviews';
@@ -61,6 +64,7 @@ export default function ProductDetailsPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [reviewCount, setReviewCount] = useState(0);
@@ -70,6 +74,9 @@ export default function ProductDetailsPage() {
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [lensStyle, setLensStyle] = useState<React.CSSProperties>({});
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
+  const [pincode, setPincode] = useState('');
+  const [shippingEstimate, setShippingEstimate] = useState<ShippingEstimate | null>(null);
+  const [estimating, setEstimating] = useState(false);
 
   const isTherapist = user?.role === 'therapist';
   const cartItem = cart.find(item => Number(item.productId) === Number(id));
@@ -80,10 +87,13 @@ export default function ProductDetailsPage() {
       if (!id) return;
       setLoading(true);
       try {
-        const [productData, reviewsData] = await Promise.all([
+        const [productData, reviewsData, offersData] = await Promise.all([
           fetchProductById(id as string),
-          fetchProductReviews(id as string)
+          fetchProductReviews(id as string),
+          getActiveOffers()
         ]);
+        
+        setOffers(offersData);
 
         if (productData) {
           setProduct(productData);
@@ -127,7 +137,9 @@ export default function ProductDetailsPage() {
     return `${cleanBase}${cleanPath}`;
   };
 
-  const price = product?.price || 0;
+  const originalPrice = product?.price || 0;
+  const pricing = product ? calculateProductPrice(product, offers, null) : null;
+  const price = pricing?.finalPrice ?? originalPrice;
   const therapistPrice = price * 0.90;
 
   const averageRating = reviews.length > 0 
@@ -228,6 +240,40 @@ export default function ProductDetailsPage() {
   const handleUpdateCartQuantity = (newQty: number) => {
     if (!product) return;
     updateQuantity(product.id, newQty);
+  };
+
+  const handleCheckShipping = async () => {
+    if (!pincode || pincode.length !== 6) {
+      toast({
+        variant: 'destructive',
+        title: "Invalid Pincode",
+        description: "Please enter a valid 6-digit pincode.",
+      });
+      return;
+    }
+
+    setEstimating(true);
+    try {
+      const weight = product?.dimensions?.weightKg || 0.5;
+      const res = await estimateShipping(pincode, weight);
+      if (res) {
+        setShippingEstimate(res);
+        toast({
+          title: "Shipping Estimated",
+          description: `Shipping to ${pincode} will cost ₹${res.rate}.`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: "Shipping Unavailable",
+          description: "We couldn't estimate shipping for this pincode.",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setEstimating(false);
+    }
   };
 
   if (loading) {
@@ -501,7 +547,24 @@ export default function ProductDetailsPage() {
 
             <div className="p-5 sm:p-8 rounded-3xl bg-muted/30 border space-y-6">
               <div className="space-y-2">
-                {isTherapist ? (
+                {pricing && pricing.offerDiscount > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex items-baseline flex-wrap gap-x-4 gap-y-2">
+                       <span className="text-2xl sm:text-4xl font-bold text-green-600">
+                        <Price amount={price} showDecimals />
+                      </span>
+                      <span className="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/50">
+                        <Price amount={originalPrice} showDecimals />
+                      </span>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        OFFER: <Price amount={pricing.offerDiscount} className="ml-1" /> OFF
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-medium text-green-600">
+                       {pricing.message}
+                    </p>
+                  </div>
+                ) : isTherapist ? (
                   <div className="space-y-4">
                     <div className="flex items-baseline flex-wrap gap-x-4 gap-y-2">
                        <span className="text-2xl sm:text-4xl font-bold text-primary">
@@ -533,7 +596,7 @@ export default function ProductDetailsPage() {
                   <div className="flex flex-col gap-1 mt-1">
                     <div className="flex items-center gap-2">
                        <Badge variant="outline" className="text-[10px] sm:text-xs font-medium border-primary/20 bg-primary/5 text-primary">
-                        GST {product.gstPercent}%: <Price amount={product.gstAmount || 0} className="ml-1" showDecimals />
+                        GST {product.gstPercent}%:
                       </Badge>
                       <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-tight">
                         {product.isTaxInclusive ? 'Inclusive of all taxes' : 'Tax Excluded'}
@@ -544,6 +607,62 @@ export default function ProductDetailsPage() {
                         * GST will be added at checkout
                       </p>
                     )}
+                  </div>
+                )}
+              </div>
+
+              {/* Shipping Estimator (Check Delivery) */}
+              <div className="space-y-4 border-y py-6 my-2">
+                <div className="flex items-center gap-3">
+                  <Truck className="w-5 h-5 text-primary" />
+                  <span className="font-bold text-sm uppercase tracking-wider">Check Delivery Availability</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Enter Pincode (e.g. 110001)"
+                      value={pincode}
+                      onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full h-12 px-4 rounded-xl bg-white border border-input focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold"
+                    />
+                    {estimating && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={handleCheckShipping}
+                    disabled={estimating || pincode.length !== 6}
+                    variant="outline"
+                    className="h-12 rounded-xl px-6 font-bold border-primary text-primary hover:bg-primary/5"
+                  >
+                    Check
+                  </Button>
+                </div>
+                
+                {shippingEstimate && (
+                  <div className="p-4 rounded-xl bg-green-50 border border-green-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-green-800">
+                          Available for Delivery to {pincode}
+                        </p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-green-700/80">
+                          <span className="flex items-center gap-1">
+                             Shipping: <span className="font-bold text-green-700">₹{shippingEstimate.rate}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                             Delivery: <span className="font-bold text-green-700">{shippingEstimate.estimated_delivery}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                             via {shippingEstimate.courier}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -681,7 +800,14 @@ export default function ProductDetailsPage() {
                         <Truck className="w-8 h-8 text-primary shrink-0" />
                         <div className="space-y-1">
                             <p className="font-bold text-lg">Fast Delivery</p>
-                            <p className="text-muted-foreground">Standard delivery within 3-5 business days across India. Express shipping options available at checkout.</p>
+                            {shippingEstimate ? (
+                              <p className="text-muted-foreground">
+                                Shipping to <span className="font-bold text-primary">{pincode}</span> will cost <span className="font-bold text-primary">₹{shippingEstimate.rate}</span> via {shippingEstimate.courier}. 
+                                Estimated delivery by <span className="font-bold text-primary">{shippingEstimate.estimated_delivery}</span>.
+                              </p>
+                            ) : (
+                              <p className="text-muted-foreground">Standard delivery within 3-5 business days across India. Express shipping options available at checkout.</p>
+                            )}
                         </div>
                     </div>
                     <div className="flex gap-4 p-6 rounded-2xl bg-muted/30 border">

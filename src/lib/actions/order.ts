@@ -11,12 +11,15 @@ const createOrderSchema = z.object({
   billingAddressId: z.number(),
   couponCode: z.string().optional(),
   couponDiscount: z.number().optional(),
+  offerDiscount: z.number().optional(),
   subtotal: z.number().optional(),
+
   total: z.number().optional(),
   referredTherapistId: z.string().optional(),
  paymentStatus: z.string(),
  paymentRef:z.string(),
- paymentGateway:z.string(),
+  paymentGateway:z.string(),
+  shippingCharges: z.number().optional(),
 });
 
 type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -42,12 +45,15 @@ export async function createOrder(
         shipping_address_id: validatedData.shippingAddressId,
         coupon_code: validatedData.couponCode,
         coupon_discount: validatedData.couponDiscount,
+        offer_discount: validatedData.offerDiscount,
         subtotal: validatedData.subtotal,
+
         total: validatedData.total,
         referred_therapist_id: validatedData.referredTherapistId,
         payment_status: validatedData.paymentStatus,
         payment_ref: validatedData.paymentRef,
         payment_gateway: validatedData.paymentGateway,
+        shipping_charges: validatedData.shippingCharges,
       },
       {
         headers: {

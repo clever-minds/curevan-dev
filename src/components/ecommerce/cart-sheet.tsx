@@ -22,7 +22,7 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const router = useRouter();
 console.log("CartSheet render - cart items:", cart);
-    const { subtotal, discount, totalGst, total, gstToPay } = getCartTotal();
+    const { subtotal, discount, totalGst, total, gstToPay, shippingCost } = getCartTotal();
 
     const handleCheckout = async () => {
         if (!user) {
@@ -126,6 +126,13 @@ console.log("CartSheet render - cart items:", cart);
                                         <span className="font-semibold text-foreground tracking-tight"><Price amount={gstToPay} showDecimals /></span>
                                     </div>
                                 )}
+                                {shippingCost > 0 && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-muted-foreground font-medium uppercase tracking-wider">Shipping</span>
+                                        <span className="font-semibold text-foreground tracking-tight"><Price amount={shippingCost} showDecimals /></span>
+                                    </div>
+                                )}
+
                                 <Separator className="bg-muted-foreground/10" />
                                 <div className="flex justify-between items-center py-2 text-xl">
                                     <p className="font-bold font-headline uppercase tracking-tighter">Total</p>

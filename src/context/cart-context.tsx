@@ -11,6 +11,8 @@ import React, {
 import type { Product, Coupon, CartItem } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { getCart, saveCart, clearCart as clearFirestoreCart, removeCartItemByProductId, validateCartStock } from '@/lib/repos/cart';
+import { getActiveOffers } from '@/lib/repos/offers';
+import { calculateProductPrice, Offer, PricingResult } from '@/lib/pricing';
 
 interface CartContextType {
   cart: CartItem[];
@@ -18,7 +20,18 @@ interface CartContextType {
   removeFromCart: (productId: number) => Promise<void>;
   updateQuantity: (productId: number, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
-  getCartTotal: () => { subtotal: number; discount: number; totalGst: number; gstToPay: number; total: number; totalWithTax: number };
+  getCartTotal: () => { 
+    subtotal: number; 
+    discount: number; 
+    offerDiscount: number;
+    couponDiscount: number;
+    totalGst: number; 
+    gstToPay: number; 
+    shippingCost: number;
+    total: number; 
+    totalWithTax: number;
+    message: string;
+  };
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
   appliedCoupon: Coupon | null;
@@ -31,6 +44,9 @@ interface CartContextType {
   } | null;
   validateStock: () => Promise<any>;
   isCartLoaded: boolean;
+  shippingCost: number;
+  setShippingCost: (cost: number) => void;
+  offers: Offer[];
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -41,6 +57,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [shippingCost, setShippingCost] = useState<number>(0);
+
 
   // -------------------------------
   // Load cart from API
@@ -57,16 +76,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const data = await getCart();
-      console.log('Cart API response:', data);
+      const [cartData, offersData] = await Promise.all([
+        getCart(),
+        getActiveOffers()
+      ]);
+      
+      console.log('Cart API response:', cartData);
+      setOffers(offersData);
 
-      if (!data || data.length === 0) {
+      if (!cartData || cartData.length === 0) {
         setCart([]);
         setAppliedCoupon(null);
         return;
       }
 
-      setCart(data as CartItem[]);
+      setCart(cartData as CartItem[]);
       setAppliedCoupon(null);
     } catch (err) {
       console.error('Failed to load cart:', err);
@@ -247,28 +271,43 @@ const updateQuantity = async (
   // Cart totals
   // -------------------------------
   const getCartTotal = useCallback(() => {
-    const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    let subtotal = 0;
+    let totalOfferDiscount = 0;
+    let totalCouponDiscount = 0;
+    let message = "No discounts applied.";
+
+    const itemResults = cart.map(item => {
+      const result = calculateProductPrice(item, offers, appliedCoupon);
+      return {
+        item,
+        result
+      };
+    });
+
+    subtotal = itemResults.reduce((sum, { item }) => sum + (item.price * item.quantity), 0);
+    totalOfferDiscount = itemResults.reduce((sum, { result, item }) => sum + (result.offerDiscount * item.quantity), 0);
     
-    let discount = 0;
-    if (appliedCoupon) {
-      if (appliedCoupon.discountType === 'percent') {
-        const eligibleSubtotal = cart.reduce(
-          (total, item) => (item.isCouponExcluded ? total : total + item.price * item.quantity),
-          0
-        );
-        discount = eligibleSubtotal * (appliedCoupon.value / 100);
-      } else if (appliedCoupon.discountType === 'flat') {
-        discount = appliedCoupon.value;
-      }
+    // According to rule 1 & 5: If ANY product has an active offer, the coupon for that product is ignored.
+    // The engine handles this per-product.
+    totalCouponDiscount = itemResults.reduce((sum, { result, item }) => sum + (result.couponDiscount * item.quantity), 0);
+
+    // Conflict message handling
+    const hasOffer = itemResults.some(r => r.result.appliedOffer);
+    if (hasOffer && appliedCoupon) {
+      message = "Offer already applied. Coupon not applicable.";
+    } else if (hasOffer) {
+      message = "Offers applied successfully.";
+    } else if (appliedCoupon) {
+      message = "Coupon applied successfully.";
     }
 
     const isTherapist = user?.role === 'therapist';
-    const therapistDiscount = isTherapist ? (subtotal - discount) * 0.1 : 0;
-    const finalDiscount = discount + therapistDiscount;
+    const taxableAmountBeforeTherapist = subtotal - totalOfferDiscount - totalCouponDiscount;
+    const therapistDiscount = isTherapist ? taxableAmountBeforeTherapist * 0.1 : 0;
+    
+    const finalDiscount = totalOfferDiscount + totalCouponDiscount + therapistDiscount;
     const taxableAmount = subtotal - finalDiscount;
 
-    // Calculate GST based on discounted taxable amount
-    // We assume discount is spread proportionally across all items
     const discountRatio = subtotal > 0 ? taxableAmount / subtotal : 1;
 
     const totalGst = cart.reduce((total, item) => {
@@ -276,7 +315,6 @@ const updateQuantity = async (
         return total + itemGst;
     }, 0);
 
-    // Only add GST to total if it is EXCLUDED from price
     const gstToPay = cart.reduce((total, item) => {
       if (!item.isTaxInclusive) {
         const itemGst = (item.gstAmount || 0) * item.quantity * discountRatio;
@@ -285,17 +323,21 @@ const updateQuantity = async (
       return total;
     }, 0);
 
-    const totalWithTax = taxableAmount + gstToPay;
+    const totalWithTax = taxableAmount + gstToPay + shippingCost;
 
     return { 
       subtotal, 
       discount: finalDiscount, 
+      offerDiscount: totalOfferDiscount,
+      couponDiscount: totalCouponDiscount,
       totalGst, 
       gstToPay,
+      shippingCost,
       total: totalWithTax, 
-      totalWithTax 
+      totalWithTax,
+      message
     };
-  }, [cart, appliedCoupon, user]);
+  }, [cart, offers, appliedCoupon, user, shippingCost]);
 
   // -------------------------------
   // Commission
@@ -317,7 +359,7 @@ const updateQuantity = async (
   return (
    
           <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, 
-            isCartOpen, setIsCartOpen, appliedCoupon, applyCoupon, removeCoupon, commissionInfo ,isCartLoaded, validateStock}}>
+            isCartOpen, setIsCartOpen, appliedCoupon, applyCoupon, removeCoupon, commissionInfo ,isCartLoaded, validateStock, offers, shippingCost, setShippingCost}}>
 
       {children}
     </CartContext.Provider>

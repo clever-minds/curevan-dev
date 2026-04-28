@@ -127,6 +127,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
     ]},
      { type: 'group', label: 'Marketing', icon: Lightbulb, items: [
         { href: '/dashboard/admin/coupons', label: 'Coupons', icon: Percent },
+        { href: '/dashboard/admin/offers', label: 'Offers', icon: Percent },
     ]},
     { type: 'group', label: 'Therapy Operations', icon: Briefcase, items: [
         { href: '/dashboard/admin/appointments', label: 'Appointments', icon: CalendarCheck2 },

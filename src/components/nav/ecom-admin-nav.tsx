@@ -50,6 +50,7 @@ const ecomNavItems = (openTicketCount: number) => [
     ]},
     { type: 'group', label: 'Marketing', icon: Lightbulb, items: [
         { href: '/dashboard/ecom-admin/coupons', label: 'Coupons', icon: Percent },
+        { href: '/dashboard/admin/offers', label: 'Offers', icon: Percent },
     ]},
     { type: 'group', label: 'Operations', icon: Warehouse, items: [
         { href: '/dashboard/ecom-admin/inventory', label: 'Inventory', icon: Warehouse },

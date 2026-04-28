@@ -59,6 +59,13 @@ export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]
       createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
       publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
+      images: (() => {
+          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
+          if (typeof imgs === 'string' && imgs) return [imgs];
+          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
+          return [];
+      })(),
     }));
   } catch (error: any) {
     console.log("JOURNAL LIST ERROR:", error?.message);
@@ -85,6 +92,13 @@ export async function listPublicJournalEntries(filters?: any): Promise<Knowledge
       createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
       publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
+      images: (() => {
+          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
+          if (typeof imgs === 'string' && imgs) return [imgs];
+          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
+          return [];
+      })(),
     }));
   } catch (error: any) {
     console.log("PUBLIC JOURNAL LIST ERROR:", error?.message);
@@ -125,6 +139,13 @@ export async function getPublicJournalEntryBySlug(slug: string): Promise<Knowled
       createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
       publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
+      images: (() => {
+          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
+          if (typeof imgs === 'string' && imgs) return [imgs];
+          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
+          return [];
+      })(),
     };
   } catch (error: any) {
     console.log("PUBLIC JOURNAL DETAIL ERROR:", error?.message);
@@ -156,6 +177,13 @@ export async function getKnowledgeBaseBySlug(slug: string): Promise<KnowledgeBas
       createdAt: getSafeDate(entry.createdAt) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt) || new Date(),
       publishedAt: entry.publishedAt ? getSafeDate(entry.publishedAt)?.toISOString() : undefined,
+      images: (() => {
+          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
+          if (typeof imgs === 'string' && imgs) return [imgs];
+          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
+          return [];
+      })(),
     };
   } catch (error: any) {
     console.error("knowledge-base GET ERROR:", error?.message);
@@ -187,6 +215,13 @@ export async function getKnowledgeBaseById(id: number): Promise<KnowledgeBase | 
       publishedAt: entry.publishedAt
         ? getSafeDate(entry.publishedAt)?.toISOString()
         : undefined,
+      images: (() => {
+          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
+          if (typeof imgs === 'string' && imgs) return [imgs];
+          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
+          return [];
+      })(),
     };
   } catch (error: any) {
     console.error("knowledge-base GET ERROR:", error?.message);

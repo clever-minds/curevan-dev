@@ -143,14 +143,20 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
             categories: Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [],
             videoUrl: post.videoUrl || "",
             coverImageUrl:
-              post.featuredImage && post.featuredImageId
-                ? [
-                    {
-                      id: Number(post.featuredImageId),
-                      url: post.featuredImage,
-                    },
-                  ]
-                : [],
+              (post as any).gallery && Array.isArray((post as any).gallery)
+                ? (post as any).gallery.map((m: any) => ({
+                    id: m.id || m,
+                    url: m.url || m.file_path || m,
+                    type: (m.url || m.file_path || "").match(/\.(mp4|webm|ogg|mov|m4v)$/i) ? "video" : "image"
+                  }))
+                : (post.featuredImage && post.featuredImageId
+                  ? [
+                      {
+                        id: Number(post.featuredImageId),
+                        url: post.featuredImage,
+                      },
+                    ]
+                  : []),
             metaDescription: (post as any).metaDescription || "",
           });
           } catch (error) {
@@ -199,7 +205,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       slug: data.slug,
       status: data.status === "review" ? "pending_review" : data.status,
       tags: data.categories,
-      featuredImage:coverImageId,
+      featuredImage: Array.isArray(data.coverImageUrl) ? (data.coverImageUrl[0]?.id ?? null) : data.coverImageUrl,
+      gallery: Array.isArray(data.coverImageUrl) ? data.coverImageUrl.map((img: any) => img.id) : [],
       videoUrl: data.videoUrl,
       metaDescription: data.metaDescription,
       difficulty: data.difficulty,

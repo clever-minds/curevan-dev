@@ -312,7 +312,10 @@ export interface Order {
   commissionAmount?: number;
   commissionState?: 'onHold' | 'inBatch' | 'paid' | 'na';
   shiprocketOrderId?: number;
+  shippingCharges?: number;
+  offerDiscount?: number;
 }
+
 
 export interface Shipment {
   id: number; // Our internal shipment ID
@@ -601,6 +604,22 @@ export interface Coupon {
   usageLimit?: number | null;
 }
 
+export interface Offer {
+  id: number;
+  name: string;
+  type: 'flat' | 'percent';
+  value: number;
+  scope: 'global' | 'category' | 'product';
+  productId?: number;
+  categoryId?: number;
+  applicableProducts?: number[];
+  applicableCategories?: number[];
+  isActive: boolean;
+  validFrom?: string;
+  validTo?: string;
+  description?: string;
+}
+
 export interface TaxSettings {
   id: 'active';
   supplier: { legalName: string; gstin: string; pan: string; cin: string; stateCode: string; address: Address; email: string; website: string };
@@ -652,6 +671,7 @@ export interface KnowledgeBase {
   contentType: 'post' | 'training' | 'documentation';
   difficulty?: "beginner" | "intermediate" | "advanced";
   stats?: { totalViews?: number; uniqueViews?: number };
+  images?: string[];
 }
 
 // export interface Training {

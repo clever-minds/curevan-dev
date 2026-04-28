@@ -44,8 +44,9 @@ export default function EcomFinancialsPage() {
             "Order ID", "User ID", "Date", "Customer Name", "Customer Phone",
             "Subtotal (Paise)", "Coupon Code", "Coupon Discount (Paise)", "Taxable Value (Paise)",
             "CGST (Paise)", "SGST (Paise)", "IGST (Paise)", "Total Tax (Paise)", "Total (Paise)",
-            "Payment Status", "Payment Txn ID",
+            "Payment Status", "Payment Txn ID", "Shipping Charges (Paise)",
             "Status", "Referred Therapist ID", "Commission Amount (Paise)", "Commission State",
+
             "Shipping Address Line 1", "Shipping Address City", "Shipping Address State", "Shipping Address Pin",
             "Billing Address Line 1", "Billing Address City", "Billing Address State", "Billing Address Pin",
             "Delivered At"
@@ -68,10 +69,12 @@ export default function EcomFinancialsPage() {
             order.total || 0,
             order.paymentStatus,
             order.paymentTxnId || '',
+            order.shippingCharges || 0,
             order.status,
             order.referredTherapistId || '',
             order.commissionAmount || 0,
             order.commissionState || '',
+
             order.shippingAddress?.line1 || '',
             order.shippingAddress?.city || '',
             order.shippingAddress?.state || '',
@@ -123,7 +126,9 @@ export default function EcomFinancialsPage() {
                                 <TableHead className="text-right">CGST</TableHead>
                                 <TableHead className="text-right">SGST</TableHead>
                                 <TableHead className="text-right">IGST</TableHead>
+                                <TableHead className="text-right">Shipping</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
+
                                 <TableHead>Payment</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -140,7 +145,9 @@ export default function EcomFinancialsPage() {
                                 <TableCell className="text-right"><Price amount={(item.cgst || 0) } showDecimals /></TableCell>
                                 <TableCell className="text-right"><Price amount={(item.sgst || 0) } showDecimals /></TableCell>
                                 <TableCell className="text-right"><Price amount={(item.igst || 0) } showDecimals /></TableCell>
+                                <TableCell className="text-right font-medium text-muted-foreground"><Price amount={(item.shippingCharges || 0) } showDecimals /></TableCell>
                                 <TableCell className="text-right font-bold"><Price amount={item.total } showDecimals /></TableCell>
+
                                 <TableCell><Badge variant="secondary">{item.paymentStatus}</Badge></TableCell>
                             </TableRow>
                         ))}

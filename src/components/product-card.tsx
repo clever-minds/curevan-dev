@@ -14,12 +14,14 @@ import { useCart } from '@/context/cart-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Price } from './money/price';
+import { calculateProductPrice } from '@/lib/pricing';
+
 
 export default function ProductCard({ product }: { product: Product }) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
-  const { cart, addToCart, updateQuantity } = useCart();
+  const { cart, addToCart, updateQuantity, offers } = useCart();
   const isTherapist = user?.role === 'therapist';
 
   const cartItem = cart.find(item => Number(item.productId) === Number(product.id));
@@ -27,8 +29,12 @@ export default function ProductCard({ product }: { product: Product }) {
   const quantityInCart = cartItem?.quantity || 0;
   console.log('quantityInCart log:', quantityInCart);
   // Therapist gets a 10% discount
-  const price = product.price;
+  // Pricing Engine logic
+  const pricing = calculateProductPrice(product, offers, null);
+  const price = pricing.finalPrice;
+  const originalPrice = product.price;
   const therapistPrice = price * 0.90;
+
 
   const handleAddToCart = () => {
     if (!user) {
@@ -90,15 +96,35 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
           ) : (
             <div className="space-y-1">
-              {product.mrp && product.mrp > price && (
-                <p className="text-xs text-muted-foreground line-through">
-                  MRP: <Price amount={product.mrp} showDecimals />
+              {pricing.offerDiscount > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground line-through">
+                    <Price amount={originalPrice} showDecimals />
+                  </p>
+                  <p className="text-2xl font-bold text-green-600">
+                    <Price amount={price} showDecimals />
+                    {!product.isTaxInclusive && <span className="text-xs font-medium text-muted-foreground ml-1">+ GST</span>}
+                  </p>
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">
+                    OFFER APPLIED
+                  </Badge>
+                </div>
+              ) : product.mrp && product.mrp > price ? (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground line-through">
+                    MRP: <Price amount={product.mrp} showDecimals />
+                  </p>
+                  <p className="text-2xl font-bold">
+                    <Price amount={price} showDecimals />
+                    {!product.isTaxInclusive && <span className="text-xs font-medium text-muted-foreground ml-1">+ GST</span>}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold">
+                  <Price amount={price} showDecimals />
+                  {!product.isTaxInclusive && <span className="text-xs font-medium text-muted-foreground ml-1">+ GST</span>}
                 </p>
               )}
-              <p className="text-2xl font-bold">
-                <Price amount={price} showDecimals />
-                {!product.isTaxInclusive && <span className="text-xs font-medium text-muted-foreground ml-1">+ GST</span>}
-              </p>
             </div>
           )}
         </div>
