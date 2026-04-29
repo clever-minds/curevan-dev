@@ -671,7 +671,6 @@ export interface KnowledgeBase {
   contentType: 'post' | 'training' | 'documentation';
   difficulty?: "beginner" | "intermediate" | "advanced";
   stats?: { totalViews?: number; uniqueViews?: number };
-  images?: string[];
 }
 
 // export interface Training {

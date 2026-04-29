@@ -44,28 +44,21 @@ export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]
     return entries.map(entry => ({
       ...entry,
       featuredImage: (() => {
-          let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(img)) img = img[0];
-          if (typeof img === 'string') return img;
-          if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
-          return '';
+        let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+        if (Array.isArray(img)) img = img[0];
+        if (typeof img === 'string') return img;
+        if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
+        return '';
       })(),
       authorName: (() => {
-          const author = entry.authorName || (entry as any).author_name || (entry as any).author;
-          if (typeof author === 'string') return author;
-          if (author && typeof author === 'object') return (author as any).name || (author as any).displayName || (author as any).full_name || 'Anonymous';
-          return 'Anonymous';
+        const author = entry.authorName || (entry as any).author_name || (entry as any).author;
+        if (typeof author === 'string') return author;
+        if (author && typeof author === 'object') return (author as any).name || (author as any).displayName || (author as any).full_name || 'Anonymous';
+        return 'Anonymous';
       })(),
       createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
       publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
-      images: (() => {
-          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
-          if (typeof imgs === 'string' && imgs) return [imgs];
-          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
-          return [];
-      })(),
     }));
   } catch (error: any) {
     console.log("JOURNAL LIST ERROR:", error?.message);
@@ -92,13 +85,6 @@ export async function listPublicJournalEntries(filters?: any): Promise<Knowledge
       createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
       publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
-      images: (() => {
-          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
-          if (typeof imgs === 'string' && imgs) return [imgs];
-          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
-          return [];
-      })(),
     }));
   } catch (error: any) {
     console.log("PUBLIC JOURNAL LIST ERROR:", error?.message);
@@ -124,28 +110,21 @@ export async function getPublicJournalEntryBySlug(slug: string): Promise<Knowled
     return {
       ...entry,
       featuredImage: (() => {
-          let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(img)) img = img[0];
-          if (typeof img === 'string') return img;
-          if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
-          return '';
+        let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
+        if (Array.isArray(img)) img = img[0];
+        if (typeof img === 'string') return img;
+        if (img && typeof img === 'object') return (img as any).url || (img as any).path || '';
+        return '';
       })(),
       authorName: (() => {
-          const author = entry.authorName || (entry as any).author_name || (entry as any).author;
-          if (typeof author === 'string') return author;
-          if (author && typeof author === 'object') return (author as any).name || (author as any).displayName || (author as any).full_name || 'Anonymous';
-          return 'Anonymous';
+        const author = entry.authorName || (entry as any).author_name || (entry as any).author;
+        if (typeof author === 'string') return author;
+        if (author && typeof author === 'object') return (author as any).name || (author as any).displayName || (author as any).full_name || 'Anonymous';
+        return 'Anonymous';
       })(),
       createdAt: getSafeDate(entry.createdAt || (entry as any).created_at) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt || (entry as any).updated_at) || new Date(),
       publishedAt: (entry.publishedAt || (entry as any).published_at) ? getSafeDate(entry.publishedAt || (entry as any).published_at)?.toISOString() : undefined,
-      images: (() => {
-          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
-          if (typeof imgs === 'string' && imgs) return [imgs];
-          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
-          return [];
-      })(),
     };
   } catch (error: any) {
     console.log("PUBLIC JOURNAL DETAIL ERROR:", error?.message);
@@ -177,13 +156,6 @@ export async function getKnowledgeBaseBySlug(slug: string): Promise<KnowledgeBas
       createdAt: getSafeDate(entry.createdAt) || new Date(),
       updatedAt: getSafeDate(entry.updatedAt) || new Date(),
       publishedAt: entry.publishedAt ? getSafeDate(entry.publishedAt)?.toISOString() : undefined,
-      images: (() => {
-          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
-          if (typeof imgs === 'string' && imgs) return [imgs];
-          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
-          return [];
-      })(),
     };
   } catch (error: any) {
     console.error("knowledge-base GET ERROR:", error?.message);
@@ -215,13 +187,6 @@ export async function getKnowledgeBaseById(id: number): Promise<KnowledgeBase | 
       publishedAt: entry.publishedAt
         ? getSafeDate(entry.publishedAt)?.toISOString()
         : undefined,
-      images: (() => {
-          let imgs = entry.images || (entry as any).gallery || entry.featuredImage || (entry as any).featured_image || (entry as any).image;
-          if (Array.isArray(imgs)) return imgs.map((img: any) => typeof img === 'string' ? img : (img.url || img.path || ''));
-          if (typeof imgs === 'string' && imgs) return [imgs];
-          if (imgs && typeof imgs === 'object' && !Array.isArray(imgs)) return [(imgs as any).url || (imgs as any).path || ''];
-          return [];
-      })(),
     };
   } catch (error: any) {
     console.error("knowledge-base GET ERROR:", error?.message);
@@ -324,7 +289,7 @@ export async function getProfileChangeRequest(requestId: string): Promise<Profil
 
     const item = data.data;
     let changes = item.changes;
-    
+
     // Handle stringified JSON
     if (typeof changes === 'string') {
       try {
@@ -337,12 +302,12 @@ export async function getProfileChangeRequest(requestId: string): Promise<Profil
 
     // Handle object structure { key: { old, new } }
     if (changes && typeof changes === 'object' && !Array.isArray(changes)) {
-        changes = Object.entries(changes).map(([key, val]: [string, any]) => ({
-            fieldPath: key,
-            name: key,
-            old: val.old,
-            new: val.new
-        }));
+      changes = Object.entries(changes).map(([key, val]: [string, any]) => ({
+        fieldPath: key,
+        name: key,
+        old: val.old,
+        new: val.new
+      }));
     }
 
     return {
@@ -369,7 +334,7 @@ export async function listProfileChangeRequests(): Promise<ProfileChangeRequest[
 
     return data.data.map(item => {
       let changes = item.changes;
-      
+
       // Handle stringified JSON
       if (typeof changes === 'string') {
         try {
@@ -382,12 +347,12 @@ export async function listProfileChangeRequests(): Promise<ProfileChangeRequest[
 
       // Handle object structure { key: { old, new } }
       if (changes && typeof changes === 'object' && !Array.isArray(changes)) {
-          changes = Object.entries(changes).map(([key, val]: [string, any]) => ({
-              fieldPath: key,
-              name: key,
-              old: val.old,
-              new: val.new
-          }));
+        changes = Object.entries(changes).map(([key, val]: [string, any]) => ({
+          fieldPath: key,
+          name: key,
+          old: val.old,
+          new: val.new
+        }));
       }
 
       return {

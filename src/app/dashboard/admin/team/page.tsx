@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,7 @@ import { listUsers } from "@/lib/repos/users";
 import { cn, downloadCsv, getSafeDate } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { listTherapists } from "@/lib/repos/therapists";
+import { getIndianStates } from "@/lib/repos/meta";
 import { updateUserRoles, inviteAdminUser } from "@/lib/actions/team";
 
 
@@ -45,6 +47,8 @@ export default function TeamManagementPage() {
   
   const [newInviteEmail, setNewInviteEmail] = useState("");
   const [newInviteRoles, setNewInviteRoles] = useState<string[]>([]);
+  const [state_admin_name, setStateAdminName] = useState("");
+  const [indianStates, setIndianStates] = useState<string[]>([]);
   const [isInviting, startInviteTransition] = useTransition();
   const [isUpdating, startUpdateTransition] = useTransition();
   
@@ -78,6 +82,7 @@ export default function TeamManagementPage() {
 
   useEffect(() => {
     fetchUsers();
+    getIndianStates().then(setIndianStates);
   }, [])
 
 
@@ -107,11 +112,16 @@ export default function TeamManagementPage() {
           toast({ variant: 'destructive', title: 'Invalid Invite', description: 'Please provide an email and select at least one role.' });
           return;
       }
-      const result = await inviteAdminUser(newInviteEmail, newInviteRoles);
+      if (newInviteRoles.includes('admin.therapy') && !state_admin_name) {
+          toast({ variant: 'destructive', title: 'State Required', description: 'Please select a state for Therapy Admin.' });
+          return;
+      }
+      const result = await inviteAdminUser(newInviteEmail, newInviteRoles, newInviteRoles.includes('admin.therapy') ? state_admin_name : undefined);
       if(result.success) {
           toast({ title: 'Invite Sent!', description: `An invitation has been sent to ${newInviteEmail}.` });
           setNewInviteEmail("");
           setNewInviteRoles([]);
+          setStateAdminName("");
           document.querySelector('[data-radix-dialog-close-button]')?.dispatchEvent(new MouseEvent('click'));
       } else {
           toast({ variant: 'destructive', title: 'Invite Failed', description: result.error });
@@ -210,6 +220,21 @@ export default function TeamManagementPage() {
                                     <label htmlFor="invite-super">Super Admin</label>
                                 </div>
                             </div>
+                            {newInviteRoles.includes('admin.therapy') && (
+                                <div className="space-y-2">
+                                    <p className="font-medium text-sm">Assign State</p>
+                                    <Select value={state_admin_name} onValueChange={setStateAdminName}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select State" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {indianStates.map(state => (
+                                                <SelectItem key={state} value={state}>{state}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                         </div>
                         <DialogFooter>
                             <DialogClose asChild>

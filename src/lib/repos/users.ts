@@ -44,16 +44,16 @@ export async function listUsers(
   try {
     console.log("Fetching users with filters:", filters);
 
-    const token =await getToken();
-     if (!token) {
-        throw new Error('Token missing, please login again');
-      }
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Token missing, please login again');
+    }
     const { data } = await serverApi.get("/api/users/list", {
       params: filters,
       withCredentials: true,
-      headers: { 
+      headers: {
         Authorization: `Bearer ${token}`,
-       },
+      },
     });
 
     const usersArray: UserProfile[] = (data.data || []).map((user: any) => ({
@@ -82,15 +82,15 @@ export async function listTeamManagementUsers(
   try {
     console.log("Fetching users with filters:", filters);
 
-    const token =await getToken();
-     if (!token) {
-        throw new Error('Token missing, please login again');
-      }
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Token missing, please login again');
+    }
     const { data } = await serverApi.get("/api/users/list-team-management-users", {
       params: filters,
-      headers: { 
+      headers: {
         Authorization: `Bearer ${token}`,
-       },
+      },
     });
 
     const usersArray: UserProfile[] = (data.data || []).map((user: any) => ({

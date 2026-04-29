@@ -5,6 +5,7 @@ import { getCurrentUser, getToken } from "../auth";
 const inviteAdminSchema = z.object({
   email: z.string().email(),
   roles: z.array(z.string()).min(1),
+  state_admin_name: z.string().optional(),
 });
 
 const updateRolesSchema = z.object({
@@ -18,7 +19,8 @@ const updateRolesSchema = z.object({
  */
 export async function inviteAdminUser(
   email: string,
-  roles: string[]
+  roles: string[],
+  state_admin_name?: string
 ): Promise<{ success: boolean; error?: string }> {
   const currentUser = await getCurrentUser();
   const token = await getToken();
@@ -27,19 +29,20 @@ export async function inviteAdminUser(
   }
 
   try {
-    const validated = inviteAdminSchema.parse({ email, roles });
+    const validated = inviteAdminSchema.parse({ email, roles, state_admin_name });
 
     const { data: response } = await serverApi.post(
-      "/api/admin/invite",
+      "/api/users/invite-admin",
       {
         email: validated.email,
         roles: validated.roles,
+        state_admin_name: validated.state_admin_name,
         actorId: currentUser.uid, // For audit logging
       },
       {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
-         },
+        },
       }
     );
 
@@ -80,7 +83,7 @@ export async function updateUserRoles(
         actorId: currentUser.uid, // For audit logging
       },
       {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
         },
       }
