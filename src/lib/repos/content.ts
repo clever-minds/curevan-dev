@@ -108,7 +108,7 @@ export async function getPublicJournalEntryBySlug(slug: string): Promise<Knowled
     if (!entry) return null;
 
     return {
-      ...entry,
+      ...(entry as any),
       featuredImage: (() => {
         let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
         if (Array.isArray(img)) img = img[0];
@@ -150,12 +150,11 @@ export async function getKnowledgeBaseBySlug(slug: string): Promise<KnowledgeBas
 
     if (entries.length === 0) return null;
 
-    const entry = entries[0] as KnowledgeBase;
     return {
-      ...entry,
-      createdAt: getSafeDate(entry.createdAt) || new Date(),
-      updatedAt: getSafeDate(entry.updatedAt) || new Date(),
-      publishedAt: entry.publishedAt ? getSafeDate(entry.publishedAt)?.toISOString() : undefined,
+      ...(entry as any),
+      createdAt: getSafeDate((entry as any).createdAt) || new Date(),
+      updatedAt: getSafeDate((entry as any).updatedAt) || new Date(),
+      publishedAt: (entry as any).publishedAt ? getSafeDate((entry as any).publishedAt)?.toISOString() : undefined,
     };
   } catch (error: any) {
     console.error("knowledge-base GET ERROR:", error?.message);
@@ -181,11 +180,11 @@ export async function getKnowledgeBaseById(id: number): Promise<KnowledgeBase | 
     if (!entry) return null;
 
     return {
-      ...entry,
-      createdAt: getSafeDate(entry.createdAt) || new Date(),
-      updatedAt: getSafeDate(entry.updatedAt) || new Date(),
-      publishedAt: entry.publishedAt
-        ? getSafeDate(entry.publishedAt)?.toISOString()
+      ...(entry as any),
+      createdAt: getSafeDate((entry as any).createdAt) || new Date(),
+      updatedAt: getSafeDate((entry as any).updatedAt) || new Date(),
+      publishedAt: (entry as any).publishedAt
+        ? getSafeDate((entry as any).publishedAt)?.toISOString()
         : undefined,
     };
   } catch (error: any) {
@@ -219,7 +218,7 @@ export async function listTrainings(): Promise<KnowledgeBase[]> {
     const rawData = data.data ?? data;
     const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
-    return entries.map(item => ({
+    return entries.map((item: any) => ({
       ...item,
       createdAt: getSafeDate(item.createdAt) || new Date(),
       updatedAt: getSafeDate(item.updatedAt) || new Date(),
@@ -255,7 +254,7 @@ export async function listDocumentation(): Promise<KnowledgeBase[]> {
     const rawData = data.data ?? data;
     const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
-    return entries.map(item => ({
+    return entries.map((item: any) => ({
       ...item,
       createdAt: getSafeDate(item.createdAt) || new Date(),
       updatedAt: getSafeDate(item.updatedAt) || new Date(),

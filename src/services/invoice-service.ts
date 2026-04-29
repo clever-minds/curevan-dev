@@ -152,9 +152,9 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
   });
 
   // Calculate internal sum of taxes from items
-  const itemsCgst = items.reduce((sum, i) => sum + i.cgst, 0);
-  const itemsSgst = items.reduce((sum, i) => sum + i.sgst, 0);
-  const itemsIgst = items.reduce((sum, i) => sum + i.igst, 0);
+  const itemsCgst = items.reduce((sum: number, i: any) => sum + i.cgst, 0);
+  const itemsSgst = items.reduce((sum: number, i: any) => sum + i.sgst, 0);
+  const itemsIgst = items.reduce((sum: number, i: any) => sum + i.igst, 0);
   const totalItemsTax = itemsCgst + itemsSgst + itemsIgst;
 
   // Final totals resolution: Use the larger of the two to ensure no missing tax
