@@ -39,8 +39,10 @@ import {
   Undo2,
   Redo2,
   Video as VideoIcon,
+  Code2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
   TooltipContent,
@@ -117,6 +119,7 @@ export function AIRichText({
   const [aiIsLoading, setAiIsLoading] = useState<string | null>(null);
   const [lastInteractionId, setLastInteractionId] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [isSourceMode, setIsSourceMode] = useState(false);
 
   // Media Library State
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
@@ -325,6 +328,10 @@ export function AIRichText({
           <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().undo().run()} disabled={disabled || !editor.can().undo()}><Undo2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Undo</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().redo().run()} disabled={disabled || !editor.can().redo()}><Redo2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Redo</p></TooltipContent></Tooltip>
+          
+          {/* Source Code Mode */}
+          <div className="w-px h-6 bg-border mx-1" />
+          <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={isSourceMode ? 'secondary' : 'ghost'} onClick={() => setIsSourceMode(!isSourceMode)} disabled={disabled}><Code2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Source Code</p></TooltipContent></Tooltip>
         </TooltipProvider>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-b p-2">
@@ -346,8 +353,22 @@ export function AIRichText({
           )}
         </TooltipProvider>
       </div>
-      <EditorContent editor={editor} />
-      <p className="px-3 pb-2 text-xs text-muted-foreground">AI assistance may contain errors. Review before saving.</p>
+      
+      {isSourceMode ? (
+        <div className="p-2 border-b">
+          <Textarea 
+            value={value} 
+            onChange={(e) => onChange(e.target.value)} 
+            className="min-h-[300px] font-mono text-sm border-0 focus-visible:ring-0 resize-y" 
+            placeholder="<p>HTML goes here...</p>" 
+            disabled={disabled}
+          />
+        </div>
+      ) : (
+        <EditorContent editor={editor} />
+      )}
+      
+      <p className="px-3 pb-2 text-xs text-muted-foreground mt-2">AI assistance may contain errors. Review before saving.</p>
 
       {mediaModalOpen && (
         <MediaLibraryModal

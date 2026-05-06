@@ -130,12 +130,14 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
         // In a real app, you would make an API call to save the draft
         console.log(`Autosaving ${contentType} draft...`, form.getValues());
         setAutoSaveStatus('saved');
-        form.reset(form.getValues()); // Resets the 'dirty' state after saving
+        // Avoid calling form.reset() here to prevent infinite loops and cursor jumps
       }, 1500); // Debounce autosave
 
       return () => clearTimeout(timer);
+    } else {
+      setAutoSaveStatus('saved');
     }
-  }, [watchedValues, form, contentType]);
+  }, [watchedValues, form.formState.isDirty, contentType]);
   useEffect(() => {
     if (!postId) return;
 
