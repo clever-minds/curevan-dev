@@ -83,9 +83,16 @@ console.log("CartSheet render - cart items:", cart);
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <span>Qty: {item.quantity}</span>
                                             </div>
-                                            <p className="font-bold text-lg text-foreground mt-1">
-                                                <Price amount={item.price} showDecimals />
-                                            </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="font-bold text-lg text-foreground">
+                                                    <Price amount={item.discountedPrice ?? item.price} showDecimals />
+                                                </span>
+                                                {item.discountedPrice !== undefined && item.discountedPrice < item.price && (
+                                                    <span className="text-xs text-muted-foreground line-through font-medium">
+                                                        <Price amount={item.price} showDecimals />
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <Button 
                                             variant="ghost" 

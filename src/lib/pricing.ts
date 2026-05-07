@@ -23,36 +23,45 @@ export function calculateProductPrice(
 ): PricingResult {
   const originalPrice = product.price;
   
-  // 1. Find the best applicable offer based on priority
-  // Priority: Product-specific > Category-specific > Global
-  const productOffer = offers.find(o => 
-    o.scope === 'product' && 
-    (o.productId === product.id || o.applicableProducts?.includes(product.id)) && 
-    o.isActive
-  );
+  // Priority: Backend provided > Product-specific > Category-specific > Global
+  let appliedOffer = product.offer;
   
-  const categoryOffer = offers.find(o => 
-    o.scope === 'category' && 
-    (o.categoryId === product.categoryId || o.applicableCategories?.includes(product.categoryId)) && 
-    o.isActive
-  );
-  
-  const globalOffer = offers.find(o => o.scope === 'global' && o.isActive);
+  if (!appliedOffer) {
+    const productOffer = offers.find(o => 
+      o.scope === 'product' && 
+      (o.productId === product.id || o.applicableProducts?.includes(product.id)) && 
+      o.isActive
+    );
+    
+    const categoryOffer = offers.find(o => 
+      o.scope === 'category' && 
+      (o.categoryId === product.categoryId || o.applicableCategories?.includes(product.categoryId)) && 
+      o.isActive
+    );
+    
+    const globalOffer = offers.find(o => o.scope === 'global' && o.isActive);
 
-  const appliedOffer = productOffer || categoryOffer || globalOffer;
+    appliedOffer = productOffer || categoryOffer || globalOffer;
+  }
   
   let offerDiscount = 0;
   let message = "";
 
   if (appliedOffer) {
-    if (appliedOffer.type === 'percent') {
-      offerDiscount = originalPrice * (appliedOffer.value / 100);
+    if (product.discountedPrice !== undefined && product.discountedPrice !== null) {
+      // Backend already calculated it
+      offerDiscount = originalPrice - Number(product.discountedPrice);
     } else {
-      offerDiscount = appliedOffer.value;
+      // Frontend fallback calculation
+      if (appliedOffer.type === 'percent') {
+        offerDiscount = originalPrice * (appliedOffer.value / 100);
+      } else {
+        offerDiscount = appliedOffer.value;
+      }
     }
     
     // Ensure discount doesn't exceed price
-    offerDiscount = Math.min(offerDiscount, originalPrice);
+    offerDiscount = Math.max(0, Math.min(offerDiscount, originalPrice));
     
     message = appliedCoupon 
       ? "Offer already applied. Coupon not applicable." 

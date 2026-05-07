@@ -95,9 +95,16 @@ export function OrderSummary() {
                   )}
                 </div>
               </div>
-              <p className="font-semibold">
-                <Price amount={item.price * item.quantity} showDecimals />
-              </p>
+              <div className="flex flex-col items-end gap-1">
+                <p className="font-semibold text-base">
+                  <Price amount={(item.discountedPrice ?? item.price) * item.quantity} showDecimals />
+                </p>
+                {item.discountedPrice !== undefined && item.discountedPrice < item.price && (
+                    <span className="text-[11px] text-muted-foreground line-through font-medium">
+                        <Price amount={item.price * item.quantity} showDecimals />
+                    </span>
+                )}
+              </div>
             </div>
           ))}
         </div>

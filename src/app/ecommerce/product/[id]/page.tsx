@@ -47,7 +47,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { fetchProductById, fetchPublicProducts } from '@/lib/repos/products';
 import { fetchProductReviews } from '@/lib/repos/reviews';
-import { getActiveOffers } from '@/lib/repos/offers';
+
 import { estimateShipping, ShippingEstimate } from '@/lib/repos/shipment';
 import { calculateProductPrice, Offer } from '@/lib/pricing';
 import type { Product, Review } from '@/lib/types';
@@ -64,7 +64,7 @@ export default function ProductDetailsPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [offers, setOffers] = useState<Offer[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [reviewCount, setReviewCount] = useState(0);
@@ -87,13 +87,10 @@ export default function ProductDetailsPage() {
       if (!id) return;
       setLoading(true);
       try {
-        const [productData, reviewsData, offersData] = await Promise.all([
+        const [productData, reviewsData] = await Promise.all([
           fetchProductById(id as string),
-          fetchProductReviews(id as string),
-          getActiveOffers()
+          fetchProductReviews(id as string)
         ]);
-        
-        setOffers(offersData);
 
         if (productData) {
           setProduct(productData);
@@ -138,7 +135,7 @@ export default function ProductDetailsPage() {
   };
 
   const originalPrice = product?.price || 0;
-  const pricing = product ? calculateProductPrice(product, offers, null) : null;
+  const pricing = product ? calculateProductPrice(product, [], null) : null;
   const price = pricing?.finalPrice ?? originalPrice;
   const therapistPrice = price * 0.90;
 
@@ -322,7 +319,7 @@ export default function ProductDetailsPage() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-start">
           
           {/* Left Column: Amazon-Style Image Gallery */}
-          <div className="flex flex-col gap-8 lg:gap-12">
+          <div className="flex flex-col gap-8 lg:gap-12 lg:sticky lg:top-28">
             
             {/* Gallery Wrapper (Thumbnails + Main Image) */}
             <div className="flex flex-col-reverse md:flex-row gap-4 lg:gap-6 items-start">
@@ -475,10 +472,10 @@ export default function ProductDetailsPage() {
               {product.brand && (
                 <p className="text-primary font-bold tracking-widest uppercase text-xs sm:text-sm">{product.brand}</p>
               )}
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold font-headline leading-tight">{product.name}</h1>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold font-headline leading-tight break-words">{product.name}</h1>
               
               {product.description && (
-                <div className="text-base sm:text-lg text-muted-foreground leading-relaxed font-medium space-y-2 py-2">
+                <div className="text-base sm:text-lg text-muted-foreground leading-relaxed font-medium space-y-2 py-2 break-words">
                   {product.description.split('\n').map((line, i) => (
                     <div key={i} className="flex items-start gap-2">
                       {line.trim() && (
@@ -528,7 +525,7 @@ export default function ProductDetailsPage() {
                   ].filter(s => s.value).map((spec, i) => (
                     <div key={i} className="flex flex-col border-b border-muted pb-2">
                       <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 mb-1">{spec.label}</span>
-                      <span className="text-sm font-semibold text-foreground">{spec.value}</span>
+                      <span className="text-sm font-semibold text-foreground break-words">{spec.value}</span>
                     </div>
                   ))}
                   
@@ -538,7 +535,7 @@ export default function ProductDetailsPage() {
                     .map((feature, i) => (
                       <div key={`feat-${i}`} className="flex flex-col border-b border-muted pb-2">
                         <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 mb-1">{feature.title}</span>
-                        <span className="text-sm font-semibold text-foreground">{feature.value}</span>
+                        <span className="text-sm font-semibold text-foreground break-words">{feature.value}</span>
                       </div>
                     ))}
                 </div>
@@ -730,7 +727,7 @@ export default function ProductDetailsPage() {
           </div>
 
         {/* Product Details Tabs */}
-        <div className="mt-12 lg:mt-32">
+        <div className="mt-12 lg:mt-20">
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 gap-6 sm:gap-8 overflow-x-auto scrollbar-hide flex-nowrap shrink-0">
               <TabsTrigger 

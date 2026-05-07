@@ -214,6 +214,8 @@ export interface Product {
   gstAmount?: number;
   isTaxInclusive: boolean;
   additionalFeatures?: { title: string; value: string; isHighlighted?: boolean }[];
+  offer?: any;
+  discountedPrice?: string | number;
 }
 
 export interface Review {

@@ -11,7 +11,7 @@ import React, {
 import type { Product, Coupon, CartItem } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { getCart, saveCart, clearCart as clearFirestoreCart, removeCartItemByProductId, validateCartStock } from '@/lib/repos/cart';
-import { getActiveOffers } from '@/lib/repos/offers';
+
 import { calculateProductPrice, Offer, PricingResult } from '@/lib/pricing';
 
 interface CartContextType {
@@ -76,13 +76,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const [cartData, offersData] = await Promise.all([
-        getCart(),
-        getActiveOffers()
-      ]);
+      const cartData = await getCart();
       
       console.log('Cart API response:', cartData);
-      setOffers(offersData);
+      setOffers([]);
 
       if (!cartData || cartData.length === 0) {
         setCart([]);

@@ -608,7 +608,7 @@ export function CheckoutAddressForm() {
         return;
       }
 
-      const { total, subtotal, offerDiscount, couponDiscount } = getCartTotal();
+      const { total, subtotal, offerDiscount, couponDiscount, discount } = getCartTotal();
       console.log("data for check create order total", total, "discount", discount, "subtotal", subtotal);
 
       const finalShippingId = Number(data.shippingAddressId);
