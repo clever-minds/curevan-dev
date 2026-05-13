@@ -118,12 +118,12 @@ export default function JournalPage() {
                 <Card key={post.id} className="group relative flex flex-col overflow-hidden border-none bg-background/40 shadow-lg backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ring-1 ring-white/10">
                     <Link href={`/journal/${post.slug}`}>
                         <CardHeader className="p-0">
-                            <div className="relative h-44 w-full overflow-hidden">
+                            <div className="relative aspect-video w-full overflow-hidden">
                                 <Image
                                     src={getMediaUrl(post.featuredImage as string)}
                                     alt={post.title}
                                     fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                                     data-ai-hint={post.aiHint}
                                     unoptimized
                                 />

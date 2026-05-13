@@ -95,7 +95,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                     data-ai-hint={post.aiHint}
                                     priority
                                     unoptimized
-                                    style="position: absolute; height: 100%; width: 100%; inset: 0px; color: transparent;"
+                                    style={{ position: 'absolute', height: '100%', width: '100%', inset: '0px', color: 'transparent' }}
                                 />
                             </div>
                             {post.tags && (
