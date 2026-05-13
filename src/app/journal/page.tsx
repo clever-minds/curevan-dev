@@ -47,7 +47,7 @@ export default function JournalPage() {
   }, [allPosts]);
 
   const featuredPost = filteredPosts[0];
-  const otherPosts = filteredPosts.slice(1);
+  const otherPosts = filteredPosts;
   const currentPosts = otherPosts.slice(0, visibleCount);
   
   const handleLoadMore = () => {
@@ -71,52 +71,6 @@ export default function JournalPage() {
         </p>
       </section>
       
-      {/* Featured Post */}
-      {loading ? (
-        <Skeleton className="h-96 w-full mb-16" />
-      ) : featuredPost && (
-        <section className="mb-20">
-          <Link href={`/journal/${featuredPost.slug}`}>
-            <Card className="group relative overflow-hidden border-none bg-gradient-to-br from-primary/5 via-background to-accent/10 shadow-2xl backdrop-blur-xl lg:grid lg:grid-cols-2 lg:min-h-[500px] transition-all duration-500 hover:shadow-primary/5 ring-1 ring-white/20">
-                <CardContent className="flex flex-col justify-center p-8 md:p-16">
-                    <div className="mb-6 flex animate-in fade-in slide-in-from-left duration-700">
-                        <Badge className="bg-primary hover:bg-primary px-4 py-1.5 text-xs font-bold tracking-[0.2em] uppercase">
-                            FEATURED ARTICLE
-                        </Badge>
-                    </div>
-                    <h2 className="mb-6 font-headline text-4xl font-bold leading-[1.1] tracking-tight lg:text-5xl xl:text-6xl group-hover:text-primary transition-colors duration-300">
-                        {featuredPost.title}
-                    </h2>
-                    <div 
-                        className="mb-8 text-xl leading-relaxed text-muted-foreground line-clamp-3 font-medium opacity-80"
-                        dangerouslySetInnerHTML={{ __html: featuredPost.excerpt }}
-                    />
-                    <div className="flex items-center gap-6 mb-10 text-sm text-muted-foreground/60 font-semibold tracking-wide">
-                        <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary"/> 6 min read</span>
-                        <span className="w-1 h-1 rounded-full bg-border" />
-                        <span>{new Date(featuredPost.publishedAt || featuredPost.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <Button asChild size="lg" className="self-start rounded-full px-10 py-7 text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:scale-105 active:scale-95 bg-primary hover:bg-primary/90">
-                        <span>
-                            Read Article <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                        </span>
-                    </Button>
-                </CardContent>
-                <div className="relative h-[400px] lg:h-full lg:min-h-[500px] overflow-hidden">
-                    <Image
-                        src={getMediaUrl(featuredPost.featuredImage as string)}
-                        alt={featuredPost.title}
-                        fill
-                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
-                        data-ai-hint={featuredPost.aiHint}
-                        unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent lg:bg-gradient-to-l opacity-80" />
-                </div>
-            </Card>
-          </Link>
-        </section>
-      )}
 
       {/* Main Content and Filters */}
       <section className="space-y-8">
@@ -164,7 +118,7 @@ export default function JournalPage() {
                 <Card key={post.id} className="group relative flex flex-col overflow-hidden border-none bg-background/40 shadow-lg backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ring-1 ring-white/10">
                     <Link href={`/journal/${post.slug}`}>
                         <CardHeader className="p-0">
-                            <div className="relative h-56 w-full overflow-hidden">
+                            <div className="relative h-44 w-full overflow-hidden">
                                 <Image
                                     src={getMediaUrl(post.featuredImage as string)}
                                     alt={post.title}
@@ -182,12 +136,12 @@ export default function JournalPage() {
                             </div>
                         </CardHeader>
                     </Link>
-                    <CardContent className="flex-1 p-8">
+                    <CardContent className="flex-1 p-4">
                         <div className="text-[10px] uppercase font-bold tracking-widest text-primary/70 mb-4 flex items-center gap-2">
                             <Clock className="w-3.5 h-3.5"/> 5 min read • {new Date(post.publishedAt || post.createdAt).toLocaleDateString()}
                         </div>
                         <Link href={`/journal/${post.slug}`}>
-                            <CardTitle className="text-2xl font-bold font-headline leading-tight group-hover:text-primary transition-colors duration-300 mb-4">
+                            <CardTitle className="text-xl font-bold font-headline leading-tight group-hover:text-primary transition-colors duration-300 mb-4">
                                 {post.title}
                             </CardTitle>
                         </Link>
@@ -196,7 +150,7 @@ export default function JournalPage() {
                             dangerouslySetInnerHTML={{ __html: post.excerpt }}
                         />
                     </CardContent>
-                    <CardFooter className="p-8 pt-0 flex justify-between items-center border-t border-white/5 mt-4 pt-6">
+                    <CardFooter className="p-4 pt-0 flex justify-between items-center border-t border-white/5 mt-2 pt-4">
                         <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white text-xs font-bold ring-2 ring-background">
                                 {post.authorName?.charAt(0) || 'A'}

@@ -77,6 +77,7 @@ const editorFormSchema = z.object({
     .optional()
     .nullable()
     .transform(val => val ?? undefined),
+  metaDescription: z.string().max(160, 'Meta description should be 160 characters or less.').optional().nullable().transform(val => val ?? undefined),
 });
 
 type EditorFormValues = z.infer<typeof editorFormSchema>;
@@ -145,11 +146,12 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       try {
         const post = await getKnowledgeBaseById(postId);
         if (!post) return;
+
         form.reset({
           title: post.title,
           slug: post.slug,
           excerpt: post.excerpt,
-          content: post.content,
+          content: post.content || '',
           durationMin: post.durationMin,
           difficulty: post.difficulty,
           sopVersion: post.sopVersion,
@@ -206,10 +208,12 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       ? data.coverImageUrl[0]?.id ?? null
       : data.coverImageUrl;
 
+    const mergedContent = data.content;
+
     const payload: Partial<KnowledgeBase> = {
       title: data.title,
       excerpt: data.excerpt,
-      content: data.content,
+      content: mergedContent,
       slug: data.slug,
       status: data.status === "review" ? "pending_review" : data.status,
       tags: data.categories,
@@ -330,10 +334,36 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                     <div className="space-y-4">
                       <MediaPicker 
                         value={field.value as MediaItem[]}
-                        onChange={(media: MediaItem[]) => field.onChange(media)}
+                        onChange={async (media: MediaItem[]) => {
+                          if (media && media.length > 0) {
+                            const item = media[0];
+                            const url = getMediaUrl(item.url);
+                            
+                            // Check aspect ratio
+                            const img = new window.Image();
+                            img.src = url;
+                            img.onload = () => {
+                              const ratio = img.width / img.height;
+                              // 16:9 is ~1.77. We allow 1.6 to 1.9
+                              if (ratio < 1.6 || ratio > 1.9) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Invalid Aspect Ratio",
+                                  description: `Please upload a 16:9 Landscape image. Current ratio is ${ratio.toFixed(2)}.`,
+                                });
+                                // Optional: Clear the field if you want strict validation
+                                // field.onChange([]); 
+                              } else {
+                                field.onChange(media);
+                              }
+                            };
+                          } else {
+                            field.onChange(media);
+                          }
+                        }}
                         multiple={false}
                       />
-                      <p className="text-xs text-muted-foreground">Recommended size: 1200x630px. Max file size: 2MB.</p>
+                      <p className="text-xs text-muted-foreground font-semibold text-primary">Recommended: 16:9 Landscape image (e.g., 1280x720px) for best fit. Max: 2MB.</p>
                     </div>
                   </FormControl>
                   <FormMessage />

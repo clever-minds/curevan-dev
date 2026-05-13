@@ -87,9 +87,10 @@ export default function SopDetailPage() {
            <p className="text-lg text-muted-foreground">{doc.excerpt}</p>
         </header>
 
-        <div className="prose dark:prose-invert max-w-none text-lg border-t pt-8 mt-8">
-          <p>{doc.content}</p>
-        </div>
+        <div 
+          className="prose dark:prose-invert max-w-none text-lg border-t pt-8 mt-8"
+          dangerouslySetInnerHTML={{ __html: doc.content }}
+        />
       </article>
 
        <div className="mt-8 flex gap-2">

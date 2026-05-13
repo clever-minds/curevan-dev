@@ -88,9 +88,10 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
           <h1 className="text-4xl font-bold tracking-tight font-headline md:text-5xl mb-4">{training.title}</h1>
         </header>
 
-        <div className="prose dark:prose-invert max-w-none text-lg">
-          <p>{training.content}</p>
-        </div>
+        <div 
+          className="prose dark:prose-invert max-w-none text-lg border-t pt-8 mt-8"
+          dangerouslySetInnerHTML={{ __html: training.content }}
+        />
 
       </article>
 
