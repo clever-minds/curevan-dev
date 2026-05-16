@@ -39,8 +39,8 @@ const LogoWithText = () => (
      <Link href="/" className="group flex items-center gap-2 no-underline">
         <Logo />
     <div className="flex flex-col items-start justify-center leading-none min-w-0">
-        <span className="font-bold text-sm sm:text-base md:text-lg lg:text-xl whitespace-nowrap text-primary">Curevan</span>
-        <span className="font-semibold text-[8px] sm:text-[10px] md:text-xs whitespace-nowrap text-accent">Cure. Anywhere.</span>
+        <span className="font-bold text-lg sm:text-xl md:text-2xl whitespace-nowrap text-primary">Curevan</span>
+        <span className="font-semibold text-[10px] sm:text-xs md:text-sm whitespace-nowrap text-accent">Cure. Anywhere.</span>
     </div>
      </Link>
   );
@@ -160,21 +160,21 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
       <div className={cn(
-          "bg-animated-gradient text-white transition-all duration-300",
-          showTopBar ? "h-10 opacity-100" : "h-0 opacity-0 overflow-hidden"
+          "bg-animated-gradient text-white transition-all duration-300 lg:hidden",
+          showTopBar ? "h-8 sm:h-10 opacity-100" : "h-0 opacity-0 overflow-hidden"
           )}>
-        <div className="container hidden h-full max-w-screen-2xl items-center justify-between lg:flex">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">
-              <a href="mailto:care@curevan.com" className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
-                <Mail className="w-4 h-4" />
+        <div className="container h-full max-w-screen-2xl items-center justify-between flex px-3 sm:px-4">
+            <div className="flex items-center gap-x-8 sm:gap-x-12 text-[11px] sm:text-xs font-bold tracking-widest uppercase">
+              <a href="mailto:care@curevan.com" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>care@curevan.com</span>
               </a>
-              <a href="tel:+917990602143" className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
-                <Phone className="w-4 h-4" />
-                <span>+91 79 9060 2143</span>
+              <a href="tel:+919514446292" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
+                <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>+91 95144 46292</span>
               </a>
             </div>
-             <div className="flex items-center gap-4">
+             <div className="hidden sm:flex items-center gap-4">
                 <Link href="#" aria-label="Facebook" className="text-white/90 hover:text-white"><Facebook className="w-5 h-5"/></Link>
                 <Link href="#" aria-label="X" className="text-white/90 hover:text-white"><XLogo/></Link>
                 <Link href="#" aria-label="Instagram" className="text-white/90 hover:text-white"><Instagram className="w-5 h-5"/></Link>
@@ -202,7 +202,7 @@ export default function Header() {
 
         {/* Mobile Nav */}
         <div className="flex items-center justify-between w-full lg:hidden">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                   <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" aria-label="Toggle Menu">
@@ -230,10 +230,8 @@ export default function Header() {
                       </div>
                   </SheetContent>
                 </Sheet>
-                <div className="md:hidden"><LogoWithText /></div>
+                <LogoWithText />
             </div>
-
-            <div className="hidden md:block"><LogoWithText /></div>
 
             <div className="flex items-center justify-end gap-0.5 sm:gap-2 flex-1 min-w-0">
               <div className={cn(

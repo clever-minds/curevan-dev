@@ -687,7 +687,7 @@ export default function ProductDetailsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-row gap-4">
                     <div className="flex items-center border rounded-2xl bg-white h-14 overflow-hidden shrink-0">
                        <Button variant="ghost" size="icon" className="h-full px-4 rounded-none border-r" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
                         <Minus className="w-4 h-4" />

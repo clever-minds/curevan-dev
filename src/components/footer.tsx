@@ -60,8 +60,9 @@ export default function Footer() {
     // In a real app, this would be a server action.
     console.log('Subscribing email:', data.email);
     toast({
-      title: 'Subscription Pending',
-      description: 'Please check your email to confirm your subscription.',
+      variant: 'success',
+      title: 'Subscription Successful!',
+      description: 'You have been added to our newsletter.',
     });
     form.reset();
   };
@@ -79,7 +80,7 @@ export default function Footer() {
               <p className="font-semibold">Subscribe to our newsletter</p>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubscribe)} className="space-y-4">
-                  <div className="flex flex-col sm:flex-row w-full max-w-sm items-stretch sm:items-start gap-3 sm:gap-2">
+                  <div className="flex flex-row w-full max-w-sm items-center gap-3 sm:gap-2">
                     <FormField
                       control={form.control}
                       name="email"

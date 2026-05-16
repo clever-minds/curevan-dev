@@ -132,7 +132,7 @@ export default  function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center">
       {/* Hero Section */}
-      <section className="w-full h-[calc(100vh-var(--header-height))] max-h-[600px] bg-card relative overflow-hidden flex items-center justify-center">
+      <section className="w-full h-[calc(100vh-var(--header-height))] max-h-[600px] bg-card relative overflow-hidden flex items-center justify-center pb-32 md:pb-48">
         <AnimatedWave />
         <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline mb-4 text-white leading-tight">
@@ -141,11 +141,11 @@ export default  function HomePage() {
           <p className="max-w-2xl mx-auto text-white/80 md:text-xl mb-8">
             Curevan offers professional therapy services and quality wellness products delivered right to your door. <span className="font-bold text-white">Cure. Anywhere.</span>
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg">
+          <div className="flex flex-row gap-3 justify-center items-center">
+            <Button asChild size="lg" className="px-4 text-xs sm:text-base h-11 sm:h-14 min-w-[140px]">
               <Link href="/discover">Book a Session</Link>
             </Button>
-             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 px-4 text-xs sm:text-base h-11 sm:h-14 min-w-[140px]">
               <Link href="/ecommerce">Shop Products</Link>
             </Button>
           </div>

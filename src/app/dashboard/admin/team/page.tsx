@@ -98,10 +98,18 @@ export default function TeamManagementPage() {
       const result = await updateUserRoles(targetUser.uid, newRoles);
 
       if (result.success) {
-          toast({ title: "Roles Updated!", description: `Roles for ${targetUser.name} have been updated. User must re-login to see changes.` });
+          toast({ 
+            variant: "success",
+            title: "Roles Updated!", 
+            description: `Roles for ${targetUser.name} have been updated. User must re-login to see changes.` 
+          });
           setUsers(prevUsers => prevUsers.map(u => u.uid === targetUser.uid ? { ...u, roles: newRoles } : u));
       } else {
-          toast({ variant: "destructive", title: "Update Failed", description: result.error });
+          toast({ 
+            variant: "destructive", 
+            title: "Update Failed", 
+            description: result.error || "An unexpected error occurred while updating roles." 
+          });
       }
     });
   };
@@ -118,13 +126,21 @@ export default function TeamManagementPage() {
       }
       const result = await inviteAdminUser(newInviteEmail, newInviteRoles, newInviteRoles.includes('admin.therapy') ? state_admin_name : undefined);
       if(result.success) {
-          toast({ title: 'Invite Sent!', description: `An invitation has been sent to ${newInviteEmail}.` });
+          toast({ 
+            variant: "success",
+            title: 'Invite Sent!', 
+            description: `An invitation has been sent to ${newInviteEmail}.` 
+          });
           setNewInviteEmail("");
           setNewInviteRoles([]);
           setStateAdminName("");
           document.querySelector('[data-radix-dialog-close-button]')?.dispatchEvent(new MouseEvent('click'));
       } else {
-          toast({ variant: 'destructive', title: 'Invite Failed', description: result.error });
+          toast({ 
+            variant: 'destructive', 
+            title: 'Invite Failed', 
+            description: result.error || "Could not send invitation. Please try again." 
+          });
       }
     });
   }

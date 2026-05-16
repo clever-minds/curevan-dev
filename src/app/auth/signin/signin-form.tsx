@@ -90,6 +90,7 @@ export function SigninForm() {
       login(userProfile);
 
       toast({
+        variant: 'success',
         title: 'Sign In Successful',
         description: `Welcome back, ${userProfile.name}!`,
       });
