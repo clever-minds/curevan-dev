@@ -209,9 +209,13 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
   const router = useRouter();
 
   async function onSubmit(data: EditorFormValues) {
-    const coverImageId = Array.isArray(data.coverImageUrl)
+    const coverImageId = Array.isArray(data.coverImageUrl) && data.coverImageUrl.length > 0
       ? data.coverImageUrl[0]?.id ?? null
-      : data.coverImageUrl;
+      : (typeof data.coverImageUrl === 'number' || typeof data.coverImageUrl === 'string' ? data.coverImageUrl : null);
+
+    const coverImageUrl = Array.isArray(data.coverImageUrl) && data.coverImageUrl.length > 0
+      ? data.coverImageUrl[0]?.url ?? ""
+      : (typeof data.coverImageUrl === 'string' ? data.coverImageUrl : "");
 
     const mergedContent = data.content;
 
@@ -222,7 +226,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       slug: data.slug,
       status: data.status === "review" ? "pending_review" : data.status,
       tags: data.categories,
-      featuredImage: coverImageId,
+      featuredImage: coverImageUrl,
+      featuredImageId: coverImageId ? Number(coverImageId) : undefined,
       videoUrl: data.videoUrl,
       metaDescription: data.metaDescription,
       difficulty: data.difficulty,
