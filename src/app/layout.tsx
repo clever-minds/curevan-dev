@@ -26,13 +26,13 @@ export const metadata: Metadata = {
     description: 'Convenient and professional healthcare services and products, delivered to your doorstep.',
     url: 'https://www.curevan.com',
     siteName: 'Curevan',
-    // images: [
-    //   {
-    //     url: 'https://www.curevan.com/og-image.png', // Add a default OG image
-    //     width: 1200,
-    //     height: 630,
-    //   },
-    // ],
+    images: [
+      {
+        url: 'https://www.curevan.com/og-image.png', // Add a default OG image
+        width: 1200,
+        height: 630,
+      },
+    ],
     locale: 'en_US',
     type: 'website',
   },
