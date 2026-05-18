@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Loader2, Upload, Eye, Check, PenSquare, ArrowRightLeft, Shrink, Bold, Italic, List, Undo2 } from 'lucide-react';
+import { Save, Loader2, Upload, Eye, Check, PenSquare, Shrink, Bold, Italic, List, Undo2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/context/auth-context';
 import { useState, useEffect, useRef } from 'react';
@@ -96,12 +96,6 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-
-  // Cross-Publishing Platforms state
-  const [crossPublishMedium, setCrossPublishMedium] = useState(false);
-  const [crossPublishDevto, setCrossPublishDevto] = useState(false);
-  const [crossPublishLinkedIn, setCrossPublishLinkedIn] = useState(false);
-  const [crossPublishFacebook, setCrossPublishFacebook] = useState(false);
 
   const form = useForm<EditorFormValues>({
     resolver: zodResolver(editorFormSchema),
@@ -249,19 +243,9 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
       // ✅ Success check
       if (response?.success) {
-        const platforms = [];
-        if (crossPublishMedium) platforms.push("Medium");
-        if (crossPublishDevto) platforms.push("Dev.to");
-        if (crossPublishLinkedIn) platforms.push("LinkedIn");
-        if (crossPublishFacebook) platforms.push("Facebook");
-
-        const description = platforms.length > 0
-          ? `Your content has been saved successfully and syndicated to ${platforms.join(", ")}!`
-          : "Your content has been saved successfully.";
-
         toast({
-          title: "Saved & Cross-Published Successfully!",
-          description: description,
+          title: "Saved Successfully!",
+          description: "Your content has been saved successfully.",
         });
 
         const redirectMap: Record<string, string> = {
@@ -374,15 +358,13 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                               // 16:9 is ~1.77. We allow 1.6 to 1.9
                               if (ratio < 1.6 || ratio > 1.9) {
                                 toast({
-                                  variant: "destructive",
-                                  title: "Invalid Aspect Ratio",
-                                  description: `Please upload a 16:9 Landscape image. Current ratio is ${ratio.toFixed(2)}.`,
+                                  variant: "default",
+                                  title: "Aspect Ratio Suggestion ⚠️",
+                                  description: `We recommend a 16:9 Landscape image for best display (Current: ${ratio.toFixed(2)}). You can still proceed!`,
                                 });
-                                // Optional: Clear the field if you want strict validation
-                                // field.onChange([]); 
-                              } else {
-                                field.onChange(media);
                               }
+                              // Always allow selection so the user is not blocked
+                              field.onChange(media);
                             };
                           } else {
                             field.onChange(media);
@@ -545,90 +527,19 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
               />
 
               {contentType === 'post' && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="videoUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>YouTube Video URL (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Separator className="my-4" />
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <ArrowRightLeft className="w-4 h-4 text-primary" />
-                      <h4 className="text-sm font-semibold font-headline">Cross-Publish & Syndication</h4>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Automatically post a teaser or full article to your connected external platforms:
-                    </p>
-                    
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
-                        <div className="space-y-0.5">
-                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="medium-toggle">
-                            Medium Blog
-                          </label>
-                          <p className="text-[11px] text-muted-foreground">Publish full text to Medium account</p>
-                        </div>
-                        <Checkbox 
-                          id="medium-toggle" 
-                          checked={crossPublishMedium} 
-                          onCheckedChange={(checked) => setCrossPublishMedium(!!checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
-                        <div className="space-y-0.5">
-                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="devto-toggle">
-                            Dev.to Community
-                          </label>
-                          <p className="text-[11px] text-muted-foreground">Publish technical post to Dev.to</p>
-                        </div>
-                        <Checkbox 
-                          id="devto-toggle" 
-                          checked={crossPublishDevto} 
-                          onCheckedChange={(checked) => setCrossPublishDevto(!!checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
-                        <div className="space-y-0.5">
-                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="linkedin-toggle">
-                            LinkedIn Page
-                          </label>
-                          <p className="text-[11px] text-muted-foreground">Share teaser link to LinkedIn Feed</p>
-                        </div>
-                        <Checkbox 
-                          id="linkedin-toggle" 
-                          checked={crossPublishLinkedIn} 
-                          onCheckedChange={(checked) => setCrossPublishLinkedIn(!!checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
-                        <div className="space-y-0.5">
-                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="facebook-toggle">
-                            Facebook Page
-                          </label>
-                          <p className="text-[11px] text-muted-foreground">Publish post update to Facebook Page</p>
-                        </div>
-                        <Checkbox 
-                          id="facebook-toggle" 
-                          checked={crossPublishFacebook} 
-                          onCheckedChange={(checked) => setCrossPublishFacebook(!!checked)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <FormField
+                  control={form.control}
+                  name="videoUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>YouTube Video URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
 
               {contentType === 'training' && (
