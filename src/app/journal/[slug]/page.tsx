@@ -54,7 +54,7 @@ export async function generateMetadata(
             description: post.excerpt,
             images: [
                 {
-                    url: post.featuredImage as string,
+                    url: getMediaUrl(post.featuredImage as string),
                     width: 1200,
                     height: 630,
                     alt: post.title,

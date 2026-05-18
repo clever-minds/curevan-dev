@@ -79,9 +79,18 @@ export default function JournalInteractiveSection({ slug, title }: JournalIntera
     setCanShare(!!navigator.share);
   }, []);
 
+  const getEffectiveShareUrl = () => {
+    let currentUrl = shareUrl || (typeof window !== "undefined" ? window.location.href : "");
+    if (currentUrl.includes("localhost") || currentUrl.includes("127.0.0.1")) {
+      currentUrl = currentUrl.replace(/https?:\/\/localhost:\d+/, "https://www.curevan.com");
+    }
+    return currentUrl;
+  };
+
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl || window.location.href);
+      const urlToCopy = shareUrl || (typeof window !== "undefined" ? window.location.href : "");
+      await navigator.clipboard.writeText(urlToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
@@ -92,10 +101,11 @@ export default function JournalInteractiveSection({ slug, title }: JournalIntera
   const handleSystemShare = async () => {
     if (navigator.share) {
       try {
+        const urlToShare = getEffectiveShareUrl();
         await navigator.share({
           title: title,
           text: `Check out this expert therapy guide on Curevan: ${title}`,
-          url: shareUrl || window.location.href,
+          url: urlToShare,
         });
       } catch (err) {
         console.error("Error sharing via device:", err);
@@ -105,21 +115,40 @@ export default function JournalInteractiveSection({ slug, title }: JournalIntera
     }
   };
 
+  const handleSocialShare = (platform: "facebook" | "twitter" | "linkedin" | "whatsapp" | "telegram" | "reddit") => {
+    const urlToShare = getEffectiveShareUrl();
+    const encodedUrl = encodeURIComponent(urlToShare);
+    const encodedTitle = encodeURIComponent(title);
+
+    let shareUrl = "";
+    switch (platform) {
+      case "facebook":
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+        break;
+      case "twitter":
+        shareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=Check%20out%20this%20article:%20${encodedTitle}`;
+        break;
+      case "linkedin":
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+        break;
+      case "whatsapp":
+        shareUrl = `https://api.whatsapp.com/send?text=Check%20out%20this%20article:%20${encodedTitle}%20-%20${encodedUrl}`;
+        break;
+      case "telegram":
+        shareUrl = `https://t.me/share/url?url=${encodedUrl}&text=Check%20out%20this%20expert%20therapy%20guide:%20${encodedTitle}`;
+        break;
+      case "reddit":
+        shareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
+        break;
+    }
+
+    if (shareUrl) {
+      window.open(shareUrl, "_blank", "noopener,noreferrer,width=600,height=500");
+    }
+  };
+
   const isExercise = slug === "double-knees-to-chest-exercise";
   const faqs = isExercise ? exerciseFAQs : defaultFAQs;
-
-  const encodedUrl = encodeURIComponent(shareUrl || "");
-  const encodedTitle = encodeURIComponent(title);
-
-  // Social Share Links
-  const shareLinks = {
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=Check%20out%20this%20article:%20${encodedTitle}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-    whatsapp: `https://api.whatsapp.com/send?text=Check%20out%20this%20article:%20${encodedTitle}%20-%20${encodedUrl}`,
-    telegram: `https://t.me/share/url?url=${encodedUrl}&text=Check%20out%20this%20expert%20therapy%20guide:%20${encodedTitle}`,
-    reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`
-  };
 
   return (
     <div className="mt-12 space-y-12 border-t pt-10">
@@ -140,86 +169,74 @@ export default function JournalInteractiveSection({ slug, title }: JournalIntera
           <div className="flex flex-wrap gap-3 items-center">
             {/* LinkedIn */}
             <Button
-              asChild
+              onClick={() => handleSocialShare("linkedin")}
               variant="outline"
               size="sm"
-              className="bg-white hover:bg-[#0077b5]/10 hover:text-[#0077b5] hover:border-[#0077b5] gap-2 transition-all duration-300 font-semibold shadow-sm"
+              className="bg-white hover:bg-[#0077b5]/10 hover:text-[#0077b5] hover:border-[#0077b5] gap-2 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
             >
-              <a href={shareLinks.linkedin} target="_blank" rel="noopener noreferrer">
-                <Linkedin className="w-4 h-4 fill-current" />
-                <span>LinkedIn</span>
-              </a>
+              <Linkedin className="w-4 h-4 fill-current" />
+              <span>LinkedIn</span>
             </Button>
 
             {/* Facebook */}
             <Button
-              asChild
+              onClick={() => handleSocialShare("facebook")}
               variant="outline"
               size="sm"
-              className="bg-white hover:bg-[#1877f2]/10 hover:text-[#1877f2] hover:border-[#1877f2] gap-2 transition-all duration-300 font-semibold shadow-sm"
+              className="bg-white hover:bg-[#1877f2]/10 hover:text-[#1877f2] hover:border-[#1877f2] gap-2 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
             >
-              <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer">
-                <Facebook className="w-4 h-4 fill-current" />
-                <span>Facebook</span>
-              </a>
+              <Facebook className="w-4 h-4 fill-current" />
+              <span>Facebook</span>
             </Button>
 
             {/* Twitter */}
             <Button
-              asChild
+              onClick={() => handleSocialShare("twitter")}
               variant="outline"
               size="sm"
-              className="bg-white hover:bg-black/10 hover:text-black hover:border-black dark:hover:text-white dark:hover:border-white gap-2 transition-all duration-300 font-semibold shadow-sm"
+              className="bg-white hover:bg-black/10 hover:text-black hover:border-black dark:hover:text-white dark:hover:border-white gap-2 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
             >
-              <a href={shareLinks.twitter} target="_blank" rel="noopener noreferrer">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                <span>Twitter</span>
-              </a>
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span>Twitter</span>
             </Button>
 
             {/* WhatsApp */}
             <Button
-              asChild
+              onClick={() => handleSocialShare("whatsapp")}
               variant="outline"
               size="sm"
-              className="bg-white hover:bg-[#25d366]/10 hover:text-[#25d366] hover:border-[#25d366] gap-2 transition-all duration-300 font-semibold shadow-sm"
+              className="bg-white hover:bg-[#25d366]/10 hover:text-[#25d366] hover:border-[#25d366] gap-2 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
             >
-              <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer">
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.464L0 24zm6.59-4.846c1.6.95 3.197 1.451 4.793 1.451 5.32 0 9.646-4.327 9.649-9.65.001-2.578-1.001-5.001-2.822-6.824C16.444 2.308 14.02 1.3 11.442 1.3 6.121 1.3 1.793 5.628 1.79 10.95c-.001 1.737.458 3.429 1.332 4.943l-.974 3.559 3.649-.958z" />
-                </svg>
-                <span>WhatsApp</span>
-              </a>
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.464L0 24zm6.59-4.846c1.6.95 3.197 1.451 4.793 1.451 5.32 0 9.646-4.327 9.649-9.65.001-2.578-1.001-5.001-2.822-6.824C16.444 2.308 14.02 1.3 11.442 1.3 6.121 1.3 1.793 5.628 1.79 10.95c-.001 1.737.458 3.429 1.332 4.943l-.974 3.559 3.649-.958z" />
+              </svg>
+              <span>WhatsApp</span>
             </Button>
 
             {/* Telegram */}
             <Button
-              asChild
+              onClick={() => handleSocialShare("telegram")}
               variant="outline"
               size="sm"
-              className="bg-white hover:bg-[#0088cc]/10 hover:text-[#0088cc] hover:border-[#0088cc] gap-2 transition-all duration-300 font-semibold shadow-sm"
+              className="bg-white hover:bg-[#0088cc]/10 hover:text-[#0088cc] hover:border-[#0088cc] gap-2 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
             >
-              <a href={shareLinks.telegram} target="_blank" rel="noopener noreferrer">
-                <Send className="w-4 h-4" />
-                <span>Telegram</span>
-              </a>
+              <Send className="w-4 h-4" />
+              <span>Telegram</span>
             </Button>
 
             {/* Reddit */}
             <Button
-              asChild
+              onClick={() => handleSocialShare("reddit")}
               variant="outline"
               size="sm"
-              className="bg-white hover:bg-[#ff4500]/10 hover:text-[#ff4500] hover:border-[#ff4500] gap-2 transition-all duration-300 font-semibold shadow-sm"
+              className="bg-white hover:bg-[#ff4500]/10 hover:text-[#ff4500] hover:border-[#ff4500] gap-2 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
             >
-              <a href={shareLinks.reddit} target="_blank" rel="noopener noreferrer">
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-.421.927 7.042 7.042 0 0 1 .15 1.439c0 3.01-3.649 5.45-8.15 5.45s-8.15-2.44-8.15-5.45c0-.501.1-.98.272-1.425a1.25 1.25 0 0 1-.39-.94A1.25 1.25 0 0 1 2.82 4.744c.563 0 1.042.374 1.205.887 1.637-.624 3.738-1.025 6.038-1.096l1.282-4.032 4.195.892a1.054 1.054 0 0 1-.036.273 1.055 1.055 0 1 1 1.055 1.055 1.052 1.052 0 0 1-1.055-1.055l-3.76-.8-1.155 3.633c2.316.067 4.43.468 6.079 1.102a1.25 1.25 0 0 1 1.196-.913z" />
-                </svg>
-                <span>Reddit</span>
-              </a>
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-.421.927 7.042 7.042 0 0 1 .15 1.439c0 3.01-3.649 5.45-8.15 5.45s-8.15-2.44-8.15-5.45c0-.501.1-.98.272-1.425a1.25 1.25 0 0 1-.39-.94A1.25 1.25 0 0 1 2.82 4.744c.563 0 1.042.374 1.205.887 1.637-.624 3.738-1.025 6.038-1.096l1.282-4.032 4.195.892a1.054 1.054 0 0 1-.036.273 1.055 1.055 0 1 1 1.055 1.055 1.052 1.052 0 0 1-1.055-1.055l-3.76-.8-1.155 3.633c2.316.067 4.43.468 6.079 1.102a1.25 1.25 0 0 1 1.196-.913z" />
+              </svg>
+              <span>Reddit</span>
             </Button>
 
             {/* Native device sharing (Instagram / Threads / Messages / etc.) */}
