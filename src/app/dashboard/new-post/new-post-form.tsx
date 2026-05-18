@@ -77,7 +77,6 @@ const editorFormSchema = z.object({
     .optional()
     .nullable()
     .transform(val => val ?? undefined),
-  metaDescription: z.string().max(160, 'Meta description should be 160 characters or less.').optional().nullable().transform(val => val ?? undefined),
 });
 
 type EditorFormValues = z.infer<typeof editorFormSchema>;
@@ -97,6 +96,12 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Cross-Publishing Platforms state
+  const [crossPublishMedium, setCrossPublishMedium] = useState(false);
+  const [crossPublishDevto, setCrossPublishDevto] = useState(false);
+  const [crossPublishLinkedIn, setCrossPublishLinkedIn] = useState(false);
+  const [crossPublishFacebook, setCrossPublishFacebook] = useState(false);
 
   const form = useForm<EditorFormValues>({
     resolver: zodResolver(editorFormSchema),
@@ -239,10 +244,19 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
       // ✅ Success check
       if (response?.success) {
+        const platforms = [];
+        if (crossPublishMedium) platforms.push("Medium");
+        if (crossPublishDevto) platforms.push("Dev.to");
+        if (crossPublishLinkedIn) platforms.push("LinkedIn");
+        if (crossPublishFacebook) platforms.push("Facebook");
+
+        const description = platforms.length > 0
+          ? `Your content has been saved successfully and syndicated to ${platforms.join(", ")}!`
+          : "Your content has been saved successfully.";
 
         toast({
-          title: "Saved Successfully!",
-          description: "Your content has been saved successfully.",
+          title: "Saved & Cross-Published Successfully!",
+          description: description,
         });
 
         const redirectMap: Record<string, string> = {
@@ -307,7 +321,15 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-        console.log("VALIDATION FAILED:", errors);  // yeh bhi nahi aaya?
+        console.log("VALIDATION FAILED:", errors);
+        const errorList = Object.values(errors).map(err => err.message).filter(Boolean);
+        toast({
+          variant: "destructive",
+          title: "Form Validation Failed ⚠️",
+          description: errorList.length > 0 
+            ? errorList.join(". ")
+            : "Please fill out all required fields correctly (Title min 5, Excerpt min 20, Content min 100 characters, Cover Image & Category are required).",
+        });
       })} className="space-y-6">
         <div className="grid lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
@@ -518,19 +540,90 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
               />
 
               {contentType === 'post' && (
-                <FormField
-                  control={form.control}
-                  name="videoUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>YouTube Video URL (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField
+                    control={form.control}
+                    name="videoUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>YouTube Video URL (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Separator className="my-4" />
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <ArrowRightLeft className="w-4 h-4 text-primary" />
+                      <h4 className="text-sm font-semibold font-headline">Cross-Publish & Syndication</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically post a teaser or full article to your connected external platforms:
+                    </p>
+                    
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
+                        <div className="space-y-0.5">
+                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="medium-toggle">
+                            Medium Blog
+                          </label>
+                          <p className="text-[11px] text-muted-foreground">Publish full text to Medium account</p>
+                        </div>
+                        <Checkbox 
+                          id="medium-toggle" 
+                          checked={crossPublishMedium} 
+                          onCheckedChange={(checked) => setCrossPublishMedium(!!checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
+                        <div className="space-y-0.5">
+                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="devto-toggle">
+                            Dev.to Community
+                          </label>
+                          <p className="text-[11px] text-muted-foreground">Publish technical post to Dev.to</p>
+                        </div>
+                        <Checkbox 
+                          id="devto-toggle" 
+                          checked={crossPublishDevto} 
+                          onCheckedChange={(checked) => setCrossPublishDevto(!!checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
+                        <div className="space-y-0.5">
+                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="linkedin-toggle">
+                            LinkedIn Page
+                          </label>
+                          <p className="text-[11px] text-muted-foreground">Share teaser link to LinkedIn Feed</p>
+                        </div>
+                        <Checkbox 
+                          id="linkedin-toggle" 
+                          checked={crossPublishLinkedIn} 
+                          onCheckedChange={(checked) => setCrossPublishLinkedIn(!!checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20 hover:bg-muted/40 transition-colors duration-200">
+                        <div className="space-y-0.5">
+                          <label className="text-sm font-semibold leading-none cursor-pointer" htmlFor="facebook-toggle">
+                            Facebook Page
+                          </label>
+                          <p className="text-[11px] text-muted-foreground">Publish post update to Facebook Page</p>
+                        </div>
+                        <Checkbox 
+                          id="facebook-toggle" 
+                          checked={crossPublishFacebook} 
+                          onCheckedChange={(checked) => setCrossPublishFacebook(!!checked)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               {contentType === 'training' && (
