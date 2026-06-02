@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Phone, MapPin, Mail, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { getMediaUrl, extractFaqsFromContent } from '@/lib/utils';
+import { getMediaUrl } from '@/lib/utils';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getPublicJournalEntryBySlug, listPublicJournalEntries } from '@/lib/repos/content';
 import { getTherapistById } from '@/lib/repos/therapists';
@@ -134,9 +134,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         notFound();
     }
 
-    const { cleanContent, faqs: extractedFaqs } = extractFaqsFromContent(post.content || '');
-    const faqs = (post as any).faqs || extractedFaqs || [];
-    post.content = cleanContent;
+    const faqs = post.faqs || [];
 
     const author = await getTherapistById(post.authorId);
     const youtubeVideoId = post.videoUrl ? new URL(post.videoUrl).searchParams.get('v') : null;

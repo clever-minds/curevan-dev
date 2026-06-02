@@ -24,7 +24,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { cn, extractFaqsFromContent, embedFaqsInContent } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { X as XIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -172,21 +172,18 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
         const postCats = Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [];
         const finalCategories = checkedCategories.length > 0 ? checkedCategories : postCats;
 
-        const { cleanContent, faqs: extractedFaqs } = extractFaqsFromContent(post.content || '');
-        const faqs = (post as any).faqs || extractedFaqs || [];
-
         form.reset({
           title: post.title,
           slug: post.slug,
           excerpt: post.excerpt,
-          content: cleanContent,
+          content: post.content || '',
           durationMin: post.durationMin,
           difficulty: post.difficulty,
           sopVersion: post.sopVersion,
           status: post.status == "pending_review" ? "review" : post.status,
           categories: finalCategories,
           tags: arbitraryTags.join(', '),
-          faqs: faqs,
+          faqs: post.faqs || [],
           videoUrl: post.videoUrl || "",
           coverImageUrl:
             post.featuredImage && post.featuredImageId
@@ -247,12 +244,10 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       : [];
     const mergedTags = Array.from(new Set([...(data.categories || []), ...userTags]));
 
-    const mergedContent = embedFaqsInContent(data.content, data.faqs || []);
-
     const payload: Partial<KnowledgeBase> = {
       title: data.title,
       excerpt: data.excerpt,
-      content: mergedContent,
+      content: data.content,
       slug: data.slug,
       status: data.status === "review" ? "pending_review" : data.status,
       tags: mergedTags,
@@ -264,7 +259,6 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       durationMin: data.durationMin,
       sopVersion: data.sopVersion,
       contentType: contentType,
-      // @ts-ignore
       faqs: data.faqs,
     };
     console.log("Submitting form with payload:", payload);
