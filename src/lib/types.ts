@@ -663,6 +663,7 @@ export interface KnowledgeBase {
   tags?: string[];
   videoUrl?: string;
   metaDescription?: string;   // ✅ add this
+  faqs?: { question: string; answer: string }[];
   publishedAt?: string;
   createdAt: Date;
   updatedAt: Date;

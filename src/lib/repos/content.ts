@@ -41,7 +41,7 @@ export async function listJournalEntries(filters?: any): Promise<KnowledgeBase[]
 
     console.log("Journal Entries API response:", entries);
 
-    return entries.map(entry => ({
+    return entries.map((entry: any) => ({
       ...entry,
       featuredImage: (() => {
         let img = entry.featuredImage || (entry as any).featured_image || (entry as any).image;
@@ -78,7 +78,7 @@ export async function listPublicJournalEntries(filters?: any): Promise<Knowledge
     const rawData = response.data?.data ?? response.data ?? [];
     const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
-    return entries.map(entry => ({
+    return entries.map((entry: any) => ({
       ...entry,
       featuredImage: entry.featuredImage || (entry as any).featured_image || (entry as any).image || '',
       authorName: entry.authorName || (entry as any).author_name || 'Anonymous',
@@ -104,7 +104,7 @@ export async function getPublicJournalEntryBySlug(slug: string): Promise<Knowled
     const rawData = response.data?.data ?? response.data ?? [];
     const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
-    const entry = entries.find((e: any) => e.slug === slug);
+    const entry = entries.find((e: any) => e.slug === slug) as any;
     if (!entry) return null;
 
     return {
@@ -149,6 +149,8 @@ export async function getKnowledgeBaseBySlug(slug: string): Promise<KnowledgeBas
     const entries = Array.isArray(rawData) ? rawData : (typeof rawData === 'object' && rawData !== null ? Object.values(rawData) : []);
 
     if (entries.length === 0) return null;
+
+    const entry = entries[0];
 
     return {
       ...(entry as any),

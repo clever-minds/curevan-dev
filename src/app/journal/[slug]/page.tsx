@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Phone, MapPin, Mail, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { getMediaUrl } from '@/lib/utils';
+import { getMediaUrl, extractFaqsFromContent } from '@/lib/utils';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getPublicJournalEntryBySlug, listPublicJournalEntries } from '@/lib/repos/content';
 import { getTherapistById } from '@/lib/repos/therapists';
@@ -51,6 +51,7 @@ export async function generateMetadata(
     return {
         title: `${post.title} | Curevan Journal`,
         description: post.excerpt,
+        keywords: post.tags,
         openGraph: {
             title: post.title,
             description: post.excerpt,
@@ -133,6 +134,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         notFound();
     }
 
+    const { cleanContent, faqs: extractedFaqs } = extractFaqsFromContent(post.content || '');
+    const faqs = (post as any).faqs || extractedFaqs || [];
+    post.content = cleanContent;
+
     const author = await getTherapistById(post.authorId);
     const youtubeVideoId = post.videoUrl ? new URL(post.videoUrl).searchParams.get('v') : null;
 
@@ -142,6 +147,25 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     return (
         <div className="container mx-auto py-8 md:py-12">
+            {faqs.length > 0 && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "FAQPage",
+                            "mainEntity": faqs.map(faq => ({
+                                "@type": "Question",
+                                "name": faq.question,
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": faq.answer
+                                }
+                            }))
+                        })
+                    }}
+                />
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Main Content */}
                 <div className="lg:col-span-2">

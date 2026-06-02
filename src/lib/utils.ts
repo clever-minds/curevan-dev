@@ -89,3 +89,32 @@ export function getCookie(name: string): string | null {
   if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
   return null;
 }
+
+/**
+ * Parses the FAQ JSON array embedded in the HTML content, returning the clean content and the parsed FAQ list.
+ */
+export function extractFaqsFromContent(content: string): { cleanContent: string; faqs: { question: string; answer: string }[] } {
+  if (!content) return { cleanContent: '', faqs: [] };
+  const faqRegex = /<script\s+type="application\/json"\s+id="journal-faqs"\s*>([\s\S]*?)<\/script>/i;
+  const match = content.match(faqRegex);
+  if (match) {
+    try {
+      const faqs = JSON.parse(match[1]);
+      const cleanContent = content.replace(faqRegex, '').trim();
+      return { cleanContent, faqs };
+    } catch (e) {
+      console.error("Failed to parse embedded FAQs:", e);
+    }
+  }
+  return { cleanContent: content, faqs: [] };
+}
+
+/**
+ * Appends the FAQ list to the HTML content as a JSON script block.
+ */
+export function embedFaqsInContent(content: string, faqs: { question: string; answer: string }[]): string {
+  const { cleanContent } = extractFaqsFromContent(content);
+  if (!faqs || faqs.length === 0) return cleanContent;
+  const faqScript = `<script type="application/json" id="journal-faqs">${JSON.stringify(faqs)}</script>`;
+  return `${cleanContent}\n${faqScript}`;
+}

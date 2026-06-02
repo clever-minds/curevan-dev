@@ -24,7 +24,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, extractFaqsFromContent, embedFaqsInContent } from '@/lib/utils';
 import { X as XIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,6 +61,11 @@ const editorFormSchema = z.object({
   // Post specific
   videoUrl: z.string().url({ message: 'Please enter a valid YouTube URL.' }).optional().or(z.literal('')),
   metaDescription: z.string().max(160, 'Meta description should be 160 characters or less.').optional().nullable().transform(val => val ?? undefined),
+  tags: z.string().optional(),
+  faqs: z.array(z.object({
+    question: z.string(),
+    answer: z.string()
+  })).optional(),
 
   // Training specific
   difficulty: z.enum(['beginner', 'intermediate', 'advanced'])
@@ -107,6 +112,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       coverImageUrl: null,
       status: 'draft',
       categories: [],
+      tags: '',
+      faqs: [],
       sopVersion: 'v1.0',
     },
   });
@@ -143,19 +150,43 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
     const loadPost = async () => {
       try {
+        const cats = await getTherapyCategories();
+        const categoryIds = cats.map(c => c.toLowerCase().replace(/ /g, '-'));
+
         const post = await getKnowledgeBaseById(postId);
         if (!post) return;
+
+        const postTags = post.tags || [];
+        const checkedCategories: string[] = [];
+        const arbitraryTags: string[] = [];
+
+        postTags.forEach((tag: string) => {
+          const normalizedTag = tag.toLowerCase().replace(/ /g, '-');
+          if (categoryIds.includes(normalizedTag)) {
+            checkedCategories.push(normalizedTag);
+          } else {
+            arbitraryTags.push(tag);
+          }
+        });
+
+        const postCats = Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [];
+        const finalCategories = checkedCategories.length > 0 ? checkedCategories : postCats;
+
+        const { cleanContent, faqs: extractedFaqs } = extractFaqsFromContent(post.content || '');
+        const faqs = (post as any).faqs || extractedFaqs || [];
 
         form.reset({
           title: post.title,
           slug: post.slug,
           excerpt: post.excerpt,
-          content: post.content || '',
+          content: cleanContent,
           durationMin: post.durationMin,
           difficulty: post.difficulty,
           sopVersion: post.sopVersion,
           status: post.status == "pending_review" ? "review" : post.status,
-          categories: Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [],
+          categories: finalCategories,
+          tags: arbitraryTags.join(', '),
+          faqs: faqs,
           videoUrl: post.videoUrl || "",
           coverImageUrl:
             post.featuredImage && post.featuredImageId
@@ -211,7 +242,12 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       ? data.coverImageUrl[0]?.url ?? ""
       : (typeof data.coverImageUrl === 'string' ? data.coverImageUrl : "");
 
-    const mergedContent = data.content;
+    const userTags = data.tags
+      ? data.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+      : [];
+    const mergedTags = Array.from(new Set([...(data.categories || []), ...userTags]));
+
+    const mergedContent = embedFaqsInContent(data.content, data.faqs || []);
 
     const payload: Partial<KnowledgeBase> = {
       title: data.title,
@@ -219,7 +255,7 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       content: mergedContent,
       slug: data.slug,
       status: data.status === "review" ? "pending_review" : data.status,
-      tags: data.categories,
+      tags: mergedTags,
       featuredImage: coverImageUrl,
       featuredImageId: coverImageId ? Number(coverImageId) : undefined,
       videoUrl: data.videoUrl,
@@ -228,6 +264,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       durationMin: data.durationMin,
       sopVersion: data.sopVersion,
       contentType: contentType,
+      // @ts-ignore
+      faqs: data.faqs,
     };
     console.log("Submitting form with payload:", payload);
     try {
@@ -420,6 +458,76 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
             <Separator />
 
+            {/* FAQ Manager Section */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium font-headline">Frequently Asked Questions (FAQs)</h3>
+                <p className="text-sm text-muted-foreground">Add questions and answers that will be automatically generated as FAQ Schema for search engines.</p>
+              </div>
+
+              <div className="space-y-4">
+                {form.watch("faqs")?.map((faq: any, index: number) => (
+                  <div key={index} className="p-4 border rounded-lg bg-muted/40 space-y-3 relative">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive h-8 w-8"
+                      onClick={() => {
+                        const currentFaqs = form.getValues("faqs") || [];
+                        form.setValue(
+                          "faqs",
+                          currentFaqs.filter((_, i) => i !== index),
+                          { shouldDirty: true }
+                        );
+                      }}
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </Button>
+                    <div className="space-y-1.5 pr-8">
+                      <span className="text-xs font-bold text-primary uppercase">Question {index + 1}</span>
+                      <Input
+                        value={faq.question}
+                        onChange={(e) => {
+                          const currentFaqs = [...(form.getValues("faqs") || [])];
+                          currentFaqs[index] = { ...currentFaqs[index], question: e.target.value };
+                          form.setValue("faqs", currentFaqs, { shouldDirty: true });
+                        }}
+                        placeholder="Enter the question..."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-bold text-primary uppercase">Answer {index + 1}</span>
+                      <Textarea
+                        value={faq.answer}
+                        onChange={(e) => {
+                          const currentFaqs = [...(form.getValues("faqs") || [])];
+                          currentFaqs[index] = { ...currentFaqs[index], answer: e.target.value };
+                          form.setValue("faqs", currentFaqs, { shouldDirty: true });
+                        }}
+                        placeholder="Enter the answer..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentFaqs = form.getValues("faqs") || [];
+                    form.setValue("faqs", [...currentFaqs, { question: "", answer: "" }], { shouldDirty: true });
+                  }}
+                >
+                  + Add FAQ Item
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">SEO & Meta Settings</h3>
               <FormField
@@ -520,11 +628,26 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                           </label>
                         </div>
                       ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                     </div>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+ 
+               <FormField
+                 control={form.control}
+                 name="tags"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel className="font-semibold">Tags / Keywords</FormLabel>
+                     <FormControl>
+                       <Input placeholder="e.g. back-pain, exercise, stretching" {...field} />
+                     </FormControl>
+                     <FormDescription>Comma-separated tags/keywords.</FormDescription>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
 
               {contentType === 'post' && (
                 <FormField
