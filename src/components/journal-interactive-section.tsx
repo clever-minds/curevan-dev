@@ -7,66 +7,15 @@ import {
   Share2, 
   Copy, 
   Check, 
-  HelpCircle,
   Sparkles,
   Send
 } from "lucide-react";
-import { 
-  Accordion, 
-  AccordionItem, 
-  AccordionTrigger, 
-  AccordionContent 
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
-interface FAQ {
-  question: string;
-  answer: string;
-}
 
 interface JournalInteractiveSectionProps {
   slug: string;
   title: string;
 }
-
-const exerciseFAQs: FAQ[] = [
-  {
-    question: "What is the primary benefit of the Double Knees-to-Chest stretch?",
-    answer: "It gently flexes the lumbar spine, which opens up the spaces between spinal vertebrae (spinal decompression). This reduces pressure on spinal discs and nerves, providing immediate relief from lower back stiffness and muscle tension."
-  },
-  {
-    question: "How often should I perform the Double Knees-to-Chest exercise?",
-    answer: "For general relief and flexibility, you can perform it 1 to 2 times daily. It is particularly effective first thing in the morning to relieve overnight stiffness, or at night before sleeping to relax the lumbar muscles."
-  },
-  {
-    question: "Is it normal to feel pain during this stretch?",
-    answer: "No. You should feel a comfortable, gentle pulling sensation in your lower back, glutes, and hips. If you experience any sharp, pinching, or shooting pain, stop immediately and consult a certified physical therapist."
-  },
-  {
-    question: "Can pregnant women perform the Double Knees-to-Chest stretch?",
-    answer: "Yes, but in later stages of pregnancy, it must be modified. You should bring your knees wider apart around the abdomen rather than directly to the chest, or substitute it with safer prenatal stretches. Always consult your obstetrician or therapist first."
-  },
-  {
-    question: "How long should I hold the stretch?",
-    answer: "Hold the stretch statically for 20 to 30 seconds. Focus on taking deep, slow diaphragmatic breaths. Maintain smooth, controlled breathing and avoid bouncing (ballistic stretching), which can cause muscle strain."
-  }
-];
-
-const defaultFAQs: FAQ[] = [
-  {
-    question: "How do I know if this physical therapy exercise is right for my condition?",
-    answer: "While these exercises are generally safe and therapeutic, everyone's body is different. We highly recommend booking a consultation with one of our certified physical therapists to get a personalized assessment."
-  },
-  {
-    question: "What should I do if my symptoms worsen after performing a stretch?",
-    answer: "If you feel increased pain, numbness, or tingling after any exercise, stop performing it immediately. Rest in a comfortable position and consult a professional therapist to modify the movements."
-  },
-  {
-    question: "How long does it typically take to see results from daily stretching?",
-    answer: "Many individuals feel immediate relief from muscle tension directly after a stretch. For long-term improvements in flexibility, posture, and chronic pain reduction, consistent practice over 2 to 4 weeks is typically required."
-  }
-];
 
 export default function JournalInteractiveSection({ slug, title }: JournalInteractiveSectionProps) {
   const [shareUrl, setShareUrl] = useState("");
@@ -147,11 +96,10 @@ export default function JournalInteractiveSection({ slug, title }: JournalIntera
     }
   };
 
-  const isExercise = slug === "double-knees-to-chest-exercise";
-  const faqs = isExercise ? exerciseFAQs : defaultFAQs;
+
 
   return (
-    <div className="mt-12 space-y-12 border-t pt-10">
+    <div className="mt-12 border-t pt-10">
       {/* Premium Share Section */}
       <div className="bg-gradient-to-r from-primary/5 via-muted/50 to-primary/5 rounded-2xl p-6 md:p-8 border shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -275,45 +223,6 @@ export default function JournalInteractiveSection({ slug, title }: JournalIntera
             </Button>
           </div>
         </div>
-      </div>
-
-      {/* Premium FAQ Accordion Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
-            <HelpCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold font-headline">Frequently Asked Questions</h2>
-            <p className="text-sm text-muted-foreground">
-              {isExercise 
-                ? "Key clinical guidelines and tips about the Double Knees-to-Chest stretch from our physical therapists."
-                : "Common therapeutic queries answered by Curevan's medical board."
-              }
-            </p>
-          </div>
-        </div>
-
-        <Card className="overflow-hidden border shadow-sm">
-          <CardContent className="p-0 divide-y divide-border">
-            <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`faq-${index}`}
-                  className="px-6 py-1 border-none hover:bg-muted/30 transition-colors duration-200"
-                >
-                  <AccordionTrigger className="text-base font-bold font-headline text-left hover:no-underline text-foreground py-4 flex items-center justify-between w-full">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed pb-5 pr-4">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { MoreVertical, CheckCircle, XCircle, PlusCircle, FileDown, Loader2 } from "lucide-react";
+import { MoreVertical, CheckCircle, XCircle, PlusCircle, FileDown, Loader2, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listJournalEntries } from "@/lib/repos/content";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import { updateJournalStatus } from "@/lib/actions";
+import { updateJournalStatus, deleteJournal } from "@/lib/actions";
 import { getToken } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/api/auth";
 
@@ -96,6 +96,47 @@ export default function AdminJournalPage() {
 
   const handleReject = (postId: string, title: string) => {
       handleStatusUpdate(postId, title, 'rejected');
+  }
+
+  const handleDelete = async (postId: string, title: string) => {
+      if (!confirm(`Are you sure you want to delete "${title}"?`)) {
+          return;
+      }
+      setProcessingId(postId);
+      try {
+          const token = await getToken();
+          if (!token) {
+              toast({ 
+                  variant: 'destructive', 
+                  title: "Session Expired", 
+                  description: "Please log in again to delete the entry." 
+              });
+              return;
+          }
+          const result = await deleteJournal(postId, token);
+          if (result.success) {
+              toast({ 
+                  title: "Post Deleted", 
+                  description: `"${title}" has been successfully deleted.` 
+              });
+              // Refetch to get updated list
+              fetchPosts();
+          } else {
+              toast({ 
+                  variant: 'destructive', 
+                  title: "Delete Failed", 
+                  description: result.message 
+              });
+          }
+      } catch (error) {
+          toast({ 
+              variant: 'destructive', 
+              title: "Error", 
+              description: "An unexpected error occurred." 
+          });
+      } finally {
+          setProcessingId(null);
+      }
   }
 
 
@@ -222,7 +263,12 @@ export default function AdminJournalPage() {
                                 <DropdownMenuItem onClick={() => handleReject(post.id, post.title)} className="text-destructive focus:text-destructive">
                                 <XCircle className="mr-2 h-4 w-4" /> Reject
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEdit(Number(post.id))}>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(Number(post.id))}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDelete(post.id, post.title)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>
@@ -284,7 +330,21 @@ export default function AdminJournalPage() {
                         </TableCell>
                         <TableCell>{getSafeDate(post.createdAt)?.toLocaleDateString() || 'N/A'}</TableCell>
                         <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(Number(post.id))}>Edit</Button>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={processingId === post.id}>
+                                {processingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(Number(post.id))}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDelete(post.id, post.title)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
                         </TableCell>
                         </TableRow>
                     ))}

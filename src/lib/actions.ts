@@ -337,6 +337,36 @@ export async function updateJournalStatus(
   }
 }
 
+/**
+ * Delete a journal/knowledge base entry
+ */
+export async function deleteJournal(
+  id: string | number,
+  token?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data } = await serverApi.delete(
+      `/api/general/knowledge-base/delete/${id}`,
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      }
+    );
+
+    return {
+      success: data.success ?? true,
+      message: data.message || `Journal entry deleted successfully.`
+    };
+  } catch (error: any) {
+    console.error('Failed to delete journal:', error?.response || error?.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to delete journal.'
+    };
+  }
+}
+
+
 import { requestReturn, approveReturn, listReturns } from './repos/returns';
 import { listRefunds, getMyRefunds, initiateRefund } from './repos/refunds';
 
