@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Eye, Phone, MapPin, Mail, Globe } from 'lucide-react';
+import { ArrowLeft, Eye, Phone, MapPin, Mail, Globe, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { getMediaUrl } from '@/lib/utils';
@@ -14,6 +14,7 @@ import { getPublicJournalEntryBySlug, listPublicJournalEntries } from '@/lib/rep
 import { getTherapistById } from '@/lib/repos/therapists';
 import TherapistCard from '@/components/therapist-card';
 import JournalInteractiveSection from '@/components/journal-interactive-section';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 export const dynamic = 'force-dynamic';
@@ -240,6 +241,43 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                         allowFullScreen>
                                     </iframe>
                                 </div>
+                            </div>
+                        )}
+
+                        {faqs && faqs.length > 0 && (
+                            <div className="mt-12 space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                                        <HelpCircle className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold font-headline">Frequently Asked Questions</h2>
+                                        <p className="text-sm text-muted-foreground">
+                                            Common therapeutic queries answered by Curevan's medical board.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <Card className="overflow-hidden border shadow-sm">
+                                    <CardContent className="p-0 divide-y divide-border">
+                                        <Accordion type="single" collapsible className="w-full">
+                                            {faqs.map((faq, index) => (
+                                                <AccordionItem
+                                                    key={index}
+                                                    value={`faq-${index}`}
+                                                    className="px-6 py-1 border-none hover:bg-muted/30 transition-colors duration-200"
+                                                >
+                                                    <AccordionTrigger className="text-base font-bold font-headline text-left hover:no-underline text-foreground py-4">
+                                                        {faq.question}
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed pb-5 pr-4">
+                                                        {faq.answer}
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </CardContent>
+                                </Card>
                             </div>
                         )}
 
