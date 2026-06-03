@@ -142,7 +142,18 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     const allPosts = await listPublicJournalEntries();
     const suggestedPosts = allPosts.filter(p => p.slug !== slug).slice(0, 3);
-    const allCategories = [...new Set(allPosts.flatMap(post => post.tags || []))];
+    
+    // Fetch official categories from API instead of extracting arbitrary tags
+    const { getJournalCategoriesFull, getJournalTagsFull } = await import('@/lib/repos/categories');
+    const dynamicCategories = await getJournalCategoriesFull();
+    const officialCategories = dynamicCategories
+        .filter(c => c.isActive)
+        .map(c => c.name);
+
+    const dynamicTags = await getJournalTagsFull();
+    const officialTags = dynamicTags
+        .filter(t => t.isActive)
+        .map(t => t.name);
 
     return (
         <div className="container mx-auto py-8 md:py-12">
@@ -329,6 +340,36 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
                     {suggestedPosts.length > 0 && (
                         <div className="sticky top-24 space-y-10">
+                            {officialCategories.length > 0 && (
+                                <div>
+                                    <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 border-b pb-4">Categories</h2>
+                                    <div className="flex flex-wrap gap-2">
+                                        {officialCategories.map(cat => (
+                                            <Link key={cat} href={`/journal?category=${cat}`}>
+                                                <Badge variant="outline" className="hover:bg-primary/5 hover:text-primary transition-colors cursor-pointer px-3 py-1 font-medium">
+                                                    {cat}
+                                                </Badge>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {officialTags.length > 0 && (
+                                <div>
+                                    <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 border-b pb-4">Tags</h2>
+                                    <div className="flex flex-wrap gap-2">
+                                        {officialTags.map(tag => (
+                                            <Link key={tag} href={`/journal?tag=${tag}`}>
+                                                <Badge variant="secondary" className="hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer px-3 py-1 font-medium">
+                                                    {tag}
+                                                </Badge>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 border-b pb-4">More to explore</h2>
                                 <div className="flex flex-col gap-6">
@@ -358,20 +399,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                 </div>
                             </div>
 
-                            {allCategories.length > 0 && (
-                                <div>
-                                    <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 border-b pb-4">Categories</h2>
-                                    <div className="flex flex-wrap gap-2">
-                                        {allCategories.map(cat => (
-                                            <Link key={cat} href={`/journal?category=${cat}`}>
-                                                <Badge variant="outline" className="hover:bg-primary/5 hover:text-primary transition-colors cursor-pointer px-3 py-1 font-medium">
-                                                    {cat}
-                                                </Badge>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+
 
                             <div className="p-6 bg-muted/50 rounded-2xl border">
                                 <h3 className="text-sm font-bold uppercase tracking-widest mb-4">Contact Info</h3>

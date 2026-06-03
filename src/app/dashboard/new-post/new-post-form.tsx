@@ -25,7 +25,7 @@ import Image from 'next/image';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { X as XIcon } from 'lucide-react';
+import { X as XIcon, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,7 +61,7 @@ const editorFormSchema = z.object({
   // Post specific
   videoUrl: z.string().url({ message: 'Please enter a valid YouTube URL.' }).optional().or(z.literal('')),
   metaDescription: z.string().max(160, 'Meta description should be 160 characters or less.').optional().nullable().transform(val => val ?? undefined),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   faqs: z.array(z.object({
     question: z.string(),
     answer: z.string()
@@ -101,6 +101,10 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [tagInputValue, setTagInputValue] = useState('');
+  const [allTags, setAllTags] = useState<any[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const form = useForm<EditorFormValues>({
     resolver: zodResolver(editorFormSchema),
@@ -112,7 +116,7 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       coverImageUrl: null,
       status: 'draft',
       categories: [],
-      tags: '',
+      tags: [],
       faqs: [],
       sopVersion: 'v1.0',
     },
@@ -123,7 +127,19 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       const cats = await getTherapyCategories();
       setAllCategories(cats.map(c => ({ id: c.toLowerCase().replace(/ /g, '-'), name: c })));
     };
+    const fetchTags = async () => {
+      const { getJournalTagsFull } = await import('@/lib/repos/categories');
+      const tags = await getJournalTagsFull();
+      setAllTags(tags.filter(t => t.isActive));
+    };
+    const fetchUser = async () => {
+      const { getCurrentUser } = await import('@/lib/api/auth');
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    };
     fetchCategories();
+    fetchTags();
+    fetchUser();
   }, []);
 
   // Watch all form fields to trigger autosave
@@ -156,21 +172,30 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
         const post = await getKnowledgeBaseById(postId);
         if (!post) return;
 
-        const postTags = post.tags || [];
-        const checkedCategories: string[] = [];
-        const arbitraryTags: string[] = [];
-
-        postTags.forEach((tag: string) => {
-          const normalizedTag = tag.toLowerCase().replace(/ /g, '-');
-          if (categoryIds.includes(normalizedTag)) {
-            checkedCategories.push(normalizedTag);
-          } else {
-            arbitraryTags.push(tag);
-          }
-        });
-
-        const postCats = Array.isArray(post.categories) ? post.categories : post.categories ? [post.categories] : [];
-        const finalCategories = checkedCategories.length > 0 ? checkedCategories : postCats;
+        const postTags = Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : []);
+        const postCategories = Array.isArray(post.categories) ? post.categories : (post.categories ? [post.categories] : []);
+        
+        // Since we separated them in DB, we no longer need to split them from a single array.
+        // But for backwards compatibility with old posts where they might still be mixed in `tags`,
+        // we can filter the known categories out of `tags` if `categories` is empty.
+        
+        let finalCategories = postCategories;
+        let finalTags = postTags;
+        
+        if (postCategories.length === 0 && postTags.length > 0) {
+          const checkedCategories: string[] = [];
+          const arbitraryTags: string[] = [];
+          postTags.forEach((tag: string) => {
+            const normalizedTag = tag.toLowerCase().replace(/ /g, '-');
+            if (categoryIds.includes(normalizedTag)) {
+              checkedCategories.push(normalizedTag);
+            } else {
+              arbitraryTags.push(tag);
+            }
+          });
+          finalCategories = checkedCategories;
+          finalTags = arbitraryTags;
+        }
 
         form.reset({
           title: post.title,
@@ -182,7 +207,7 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
           sopVersion: post.sopVersion,
           status: post.status == "pending_review" ? "review" : post.status,
           categories: finalCategories,
-          tags: arbitraryTags.join(', '),
+          tags: finalTags,
           faqs: post.faqs || [],
           videoUrl: post.videoUrl || "",
           coverImageUrl:
@@ -239,10 +264,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       ? data.coverImageUrl[0]?.url ?? ""
       : (typeof data.coverImageUrl === 'string' ? data.coverImageUrl : "");
 
-    const userTags = data.tags
-      ? data.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
-      : [];
-    const mergedTags = Array.from(new Set([...(data.categories || []), ...userTags]));
+    // deduplicate tags
+    const userTags = Array.from(new Set(Array.isArray(data.tags) ? data.tags : []));
 
     const payload: Partial<KnowledgeBase> = {
       title: data.title,
@@ -250,7 +273,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
       content: data.content,
       slug: data.slug,
       status: data.status === "review" ? "pending_review" : data.status,
-      tags: mergedTags,
+      tags: userTags,
+      categories: data.categories,
       featuredImage: coverImageUrl,
       featuredImageId: coverImageId ? Number(coverImageId) : undefined,
       videoUrl: data.videoUrl,
@@ -635,9 +659,94 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                    <FormItem>
                      <FormLabel className="font-semibold">Tags / Keywords</FormLabel>
                      <FormControl>
-                       <Input placeholder="e.g. back-pain, exercise, stretching" {...field} />
+                        <div className="flex flex-col space-y-2 relative">
+                           <Input 
+                             placeholder="Type and select from list or press comma to add new" 
+                             value={tagInputValue}
+                             onChange={(e) => {
+                               setTagInputValue(e.target.value);
+                               setShowTagSuggestions(true);
+                             }}
+                             onFocus={() => setShowTagSuggestions(true)}
+                             onBlur={() => {
+                               // Delay hiding to allow click events on suggestions to fire
+                               setTimeout(() => setShowTagSuggestions(false), 200);
+                             }}
+                             onKeyDown={async (e) => {
+                               if (e.key === 'Enter' || e.key === ',') {
+                                 e.preventDefault();
+                                 const newTag = tagInputValue.trim().toLowerCase();
+                                 if (newTag && !(field.value || []).includes(newTag)) {
+                                   field.onChange([...(field.value || []), newTag]);
+                                   
+                                   // Automatically save new tag to database
+                                   try {
+                                     const { addJournalTag } = await import('@/lib/repos/categories');
+                                     const savedTag = await addJournalTag(newTag);
+                                     if (savedTag) {
+                                       setAllTags(prev => [...prev, savedTag]);
+                                     }
+                                   } catch (err) {
+                                     // Silent fail if it already exists in DB
+                                   }
+                                 }
+                                 setTagInputValue('');
+                                 setShowTagSuggestions(false);
+                               }
+                             }}
+                           />
+                           {/* Autocomplete Suggestions */}
+                           {showTagSuggestions && tagInputValue && (
+                             <div className="absolute top-full left-0 mt-1 w-full z-10 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                               {allTags
+                                 .filter(t => t.name.toLowerCase().includes(tagInputValue.toLowerCase()) && !(field.value || []).includes(t.slug))
+                                 .map(t => (
+                                   <div 
+                                     key={t.id}
+                                     className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center group"
+                                     onClick={() => {
+                                       field.onChange([...(field.value || []), t.slug]);
+                                       setTagInputValue('');
+                                       setShowTagSuggestions(false);
+                                     }}
+                                   >
+                                     <span>{t.name}</span>
+                                     {currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || t.createdBy === currentUser.id) && (
+                                       <Trash2 
+                                         className="w-4 h-4 text-muted-foreground hover:text-red-500 hidden group-hover:block" 
+                                         onClick={async (e) => {
+                                           e.stopPropagation();
+                                           try {
+                                             const { deleteJournalTag } = await import('@/lib/repos/categories');
+                                             await deleteJournalTag(t.id);
+                                             setAllTags(allTags.filter(tag => tag.id !== t.id));
+                                             toast({ title: "Tag deleted successfully" });
+                                           } catch (err) {
+                                             toast({ title: "Failed to delete tag", variant: "destructive" });
+                                           }
+                                         }}
+                                       />
+                                     )}
+                                   </div>
+                               ))}
+                             </div>
+                           )}
+
+                           <div className="flex flex-wrap gap-2 mt-2">
+                             {(field.value || []).map((tag: string) => (
+                               <Badge key={tag} variant="secondary" className="flex items-center gap-1 px-3 py-1 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-bold">
+                                 {tag}
+                                 <XIcon 
+                                   className="w-3 h-3 cursor-pointer" 
+                                   onClick={() => {
+                                     field.onChange((field.value || []).filter((t: string) => t !== tag));
+                                   }}
+                                 />
+                               </Badge>
+                             ))}
+                           </div>
+                        </div>
                      </FormControl>
-                     <FormDescription>Comma-separated tags/keywords.</FormDescription>
                      <FormMessage />
                    </FormItem>
                  )}

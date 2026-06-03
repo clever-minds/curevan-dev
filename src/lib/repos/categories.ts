@@ -29,12 +29,50 @@ export async function listProductCategories1(): Promise<ProductCategory[]> {
   }
 }
 
-/**
- * Returns a static list of therapy categories
- * Function name unchanged: getTherapyCategories
- */
+export async function addJournalTag(name: string): Promise<any> {
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.post("/api/journal-tags/add", { name, status: true }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (response?.success) {
+      return response.data;
+    }
+    return null;
+  } catch (error: any) {
+    console.error("Failed to add journal tag via API:", error?.response || error?.message);
+    throw error;
+  }
+}
+
+export async function deleteJournalTag(id: number): Promise<boolean> {
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.delete(`/api/journal-tags/delete/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return !!response?.success;
+  } catch (error: any) {
+    console.error("Failed to delete journal tag via API:", error?.response || error?.message);
+    throw error;
+  }
+}
+
 export async function getTherapyCategories(): Promise<string[]> {
-  // This could later be replaced with an API call if needed
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.get("/api/journal-categories/list", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (response?.success && Array.isArray(response.data)) {
+      // Just returning names for backward compatibility if possible, or mapping to objects
+      return response.data.map((cat: any) => cat.name);
+    }
+  } catch (error) {
+    console.error("Failed to fetch journal categories:", error);
+  }
+  
+  // Fallback
   return [
     "Physiotherapy",
     "Nursing Care",
@@ -48,4 +86,34 @@ export async function getTherapyCategories(): Promise<string[]> {
     "Earnings",
     "Clinical",
   ];
+}
+
+export async function getJournalCategoriesFull(): Promise<{id: number, slug: string, name: string, isActive: boolean}[]> {
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.get("/api/journal-categories/list", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (response?.success && Array.isArray(response.data)) {
+      return response.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch full journal categories:", error);
+  }
+  return [];
+}
+
+export async function getJournalTagsFull(): Promise<{id: number, slug: string, name: string, isActive: boolean}[]> {
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.get("/api/journal-tags/list", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (response?.success && Array.isArray(response.data)) {
+      return response.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch full journal tags:", error);
+  }
+  return [];
 }

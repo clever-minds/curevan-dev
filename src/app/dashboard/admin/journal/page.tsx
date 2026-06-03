@@ -24,8 +24,8 @@ import { listJournalEntries } from "@/lib/repos/content";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { updateJournalStatus, deleteJournal } from "@/lib/actions";
-import { getToken } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/api/auth";
+import { JournalCategoriesTab } from "./journal-categories-tab";
 
 export const dynamic = 'force-dynamic';
 
@@ -189,9 +189,10 @@ export default function AdminJournalPage() {
         </div>
       </div>
       <Tabs defaultValue="review" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="review">Awaiting Review ({postsForReview.length})</TabsTrigger>
             <TabsTrigger value="all">All Posts ({allPosts.length})</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
         </TabsList>
 
         <TabsContent value="review">
@@ -352,6 +353,10 @@ export default function AdminJournalPage() {
                 </Table>
                 </CardContent>
             </Card>
+        </TabsContent>
+
+        <TabsContent value="categories">
+            <JournalCategoriesTab />
         </TabsContent>
       </Tabs>
     </div>

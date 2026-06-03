@@ -8,7 +8,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { KnowledgeBase } from '@/lib/types';
 import { listPublicJournalEntries } from "@/lib/repos/content";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,17 +19,42 @@ import { cn, getMediaUrl } from "@/lib/utils";
 const PAGE_SIZE = 6; // Number of posts to show per page
 
 export default function JournalPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto py-12 text-center">Loading journal...</div>}>
+      <JournalPageContent />
+    </Suspense>
+  );
+}
+
+function JournalPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const [allPosts, setAllPosts] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [officialCategories, setOfficialCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    const tag = searchParams.get('tag');
+    if (cat) setSelectedTag(cat);
+    else if (tag) setSelectedTag(tag);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const posts = await listPublicJournalEntries();
       setAllPosts(posts);
+      
+      const { getJournalCategoriesFull } = await import('@/lib/repos/categories');
+      const dynamicCategories = await getJournalCategoriesFull();
+      setOfficialCategories(dynamicCategories.filter(c => c.isActive).map(c => c.name));
+      
       setLoading(false);
     };
     fetchData();
@@ -42,9 +69,7 @@ export default function JournalPage() {
       });
   }, [allPosts, searchQuery, selectedTag]);
 
-  const allTags = useMemo(() => {
-    return [...new Set(allPosts.flatMap(post => post.tags || []))];
-  }, [allPosts]);
+
 
   const featuredPost = filteredPosts[0];
   const otherPosts = filteredPosts;
@@ -86,25 +111,35 @@ export default function JournalPage() {
                         />
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button 
-                            variant={selectedTag === null ? 'default' : 'outline'} 
-                            size="sm" 
-                            onClick={() => setSelectedTag(null)}
+                    <div className="flex w-full">
+                        <Select 
+                            value={selectedTag || "all"} 
+                            onValueChange={(val) => {
+                                const newTag = val === "all" ? null : val;
+                                setSelectedTag(newTag);
+                                const params = new URLSearchParams(searchParams.toString());
+                                if (newTag) {
+                                    params.set('category', newTag);
+                                    params.delete('tag');
+                                } else {
+                                    params.delete('category');
+                                    params.delete('tag');
+                                }
+                                router.push(`${pathname}?${params.toString()}`, { scroll: false });
+                            }}
                         >
-                            All
-                        </Button>
-                        {allTags.slice(0, 4).map(tag => (
-                            <Button 
-                                key={tag} 
-                                variant={selectedTag === tag ? 'default' : 'outline'} 
-                                size="sm" 
-                                className="capitalize"
-                                onClick={() => setSelectedTag(tag)}
-                            >
-                                {tag}
-                            </Button>
-                        ))}
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {officialCategories.map(tag => (
+                                    <SelectItem key={tag} value={tag} className="capitalize">
+                                        {tag}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </CardContent>
