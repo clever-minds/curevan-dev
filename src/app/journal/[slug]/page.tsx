@@ -194,15 +194,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                     </Breadcrumb>
                     <article>
                         <header className="mb-8">
-                            <div className="relative h-80 w-full mb-8 rounded-lg overflow-hidden">
+                            <div className="relative aspect-video w-full mb-8 rounded-lg overflow-hidden bg-muted">
                                 <Image
                                     src={getMediaUrl(post.featuredImage as string)}
                                     alt={post.title}
                                     fill
+                                    className="object-cover"
                                     data-ai-hint={post.aiHint}
                                     priority
                                     unoptimized
-                                    style={{ position: 'absolute', height: '100%', width: '100%', inset: '0px', color: 'transparent' }}
                                 />
                             </div>
                             {post.tags && (
