@@ -344,13 +344,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                 <div>
                                     <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 border-b pb-4">Categories</h2>
                                     <div className="flex flex-wrap gap-2">
-                                        {officialCategories.map(cat => (
-                                            <Link key={cat} href={`/journal?category=${cat}`}>
-                                                <Badge variant="outline" className="hover:bg-primary/5 hover:text-primary transition-colors cursor-pointer px-3 py-1 font-medium">
-                                                    {cat}
-                                                </Badge>
-                                            </Link>
-                                        ))}
+                                        {officialCategories.map(cat => {
+                                            const isSelected = post.categories?.includes(cat) || (post as any).category === cat || (post as any).categoryname === cat;
+                                            return (
+                                                <Link key={cat} href={`/journal?category=${cat}`}>
+                                                    <Badge 
+                                                        variant={isSelected ? "default" : "outline"} 
+                                                        className={`transition-colors cursor-pointer px-3 py-1 font-medium ${isSelected ? '' : 'hover:bg-primary/5 hover:text-primary'}`}
+                                                    >
+                                                        {cat}
+                                                    </Badge>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -359,13 +365,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                 <div>
                                     <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 border-b pb-4">Tags</h2>
                                     <div className="flex flex-wrap gap-2">
-                                        {officialTags.map(tag => (
-                                            <Link key={tag} href={`/journal?tag=${tag}`}>
-                                                <Badge variant="secondary" className="hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer px-3 py-1 font-medium">
-                                                    {tag}
-                                                </Badge>
-                                            </Link>
-                                        ))}
+                                        {officialTags.map(tag => {
+                                            const isSelected = post.tags?.includes(tag);
+                                            return (
+                                                <Link key={tag} href={`/journal?tag=${tag}`}>
+                                                    <Badge 
+                                                        variant={isSelected ? "default" : "secondary"} 
+                                                        className={`transition-colors cursor-pointer px-3 py-1 font-medium ${isSelected ? '' : 'hover:bg-primary/10 hover:text-primary'}`}
+                                                    >
+                                                        {tag}
+                                                    </Badge>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
