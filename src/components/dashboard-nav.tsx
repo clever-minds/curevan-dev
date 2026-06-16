@@ -131,6 +131,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
     ]},
     { type: 'group', label: 'Therapy Operations', icon: Briefcase, items: [
         { href: '/dashboard/admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
+        { href: '/dashboard/admin/service-types', label: 'Service Types', icon: ClipboardCheck },
         { href: '/dashboard/admin/pcrs', label: 'All PCRs', icon: ClipboardCheck },
         { href: '/dashboard/admin/payouts', label: 'Payouts', icon: HandCoins },
     ]},

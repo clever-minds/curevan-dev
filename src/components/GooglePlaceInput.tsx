@@ -30,7 +30,7 @@ export default function GooglePlacesInput({
   const [inputValue, setInputValue] = useState(value);
 
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: "AIzaSyDGxg9Uw6sQXWDVoEAmirxdVF5neAICKJM",
+    googleMapsApiKey: "AIzaSyA6KvzdZ_YMaclHz0_MJ93JzKWDEqlE__k",
     libraries,
   });
 

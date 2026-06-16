@@ -47,7 +47,17 @@ export async function getRoles(): Promise<string[]> {
 }
 
 export async function getTherapyCategories(): Promise<string[]> {
-    // In a real app, this might also come from a 'therapyCategories' collection
+    try {
+      const serverApi = (await import('@/lib/repos/axios.server')).default;
+      const { data } = await serverApi.get('/api/service-types/list');
+      if (data?.success && Array.isArray(data.data)) {
+        // filter active service types and return their names
+        return data.data.filter((st: any) => st.is_active).map((st: any) => st.name);
+      }
+    } catch (error) {
+      console.error("Failed to fetch service types from backend:", error);
+    }
+    // Fallback list
     return [
       'Physiotherapy', 'Nursing Care', 'Geri care Therapy', 'Speech Therapy',
       'Mental Health Counseling', 'Dietitian/Nutritionist', 'Respiratory Therapy',

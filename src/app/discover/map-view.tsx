@@ -14,10 +14,11 @@ export function MapView({
   therapists: (Therapist & { distance?: number })[];
   userPosition: { lat: number; lng: number } | null;
 }) {
-  const apiKey = 'AIzaSyDGxg9Uw6sQXWDVoEAmirxdVF5neAICKJM';
+  const apiKey = 'AIzaSyA6KvzdZ_YMaclHz0_MJ93JzKWDEqlE__k';
+  console.log("Google Maps API Key:", apiKey);
   const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     if (userPosition) setLoading(false);
   }, [userPosition]);
@@ -51,8 +52,8 @@ export function MapView({
 
   const infoWindowPosition =
     selectedTherapist &&
-    !isNaN(Number(selectedTherapist.lat)) &&
-    !isNaN(Number(selectedTherapist.lng))
+      !isNaN(Number(selectedTherapist.lat)) &&
+      !isNaN(Number(selectedTherapist.lng))
       ? { lat: Number(selectedTherapist.lat), lng: Number(selectedTherapist.lng) }
       : null;
 
@@ -67,8 +68,8 @@ export function MapView({
       >
         {/* Therapist Markers */}
         {therapists.map((therapist) => {
-        const latNum = Number(therapist.lat) + Math.random() * 0.0001;
-        const lngNum = Number(therapist.lng) + Math.random() * 0.0001;
+          const latNum = Number(therapist.lat) + Math.random() * 0.0001;
+          const lngNum = Number(therapist.lng) + Math.random() * 0.0001;
           if (isNaN(latNum) || isNaN(lngNum)) return null;
           return (
             <AdvancedMarker

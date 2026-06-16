@@ -47,7 +47,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<{
   pincode: string;
 } | null> {
   try {
-    const GOOGLE_API_KEY = "AIzaSyDGxg9Uw6sQXWDVoEAmirxdVF5neAICKJM";
+    const GOOGLE_API_KEY = "AIzaSyA6KvzdZ_YMaclHz0_MJ93JzKWDEqlE__k";
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}&language=en&region=IN`
     );
@@ -502,7 +502,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       isHomeVisit: true,
       prescription: null,
       notes: '',
-      dob:"",
+      dob: "",
       consent_terms: false,
       consent_medical: false,
       consent_privacy: false,
@@ -589,7 +589,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     }
   };
 
-   const handleSaveEdit = async (formData: any) => {
+  const handleSaveEdit = async (formData: any) => {
     if (!editingAddress) return;
 
     const payload = {
@@ -630,7 +630,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
 
     const serviceAmount = therapist.hourlyRate ?? 500;
 
-console.log("booking new data",data);
+    console.log("booking new data", data);
     openPayment({
       amount: serviceAmount * 100,
       currency: 'INR',
@@ -643,7 +643,7 @@ console.log("booking new data",data);
           const result = await createBookingAndInvoice({
             patientId: user.id,
             patientName: data.patientFullName || user.name || 'N/A',
-            dateofBirth:data.dob,
+            dateofBirth: data.dob,
             therapistId: therapist.id,
             therapist: therapist.name,
             serviceTypeId: data.serviceType.toLowerCase().replace(/ /g, '-'),

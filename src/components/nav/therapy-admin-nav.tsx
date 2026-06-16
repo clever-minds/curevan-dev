@@ -45,6 +45,7 @@ import { listProfileChangeRequests } from '@/lib/repos/content';
 const therapyNavItems = (activeAlertCount: number, openTicketCount: number, pendingApprovalsCount: number) => [
      { type: 'group', label: 'Therapy Operations', icon: Briefcase, items: [
         { href: '/dashboard/therapy-admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
+        { href: '/dashboard/admin/service-types', label: 'Service Types', icon: ClipboardCheck },
         { href: '/dashboard/admin/pcrs', label: 'All PCRs', icon: ClipboardCheck },
         { href: '/dashboard/therapy-admin/payouts', label: 'Payouts', icon: HandCoins },
     ]},

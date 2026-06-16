@@ -29,7 +29,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<{
   pincode: string;
 } | null> {
   try {
-    const GOOGLE_API_KEY = "AIzaSyDGxg9Uw6sQXWDVoEAmirxdVF5neAICKJM";
+    const GOOGLE_API_KEY = "AIzaSyA6KvzdZ_YMaclHz0_MJ93JzKWDEqlE__k";
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}&language=en&region=IN`
     );
@@ -322,7 +322,7 @@ function AddressModal({
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val.length <= 10 && (!val || /^\d*$/.test(val))) {
-                            setFormData({ ...formData, phone: val });
+                          setFormData({ ...formData, phone: val });
                         }
                       }}
                       placeholder="10 digit number"
@@ -407,7 +407,7 @@ function AddressModal({
                       onChange={(e) => {
                         const val = e.target.value;
                         if (!val || /^[a-zA-Z\s]*$/.test(val)) {
-                            setFormData({ ...formData, city: val });
+                          setFormData({ ...formData, city: val });
                         }
                       }}
                       placeholder="City"
@@ -450,7 +450,7 @@ function AddressModal({
                       onChange={(e) => {
                         const val = e.target.value;
                         if (!val || /^\d*$/.test(val)) {
-                            setFormData({ ...formData, pincode: val });
+                          setFormData({ ...formData, pincode: val });
                         }
                       }}
                       placeholder="6 digits"
@@ -548,7 +548,7 @@ export function CheckoutAddressForm() {
     const data = await listAddresses();
     const addressList = Array.isArray(data) ? data : [];
     setAddresses(addressList);
-    
+
     if (addressList.length > 0) {
       form.setValue('shippingAddressId', String(addressList[0].id), { shouldValidate: true });
     } else {
@@ -559,42 +559,42 @@ export function CheckoutAddressForm() {
   // Shipping Estimation logic
   useEffect(() => {
     const updateShipping = async () => {
-        if (!shippingAddressId || shippingAddressId === 'new') {
-            setShippingCost(0);
-            return;
+      if (!shippingAddressId || shippingAddressId === 'new') {
+        setShippingCost(0);
+        return;
+      }
+
+      const selectedAddr = addresses.find(a => String(a.id) === shippingAddressId);
+      if (!selectedAddr || !selectedAddr.pincode) {
+        setShippingCost(0);
+        return;
+      }
+
+      // Calculate total weight
+      const totalWeight = cart.reduce((sum, item) => {
+        const weight = item.dimensions?.weightKg || 0.5; // default 0.5kg
+        return sum + (weight * item.quantity);
+      }, 0);
+
+      try {
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const FREE_SHIPPING_THRESHOLD = 1000;
+
+        if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+          setShippingCost(0);
+          return;
         }
 
-        const selectedAddr = addresses.find(a => String(a.id) === shippingAddressId);
-        if (!selectedAddr || !selectedAddr.pincode) {
-            setShippingCost(0);
-            return;
+        const estimate = await estimateShipping(selectedAddr.pincode, totalWeight);
+        if (estimate) {
+          setShippingCost(estimate.rate);
+        } else {
+          setShippingCost(0);
         }
-
-        // Calculate total weight
-        const totalWeight = cart.reduce((sum, item) => {
-            const weight = item.dimensions?.weightKg || 0.5; // default 0.5kg
-            return sum + (weight * item.quantity);
-        }, 0);
-
-        try {
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const FREE_SHIPPING_THRESHOLD = 1000;
-
-            if (subtotal >= FREE_SHIPPING_THRESHOLD) {
-                setShippingCost(0);
-                return;
-            }
-
-            const estimate = await estimateShipping(selectedAddr.pincode, totalWeight);
-            if (estimate) {
-                setShippingCost(estimate.rate);
-            } else {
-                setShippingCost(0);
-            }
-        } catch (error) {
-            console.error("Shipping estimate failed:", error);
-            setShippingCost(0);
-        }
+      } catch (error) {
+        console.error("Shipping estimate failed:", error);
+        setShippingCost(0);
+      }
     };
 
     updateShipping();
@@ -799,8 +799,8 @@ export function CheckoutAddressForm() {
                           <FormControl>
                             <div
                               className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative group ${isSelected
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 bg-white hover:border-gray-300'
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white hover:border-gray-300'
                                 }`}
                             >
                               <input
@@ -830,8 +830,8 @@ export function CheckoutAddressForm() {
 
                               <div className="absolute top-4 right-4 pointer-events-none">
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
-                                    ? 'border-blue-500 bg-blue-500'
-                                    : 'border-gray-400 bg-white'
+                                  ? 'border-blue-500 bg-blue-500'
+                                  : 'border-gray-400 bg-white'
                                   }`}>
                                   {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                 </div>
@@ -910,8 +910,8 @@ export function CheckoutAddressForm() {
                               <FormControl>
                                 <div
                                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative group ${isSelected
-                                      ? 'border-green-500 bg-green-50'
-                                      : 'border-gray-200 bg-white hover:border-gray-300'
+                                    ? 'border-green-500 bg-green-50'
+                                    : 'border-gray-200 bg-white hover:border-gray-300'
                                     }`}
                                 >
                                   <input
@@ -941,8 +941,8 @@ export function CheckoutAddressForm() {
 
                                   <div className="absolute top-4 right-4 pointer-events-none">
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
-                                        ? 'border-green-500 bg-green-500'
-                                        : 'border-gray-400 bg-white'
+                                      ? 'border-green-500 bg-green-500'
+                                      : 'border-gray-400 bg-white'
                                       }`}>
                                       {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                     </div>
