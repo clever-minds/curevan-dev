@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import type { UserProfile } from '@/lib/types';
 import api from '@/lib/api/axios';
 import { getToken, logoutAction } from "@/lib/auth";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -61,14 +62,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuth();
   }, []);
 
+  const { toast } = useToast();
+
   // ✅ Register FCM Token when user is authenticated
   useEffect(() => {
+    let unsubscribe: any = null;
+
     const setupFCM = async () => {
       console.log("setupFCM running. User is:", user ? "Logged In" : "Null");
       if (user) {
         try {
           console.log("Importing firebase and actions...");
-          const { requestFcmToken } = await import('@/lib/firebase');
+          const { requestFcmToken, listenForMessages } = await import('@/lib/firebase');
           const { updateFcmTokenAction } = await import('@/lib/actions');
           
           console.log("Calling requestFcmToken()...");
@@ -79,6 +84,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log("FCM Token Generated, sending to backend...");
             await updateFcmTokenAction(token);
             console.log("FCM Token sent to backend successfully.");
+            
+            unsubscribe = listenForMessages((payload) => {
+              console.log("Foreground message received:", payload);
+              toast({
+                title: payload.notification?.title || "New Notification",
+                description: payload.notification?.body || "You have a new message.",
+              });
+            });
           }
         } catch (err) {
           console.error("Failed to setup FCM:", err);
@@ -86,6 +99,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     setupFCM();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user]);
 
   // ✅ Login: simply set the user passed from SigninForm

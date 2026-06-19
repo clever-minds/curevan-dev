@@ -6,7 +6,19 @@ import {
   ConfirmationResult,
   connectAuthEmulator,
 } from "firebase/auth";
-import { getMessaging, getToken } from "firebase/messaging";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
+
+export const listenForMessages = (callback: (payload: any) => void) => {
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    try {
+      const messaging = getMessaging(app);
+      return onMessage(messaging, callback);
+    } catch (err) {
+      console.error("Error setting up onMessage listener:", err);
+    }
+  }
+  return null;
+};
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
