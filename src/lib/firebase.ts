@@ -93,19 +93,27 @@ export const sendOTP = async (
 };
 
 export const requestFcmToken = async (): Promise<string | null> => {
+  console.log("requestFcmToken called.");
   if (typeof window !== "undefined" && "serviceWorker" in navigator) {
     try {
+      console.log("Initializing messaging...");
       const messaging = getMessaging(app);
+      console.log("Requesting Notification permission...");
       const permission = await Notification.requestPermission();
+      console.log("Notification permission is:", permission);
+      
       if (permission === "granted") {
+        console.log("Registering service worker...");
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log("Service worker registered. Requesting token...");
         const token = await getToken(messaging, {
           serviceWorkerRegistration: registration,
           vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
         });
+        console.log("FCM Token retrieved successfully.");
         return token;
       } else {
-        console.warn("Notification permission denied");
+        console.warn("Notification permission denied or default.");
         return null;
       }
     } catch (error) {
@@ -113,5 +121,6 @@ export const requestFcmToken = async (): Promise<string | null> => {
       return null;
     }
   }
+  console.warn("Window or serviceWorker not available.");
   return null;
 };

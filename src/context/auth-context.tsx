@@ -64,14 +64,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ✅ Register FCM Token when user is authenticated
   useEffect(() => {
     const setupFCM = async () => {
+      console.log("setupFCM running. User is:", user ? "Logged In" : "Null");
       if (user) {
         try {
+          console.log("Importing firebase and actions...");
           const { requestFcmToken } = await import('@/lib/firebase');
           const { updateFcmTokenAction } = await import('@/lib/actions');
+          
+          console.log("Calling requestFcmToken()...");
           const token = await requestFcmToken();
+          console.log("requestFcmToken() returned:", token);
+          
           if (token) {
             console.log("FCM Token Generated, sending to backend...");
             await updateFcmTokenAction(token);
+            console.log("FCM Token sent to backend successfully.");
           }
         } catch (err) {
           console.error("Failed to setup FCM:", err);
