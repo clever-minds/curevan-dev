@@ -453,7 +453,7 @@ export async function updateFcmTokenAction(fcmToken: string) {
   if (!token) return { success: false, message: "Unauthorized" };
 
   try {
-    const response = await serverApi.post(`/api/auth/update-fcm`, { fcm_token: fcmToken }, {
+    const response = await serverApi.put(`/api/auth/update-fcm-token`, { fcm_token: fcmToken }, {
       headers: {
         Authorization: `Bearer ${token}`
       }
