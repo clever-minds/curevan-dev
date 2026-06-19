@@ -58,7 +58,33 @@ export async function deleteJournalTag(id: number): Promise<boolean> {
   }
 }
 
-export async function getTherapyCategories(): Promise<{id: number, name: string}[]> {
+export async function getTherapyCategories(): Promise<string[]> {
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.get("/api/service-types/list", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (response?.success && Array.isArray(response.data)) {
+      return response.data.map((cat: any) => cat.name);
+    }
+  } catch (error) {
+    console.error("Failed to fetch service types:", error);
+  }
+  
+  // Fallback
+  return [
+    "Physiotherapy",
+    "Nursing Care",
+    "Geri care Therapy",
+    "Speech Therapy",
+    "Mental Health Counseling",
+    "Dietitian/Nutritionist",
+    "Respiratory Therapy",
+    "Acupuncture"
+  ];
+}
+
+export async function getTherapyCategoriesWithIds(): Promise<{id: number, name: string}[]> {
   try {
     const token = await getToken();
     const { data: response } = await serverApi.get("/api/service-types/list", {

@@ -23,7 +23,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
-import { getTherapyCategories } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import GooglePlacesInput from './GooglePlaceInput';
 import { useAuth } from '@/context/auth-context';
 import { createBookingAndInvoice } from '@/lib/actions/booking';
@@ -85,7 +85,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
 
   useEffect(() => {
     const fetchCategories = async () => {
-        const data = await getTherapyCategories();
+        const data = await getTherapyCategoriesWithIds();
         setTherapyCategories(data);
     };
     fetchCategories();
