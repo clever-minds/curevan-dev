@@ -146,7 +146,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
           dateofBirth: '1990-01-01', // default or ask in form if needed
           therapistId: null as any, // unassigned
           therapist: 'Unassigned',
-          serviceTypeId: data.therapyType.toLowerCase().replace(/ /g, '-'),
+          serviceTypeId: null as any,
           therapyType: data.therapyType,
           serviceAmount: 0,
           totalAmount: 0,
