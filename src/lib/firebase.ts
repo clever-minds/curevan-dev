@@ -116,10 +116,11 @@ export const requestFcmToken = async (): Promise<string | null> => {
       
       if (permission === "granted") {
         console.log("Registering service worker...");
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log("Service worker registered. Requesting token...");
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const readyRegistration = await navigator.serviceWorker.ready;
+        console.log("Service worker ready. Requesting token...");
         const token = await getToken(messaging, {
-          serviceWorkerRegistration: registration,
+          serviceWorkerRegistration: readyRegistration,
           vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
         });
         console.log("FCM Token retrieved successfully.");
