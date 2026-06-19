@@ -98,8 +98,10 @@ export const requestFcmToken = async (): Promise<string | null> => {
       const messaging = getMessaging(app);
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         const token = await getToken(messaging, {
-          vapidKey: "BGwR2rR0v1V4PjIe4WqN5_1r3BtzX-gQzG4sB5Z2p2o2c8g9u1r5HlR9tZ2w8g3Xz-y4C8W6N_D0Z2P0G2hH1l0" // Standard fallback VAPID key is usually not required if using standard FCM without WebPush cert, but it's good practice. Actually, we don't have the VAPID key in the .env. Let's try without vapidKey.
+          serviceWorkerRegistration: registration,
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
         });
         return token;
       } else {
