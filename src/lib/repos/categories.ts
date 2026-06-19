@@ -58,14 +58,14 @@ export async function deleteJournalTag(id: number): Promise<boolean> {
   }
 }
 
-export async function getTherapyCategories(): Promise<string[]> {
+export async function getTherapyCategories(): Promise<{id: number, name: string}[]> {
   try {
     const token = await getToken();
     const { data: response } = await serverApi.get("/api/service-types/list", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (response?.success && Array.isArray(response.data)) {
-      return response.data.map((cat: any) => cat.name);
+      return response.data.map((cat: any) => ({ id: cat.id, name: cat.name }));
     }
   } catch (error) {
     console.error("Failed to fetch service types:", error);
@@ -73,14 +73,14 @@ export async function getTherapyCategories(): Promise<string[]> {
   
   // Fallback
   return [
-    "Physiotherapy",
-    "Nursing Care",
-    "Geri care Therapy",
-    "Speech Therapy",
-    "Mental Health Counseling",
-    "Dietitian/Nutritionist",
-    "Respiratory Therapy",
-    "Acupuncture"
+    { id: 1, name: "Physiotherapy" },
+    { id: 2, name: "Nursing Care" },
+    { id: 3, name: "Geri care Therapy" },
+    { id: 4, name: "Speech Therapy" },
+    { id: 5, name: "Mental Health Counseling" },
+    { id: 6, name: "Dietitian/Nutritionist" },
+    { id: 7, name: "Respiratory Therapy" },
+    { id: 8, name: "Acupuncture" }
   ];
 }
 

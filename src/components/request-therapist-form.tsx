@@ -70,7 +70,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [therapyCategories, setTherapyCategories] = useState<string[]>([]);
+  const [therapyCategories, setTherapyCategories] = useState<{id: number, name: string}[]>([]);
   
   const form = useForm<RequestTherapistFormValues>({
     resolver: zodResolver(requestTherapistSchema),
@@ -140,13 +140,15 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
 
     function submitBooking(processedReports: any) {
       startTransition(async () => {
+        const selectedCat = therapyCategories.find(c => c.name === data.therapyType);
+        
         const result = await createBookingAndInvoice({
           patientId: user!.id,
           patientName: data.fullName || user!.name || 'N/A',
           dateofBirth: '1990-01-01', // default or ask in form if needed
           therapistId: null as any, // unassigned
           therapist: 'Unassigned',
-          serviceTypeId: null as any,
+          serviceTypeId: selectedCat ? selectedCat.id : (null as any),
           therapyType: data.therapyType,
           serviceAmount: 0,
           totalAmount: 0,
@@ -219,7 +221,11 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
                     <SelectTrigger><SelectValue placeholder="Select a therapy type" /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        {therapyCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                      {therapyCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                 </Select>
                 <FormMessage />
