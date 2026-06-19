@@ -61,15 +61,14 @@ export async function deleteJournalTag(id: number): Promise<boolean> {
 export async function getTherapyCategories(): Promise<string[]> {
   try {
     const token = await getToken();
-    const { data: response } = await serverApi.get("/api/journal-categories/list", {
+    const { data: response } = await serverApi.get("/api/service-types/list", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (response?.success && Array.isArray(response.data)) {
-      // Just returning names for backward compatibility if possible, or mapping to objects
       return response.data.map((cat: any) => cat.name);
     }
   } catch (error) {
-    console.error("Failed to fetch journal categories:", error);
+    console.error("Failed to fetch service types:", error);
   }
   
   // Fallback
@@ -81,10 +80,7 @@ export async function getTherapyCategories(): Promise<string[]> {
     "Mental Health Counseling",
     "Dietitian/Nutritionist",
     "Respiratory Therapy",
-    "Acupuncture",
-    "Operations",
-    "Earnings",
-    "Clinical",
+    "Acupuncture"
   ];
 }
 

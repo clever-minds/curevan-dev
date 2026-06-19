@@ -15,6 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,10 +33,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/money/price";
 import type { Appointment, Product } from "@/lib/types";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, submitReview } from "@/lib/repos/appointments";
 import { listOrders } from "@/lib/repos/orders";
 import { listProducts } from "@/lib/repos/products";
 import ReportAiSummary from "@/components/report/report-ai-summary";
+import { PatientJourneyCard } from "../patient/patient-journey-card";
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +66,10 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams(); 
   const { toast } = useToast(); 
@@ -88,6 +101,20 @@ export default function AccountPage() {
     }
     fetchData();
   }, [user, toast]);
+
+  const handleReviewSubmit = async () => {
+    if (!reviewingId) return;
+    setIsSubmittingReview(true);
+    const success = await submitReview(reviewingId, rating, reviewText);
+    setIsSubmittingReview(false);
+    if (success) {
+      toast({ title: 'Review submitted!' });
+      setReviewingId(null);
+      // optionally refresh data here
+    } else {
+      toast({ variant: 'destructive', title: 'Error submitting review' });
+    }
+  };
 
   if (!user || loading) {
     return (
@@ -210,6 +237,9 @@ export default function AccountPage() {
         { name: 'Products', value: shopSpend },
       ];
 
+      // Find the first active session for the patient
+      const activeSession = appointments.find(a => a.status !== 'Completed' && a.status !== 'Cancelled' && a.status !== 'No-Show' && a.status !== 'Confirmed');
+
       return (
         <div className="space-y-8">
           <div className="flex flex-wrap items-center justify-between gap-4 no-print">
@@ -246,6 +276,12 @@ export default function AccountPage() {
                 copy={() => console.log('copy')}
              />
 
+             {activeSession && (
+                 <div className="mb-8">
+                     <PatientJourneyCard session={activeSession} />
+                 </div>
+             )}
+
             <DashboardSection id="charts" title="Insights (Last 90 Days)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
                     <DashboardCard title="Bookings by Week" type="bar" data={weeklyBookings} categoryKey="date" valueKey="sessionCount" isCurrency={false} />
@@ -273,10 +309,48 @@ export default function AccountPage() {
                                 <TableCell>{appointment.therapyType}</TableCell>
                                 <TableCell>{appointment.therapist}</TableCell>
                                 <TableCell><Badge variant="secondary">{appointment.status}</Badge></TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right flex items-center justify-end gap-2">
                                     <Button variant="link" size="sm" asChild>
                                         <Link href={`/pcr/${appointment.id}`}>View PCR</Link>
                                     </Button>
+                                    {appointment.status === 'Completed' && (
+                                        <>
+                                            <Dialog open={reviewingId === appointment.id} onOpenChange={(open) => !open && setReviewingId(null)}>
+                                              <DialogTrigger asChild>
+                                                <Button variant="outline" size="sm" onClick={() => setReviewingId(appointment.id)}>Review</Button>
+                                              </DialogTrigger>
+                                              <DialogContent>
+                                                <DialogHeader>
+                                                  <DialogTitle>Leave a Review</DialogTitle>
+                                                </DialogHeader>
+                                                <div className="space-y-4 pt-4">
+                                                  <div className="flex gap-2 justify-center">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                      <Star
+                                                        key={star}
+                                                        className={cn("w-8 h-8 cursor-pointer", star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300")}
+                                                        onClick={() => setRating(star)}
+                                                      />
+                                                    ))}
+                                                  </div>
+                                                  <Textarea
+                                                    placeholder="Write your review here..."
+                                                    value={reviewText}
+                                                    onChange={(e) => setReviewText(e.target.value)}
+                                                  />
+                                                  <Button onClick={handleReviewSubmit} disabled={isSubmittingReview} className="w-full">
+                                                    {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                                                  </Button>
+                                                </div>
+                                              </DialogContent>
+                                            </Dialog>
+                                            {appointment.therapistId && (
+                                              <Button variant="default" size="sm" asChild>
+                                                  <Link href={`/booking/${appointment.therapistId}`}>Rebook</Link>
+                                              </Button>
+                                            )}
+                                        </>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}

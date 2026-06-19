@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { getEarningsHistory } from "@/services/earnings-service";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
 
@@ -80,13 +80,21 @@ export default function TherapistDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [availableRequests, setAvailableRequests] = useState<Appointment[]>([]);
   const [therapist, setTherapist] = useState<Therapist | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [topServicesData, setTopServicesData] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
 
   const therapistId = user?.uid || '';
   const earningsHistory = useMemo(() => getEarningsHistory(therapistId, 'mtd'), [therapistId]);
+  
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23,59,59,999);
+
   const excludedItems = earningsHistory.filter(e => e.status === 'On-Hold');
 
   useEffect(() => {
@@ -100,13 +108,17 @@ export default function TherapistDashboard() {
         if (!user) return;
         setLoading(true);
         try {
-            const [appointmentData, therapistData, therapyCats] = await Promise.all([
+            const [appointmentData, availableReqs, therapistData, therapyCats, dashboardStats] = await Promise.all([
                 listAppointmentsForUser(user.id, 'therapist'),
+                getAvailableRequests(user.id),
                 getTherapistById(user.id),
-                getTherapyCategories()
+                getTherapyCategories(),
+                import('@/lib/repos/therapists').then(m => m.getTherapistDashboardStats(user.id))
             ]);
             setAppointments(appointmentData);
+            setAvailableRequests(availableReqs);
             setTherapist(therapistData);
+            setStats(dashboardStats);
             setTopServicesData(therapyCats.slice(0,3).map(cat => ({
                 name: cat.split(" ")[0],
                 count: Math.floor(Math.random() * 20) + 5,
@@ -125,15 +137,49 @@ export default function TherapistDashboard() {
 
 
   const handleStartSessionRequest = (appointment: Appointment) => {
-    // This simulates the "Verify patient (OTP/QR/GEOFENCE)" step (B2 in DFD)
-    setVerifyingAppointment(appointment);
+    // If the status is Pending or Assigned, the therapist can navigate/start
+    setActiveSession(appointment);
   };
   
-  const handleVerificationSuccess = (appointment: Appointment) => {
+  const handleAcceptRequest = async (appointmentId: number) => {
+    if (!user || !therapist) return;
+    const success = await acceptBookingRequest(appointmentId, {
+        therapistId: user.id,
+        therapistName: therapist.name || user.name || "Unknown Therapist",
+        therapistPhone: (user as any).phone || ""
+    });
+    if (success) {
+        toast({ title: "Booking Accepted", description: "The appointment has been added to your schedule." });
+        // Refresh data
+        const [appointmentData, availableReqs] = await Promise.all([
+            listAppointmentsForUser(user.id, 'therapist'),
+            getAvailableRequests(user.id)
+        ]);
+        setAppointments(appointmentData);
+        setAvailableRequests(availableReqs);
+    } else {
+        toast({ title: "Failed to accept booking", variant: "destructive" });
+    }
+  };
+
+  const handleRejectRequest = (appointmentId: number) => {
+      // Hide locally
+      setAvailableRequests(prev => prev.filter(r => r.id !== appointmentId));
+  };
+  
+  const handleVerificationSuccess = async (appointment: Appointment) => {
     // This simulates creating a `sessions` row and starting the timer (B3 in DFD)
-    setActiveSession(appointment);
+    await updateAppointmentStatus(appointment.id, 'Session Started');
+    setActiveSession({ ...appointment, status: 'Session Started' });
     setVerifyingAppointment(null);
   }
+
+  const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
+      const success = await updateAppointmentStatus(appointmentId, newStatus);
+      if (success && activeSession && activeSession.id === appointmentId) {
+          setActiveSession({ ...activeSession, status: newStatus });
+      }
+  };
 
   const handleEndSession = () => {
     // This simulates closing the session and preparing for PCR documentation (P3 in DFD)
@@ -176,18 +222,35 @@ export default function TherapistDashboard() {
                 <p className="text-muted-foreground">For period: Jan 1, 2024 - Jul 31, 2024</p>
             </div>
 
+            <div className="flex flex-wrap gap-4">
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/availability">Manage Availability</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/edit">Edit Profile & Documents</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/reviews">My Ratings & Reviews</Link>
+               </Button>
+            </div>
+
             {activeSession && (
-                <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} />
+                <ActiveSessionCard 
+                    session={activeSession} 
+                    onEndSession={handleEndSession} 
+                    onStatusUpdate={handleStatusUpdate}
+                    onVerifyRequest={(session) => setVerifyingAppointment(session)}
+                />
             )}
 
             {/* KPIs */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <KpiCard title="Sessions Completed (90d)" value="128" icon={TrendingUp} />
-                <KpiCard title="PCR Lock Rate (90d)" value="92%" icon={Percent} />
-                <KpiCard title="Net Payout (90d)" value="₹1,28,500" icon={Wallet} />
-                <KpiCard title="Product Commissions (90d)" value="₹8,750" icon={Wallet} />
-                <KpiCard title="Unique Patients (90d)" value="42" icon={Users} />
-                <KpiCard title="Avg. Rating (90d)" value="4.9" icon={Star} />
+                <KpiCard title="Sessions Completed" value={stats?.kpis?.sessionsCompleted ?? 0} icon={TrendingUp} />
+                <KpiCard title="PCR Lock Rate" value={`${stats?.kpis?.pcrLockRate ?? 0}%`} icon={Percent} />
+                <KpiCard title="Net Payout (Estimated)" value={`₹${(stats?.kpis?.netPayout ?? 0).toLocaleString()}`} icon={Wallet} />
+                <KpiCard title="Product Commissions" value={`₹${(stats?.kpis?.productCommissions ?? 0).toLocaleString()}`} icon={Wallet} />
+                <KpiCard title="Unique Patients" value={stats?.kpis?.uniquePatients ?? 0} icon={Users} />
+                <KpiCard title="Avg. Rating" value={stats?.kpis?.avgRating ?? "0.0"} icon={Star} />
             </div>
 
             <ReportAiSummary 
@@ -200,16 +263,90 @@ export default function TherapistDashboard() {
                 copy={() => console.log('copy')}
             />
 
-            <DashboardSection id="charts" title="Insights (Last 90 Days)">
+            <DashboardSection id="charts" title="Insights (Dynamic)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Sessions Per Day" type="line" data={sessionData} categoryKey="date" valueKey="sessionCount" />
-                    <DashboardCard title="Session Mode Split" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" />
-                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={weeklyEarningsData} categoryKey="week" valueKey="Service" className="lg:col-span-2" />
+                    <DashboardCard title="Sessions Per Day" type="line" data={stats?.charts?.sessionData || sessionData} categoryKey="date" valueKey="sessionCount" />
+                    <DashboardCard title="Session Mode Split" type="pie" data={stats?.charts?.modeSplitData || modeSplitData} categoryKey="name" valueKey="value" />
+                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={stats?.charts?.weeklyEarningsData || weeklyEarningsData} categoryKey="week" valueKey="Service" className="lg:col-span-2" />
                     <DashboardCard title="Top Services by Count" type="bar" data={topServicesData} categoryKey="name" valueKey="count" className="lg:col-span-2" />
                 </div>
             </DashboardSection>
 
-             <DashboardSection id="schedule" title="Upcoming Schedule (Next 7 Days)">
+             <DashboardSection id="available-requests" title="Available Booking Requests">
+                {availableRequests.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-8 text-center text-muted-foreground">
+                            No new booking requests available at this time.
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {availableRequests.map(req => (
+                            <Card key={req.id} className="border-primary/50 shadow-sm">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-lg">{req.therapyType}</CardTitle>
+                                    <CardDescription>
+                                        {new Date(req.date).toLocaleDateString()} at {req.time}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="pb-2 text-sm space-y-1">
+                                    <p><strong>Patient:</strong> {req.patientName}</p>
+                                    <p><strong>Amount:</strong> ₹{req.serviceAmount}</p>
+                                    <p><strong>Location:</strong> {req.serviceAddress ? "Patient's Address" : "Clinic/Online"}</p>
+                                </CardContent>
+                                <CardFooter className="flex justify-between gap-2">
+                                    <Button variant="outline" className="w-full text-destructive" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
+                                    <Button className="w-full" onClick={() => handleAcceptRequest(req.id)}>Accept</Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </DashboardSection>
+
+             <DashboardSection id="schedule" title="Today's Appointments">
+                <Card>
+                    <CardContent className="pt-6">
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Time</TableHead>
+                            <TableHead>Patient</TableHead>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Mode</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {appointments.filter(a => new Date(a.date) >= todayStart && new Date(a.date) <= todayEnd && a.status !== 'Completed' && a.status !== 'Cancelled').map((appointment) => (
+                            <TableRow key={appointment.id}>
+                                <TableCell>{appointment.time}</TableCell>
+                                <TableCell>{appointment.patientName}</TableCell>
+                                <TableCell>{appointment.therapyType}</TableCell>
+                                <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
+                                <TableCell className="text-right flex justify-end gap-2">
+                                     <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => handleStartSessionRequest(appointment)} 
+                                        disabled={!!activeSession}
+                                    >
+                                        <PlayCircle className="mr-2 h-4 w-4"/>
+                                        Start Journey
+                                    </Button>
+                                    <Button variant="ghost" size="sm" asChild>
+                                        <Link href={`/pcr/${appointment.id}`}>PCR</Link>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </DashboardSection>
+
+             <DashboardSection id="upcoming" title="Upcoming Visits">
                 <Card>
                     <CardContent className="pt-6">
                      <Table>
@@ -223,26 +360,44 @@ export default function TherapistDashboard() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {appointments.filter(a => new Date(a.date) > new Date()).slice(0, 5).map((appointment) => (
+                            {appointments.filter(a => new Date(a.date) > todayEnd && a.status !== 'Completed' && a.status !== 'Cancelled').slice(0, 5).map((appointment) => (
                             <TableRow key={appointment.id}>
                                 <TableCell>{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</TableCell>
                                 <TableCell>{appointment.patientName}</TableCell>
                                 <TableCell>{appointment.therapyType}</TableCell>
-                                <TableCell><Badge variant="outline">Home</Badge></TableCell>
-                                <TableCell className="text-right space-x-2">
-                                     <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={() => handleStartSessionRequest(appointment)} 
-                                        disabled={!!activeSession}
-                                    >
-                                        <PlayCircle className="mr-2"/>
-                                        Start Session
-                                    </Button>
+                                <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
+                                <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" asChild>
-                                        <Link href={`/pcr/${appointment.id}`}>View PCR</Link>
+                                        <Link href={`/pcr/${appointment.id}`}>View Details</Link>
                                     </Button>
                                 </TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </DashboardSection>
+
+             <DashboardSection id="history" title="Booking History">
+                <Card>
+                    <CardContent className="pt-6">
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Patient</TableHead>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Status</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {appointments.filter(a => a.status === 'Completed' || a.status === 'Cancelled' || a.status === 'No-Show').slice(0, 5).map((appointment) => (
+                            <TableRow key={appointment.id}>
+                                <TableCell>{new Date(appointment.date).toLocaleDateString()}</TableCell>
+                                <TableCell>{appointment.patientName}</TableCell>
+                                <TableCell>{appointment.therapyType}</TableCell>
+                                <TableCell><Badge variant="secondary">{appointment.status}</Badge></TableCell>
                             </TableRow>
                             ))}
                         </TableBody>
@@ -274,7 +429,7 @@ export default function TherapistDashboard() {
                                 <TableCell>{new Date(item.sessionDate).toLocaleDateString()}</TableCell>
                                 <TableCell><Badge variant={item.type === 'service' ? 'default' : 'secondary'}>{item.type}</Badge></TableCell>
                                 <TableCell>{item.source}</TableCell>
-                                <TableCell>₹{item.netAmount.toFixed(2)}</TableCell>
+                                <TableCell>₹{item.netPayable.toFixed(2)}</TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className={cn(
                                         item.status === "Paid" && "border-green-500 text-green-700",

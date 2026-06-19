@@ -107,16 +107,16 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       consent_medical: false,
       consent_privacy: false,
       consent_refund: false,
-      selectedAddress: user?.address ? 'primary' : 'new',
+      selectedAddress: user?.addresses?.[0] ? 'primary' : 'new',
     },
   });
 
   useEffect(() => {
-    if (user?.address) {
+    if (user?.addresses?.[0]) {
       form.setValue('selectedAddress', 'primary');
-      form.setValue('line1', user.address.line1);
-      form.setValue('city', user.address.city);
-      form.setValue('pin', user.address.pin);
+      form.setValue('line1', user.addresses[0].line1);
+      form.setValue('city', user.addresses[0].city);
+      form.setValue('pin', user.addresses[0].pin);
     } else {
       form.setValue('selectedAddress', 'new');
     }
@@ -128,10 +128,10 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const selectedAddress = form.watch('selectedAddress');
 
   useEffect(() => {
-      if (selectedAddress === 'primary' && user?.address) {
-          form.setValue('line1', user.address.line1);
-          form.setValue('city', user.address.city);
-          form.setValue('pin', user.address.pin);
+      if (selectedAddress === 'primary' && user?.addresses?.[0]) {
+          form.setValue('line1', user.addresses[0].line1);
+          form.setValue('city', user.addresses[0].city);
+          form.setValue('pin', user.addresses[0].pin);
       } else if (selectedAddress === 'new') {
           form.setValue('line1', '');
           form.setValue('city', '');
@@ -254,21 +254,22 @@ console.log("timeSlots", timeSlots);
                 const bookingDetails = {
                     patientId: user.id,
                     patientName: user.name || 'N/A',
+                    dateofBirth: data.dob,
                     therapistId: therapist.id,
                     therapist: therapist.name,
                     serviceTypeId: data.serviceType.toLowerCase().replace(/ /g, '-'),
                     therapyType: data.serviceType,
                     serviceAmount: serviceAmount,
                     totalAmount: serviceAmount,
-                    date: data.scheduledDate.toISOString(),
+                    date: data.scheduledDate.toISOString() as unknown as Date,
                     time: data.scheduledTime,
                     mode: data.sessionMode,
                     notes: data.notes,
                     serviceAddress: data.sessionMode === 'home' ? {
-                        line1: data.line1 || '', city: data.city || '', pin: data.pin || '', state: 'Gujarat', country: 'India'
+                        id: 0, line1: data.line1 || '', city: data.city || '', pin: data.pin || '', state: 'Gujarat', country: 'India'
                     } : undefined,
-                    status: 'Pending',            // or whatever default you want
-                    verificationStatus: 'Pending',
+                    status: 'Pending' as const,            // or whatever default you want
+                    verificationStatus: 'Not Verified' as const,
                 };
 
                 const result = await createBookingAndInvoice(bookingDetails, { paymentId: paymentResponse.razorpay_payment_id, gateway: 'razorpay' });
@@ -388,14 +389,14 @@ console.log("timeSlots", timeSlots);
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {user?.address && <SelectItem value="primary">{user.address.line1}, {user.address.city}</SelectItem>}
+                                        {user?.addresses?.[0] && <SelectItem value="primary">{user.addresses[0].line1}, {user.addresses[0].city}</SelectItem>}
                                         <SelectItem value="new">Add a new address</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </FormItem>
                         )}
                     />
-                     {(selectedAddress === 'new' || !user?.address) && (
+                     {(selectedAddress === 'new' || !user?.addresses?.[0]) && (
                         <div className="space-y-4 animate-in fade-in">
                             <div className="flex justify-between items-center">
                                 <h4 className="font-medium">New Address</h4>

@@ -25,6 +25,7 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
 import { listAppointments, listAppointmentsForUser ,cancelAppointments} from '@/lib/repos/appointments';
 import { format, parseISO } from 'date-fns';
+import { ReviewDialog } from '@/components/patient/ReviewDialog';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -32,10 +33,16 @@ interface AppointmentsTableProps {
   context?: 'bookings' | 'pcr';
 }
 
-const getStatusBadgeVariant = (status: Appointment['status']) => {
+const getStatusBadgeVariant = (status: Appointment['status'] | string) => {
   switch (status) {
-    case 'Confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
     case 'Completed': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+    case 'Session Started': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+    case 'Arrived': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
+    case 'On The Way': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+    case 'Accepted': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300';
+    case 'Assigned': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+    case 'Confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+    case 'Searching Therapist': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
     case 'Pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
     case 'Cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
     case 'No-Show': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
@@ -111,6 +118,9 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
         <DropdownMenuItem asChild><Link href={`/dashboard/admin/users?search=${appointment.patientId}`} className="w-full flex items-center"><User className="mr-2"/>View Patient</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link href={`/therapists/${appointment.therapist.toLowerCase().replace(/ /g, '-')}`} className="w-full flex items-center"><User className="mr-2"/>View Therapist</Link></DropdownMenuItem>
         <DropdownMenuSeparator />
+        {isPatient && appointment.status === 'Completed' && (
+          <ReviewDialog appointmentId={appointment.id} />
+        )}
         <DropdownMenuItem className="text-destructive focus:text-destructive"><Ban className="mr-2" /> Cancel</DropdownMenuItem>
     </>
   );

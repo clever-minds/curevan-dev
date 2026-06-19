@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Edit2 } from "lucide-react";
 import clientApi from '@/lib/repos/axios';
 
 interface ServiceType {
@@ -22,6 +25,12 @@ export default function AdminServiceTypesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [newTypeName, setNewTypeName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+
+  // Edit State
+  const [editingType, setEditingType] = useState<ServiceType | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchServiceTypes();
@@ -77,6 +86,34 @@ export default function AdminServiceTypesPage() {
       }
     } catch (error: any) {
       toast({ title: "Error", description: error?.response?.data?.message || "Failed to connect to server.", variant: "destructive" });
+    }
+  };
+
+  const openEditModal = (st: ServiceType) => {
+    setEditingType(st);
+    setEditName(st.name);
+    setEditIsActive(st.is_active);
+  };
+
+  const handleUpdateServiceType = async () => {
+    if (!editingType || !editName.trim()) return;
+    try {
+      setIsUpdating(true);
+      const { data } = await clientApi.put(`/api/service-types/update/${editingType.id}`, { 
+        name: editName.trim(), 
+        is_active: editIsActive 
+      });
+      if (data?.success) {
+        toast({ title: "Success", description: "Service type updated successfully" });
+        setEditingType(null);
+        fetchServiceTypes();
+      } else {
+        toast({ title: "Error", description: data?.message || "Failed to update", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.response?.data?.message || "Failed to connect to server.", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -147,6 +184,9 @@ export default function AdminServiceTypesPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" className="mr-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => openEditModal(st)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteServiceType(st.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -159,6 +199,43 @@ export default function AdminServiceTypesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Modal */}
+      <Dialog open={!!editingType} onOpenChange={(open) => !open && setEditingType(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Service Type</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input 
+                value={editName} 
+                onChange={(e) => setEditName(e.target.value)} 
+                placeholder="Service type name"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label>Active Status</Label>
+                <p className="text-sm text-muted-foreground">Is this service type currently available?</p>
+              </div>
+              <Switch 
+                checked={editIsActive} 
+                onCheckedChange={setEditIsActive} 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingType(null)}>Cancel</Button>
+            <Button onClick={handleUpdateServiceType} disabled={isUpdating || !editName.trim()}>
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

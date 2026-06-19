@@ -164,3 +164,89 @@ export async function cancelAppointments(appointmentId: number): Promise<boolean
     return false
   }
 }
+
+/**
+ * Get available booking requests for therapists (Status: Searching)
+ */
+export async function getAvailableRequests(therapistId: number): Promise<Appointment[]> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+
+    const { data: response } = await serverApi.get<ApiResponse<Appointment[]>>(
+      `/api/appointments/requests/available`,
+      {
+        params: { therapistId },
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    return response?.success ? (response.data ?? []) : [];
+  } catch (err) {
+    console.error('Error fetching available requests:', err);
+    return [];
+  }
+}
+
+/**
+ * Accept a booking request
+ */
+export async function acceptBookingRequest(appointmentId: number, therapistData: any): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+
+    const { data: response } = await serverApi.post<ApiResponse<any>>(
+      `/api/appointments/accept/${appointmentId}`,
+      therapistData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return response?.success === true;
+  } catch (err) {
+    console.error('Error accepting booking request:', err);
+    return false;
+  }
+}
+
+/**
+ * Update the status of an appointment (e.g. Navigating, Arrived, In Progress)
+ */
+export async function updateAppointmentStatus(appointmentId: number, status: string): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+
+    const { data: response } = await serverApi.put<ApiResponse<any>>(
+      `/api/appointments/status/${appointmentId}`,
+      { status },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return response?.success === true;
+  } catch (err) {
+    console.error('Error updating appointment status:', err);
+    return false;
+  }
+}
+
+/**
+ * Submit a review for a completed appointment
+ */
+export async function submitReview(appointmentId: number, rating: number, review: string): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+
+    const { data: response } = await serverApi.post<ApiResponse<any>>(
+      `/api/appointments/${appointmentId}/review`,
+      { rating, review },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return response?.success === true;
+  } catch (err) {
+    console.error('Error submitting review:', err);
+    return false;
+  }
+}

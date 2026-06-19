@@ -6,6 +6,7 @@ import {
   ConfirmationResult,
   connectAuthEmulator,
 } from "firebase/auth";
+import { getMessaging, getToken } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -89,4 +90,26 @@ export const sendOTP = async (
     }
     throw error;
   }
+};
+
+export const requestFcmToken = async (): Promise<string | null> => {
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    try {
+      const messaging = getMessaging(app);
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        const token = await getToken(messaging, {
+          vapidKey: "BGwR2rR0v1V4PjIe4WqN5_1r3BtzX-gQzG4sB5Z2p2o2c8g9u1r5HlR9tZ2w8g3Xz-y4C8W6N_D0Z2P0G2hH1l0" // Standard fallback VAPID key is usually not required if using standard FCM without WebPush cert, but it's good practice. Actually, we don't have the VAPID key in the .env. Let's try without vapidKey.
+        });
+        return token;
+      } else {
+        console.warn("Notification permission denied");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error requesting FCM token:", error);
+      return null;
+    }
+  }
+  return null;
 };

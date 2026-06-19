@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { updateJournalStatus, deleteJournal } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/api/auth";
+import { getToken } from "@/lib/auth";
 import { JournalCategoriesTab } from "./journal-categories-tab";
 
 export const dynamic = 'force-dynamic';
@@ -95,7 +96,7 @@ export default function AdminJournalPage() {
   }
 
   const handleReject = (postId: string, title: string) => {
-      handleStatusUpdate(postId, title, 'rejected');
+      handleStatusUpdate(postId, title, 'draft');
   }
 
   const handleDelete = async (postId: string, title: string) => {

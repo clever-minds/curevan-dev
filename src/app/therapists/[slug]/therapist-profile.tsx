@@ -62,8 +62,8 @@ export function TherapistProfileClient({ therapist, authoredPosts }: { therapist
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-1">
                                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                                        <span className="font-semibold text-foreground">{therapist.rating}</span>
-                                        ({therapist.reviews} reviews)
+                                        <span className="font-semibold text-foreground">{therapist.avgRating || therapist.rating}</span>
+                                        ({therapist.reviewList?.length || therapist.reviews || 0} reviews)
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Briefcase className="w-4 h-4" />
@@ -160,6 +160,30 @@ export function TherapistProfileClient({ therapist, authoredPosts }: { therapist
                                 <p className="text-xs text-muted-foreground mt-2">{new Date(post.publishedAt || post.createdAt).toLocaleDateString()}</p>
                              </Link>
                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Patient Reviews Section */}
+                {therapist.reviewList && therapist.reviewList.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Patient Reviews</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {therapist.reviewList.map((review) => (
+                                <div key={review.id} className="border-b pb-4 last:border-0 last:pb-0">
+                                    <div className="flex items-center justify-between">
+                                        <p className="font-semibold">{review.patient_name || 'Anonymous Patient'}</p>
+                                        <div className="flex items-center">
+                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-400 mr-1" />
+                                            <span className="text-sm font-medium">{review.rating} / 5</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1">{new Date(review.created_at).toLocaleDateString()}</p>
+                                    <p className="mt-2 text-foreground">{review.review}</p>
+                                </div>
+                            ))}
                         </CardContent>
                     </Card>
                 )}

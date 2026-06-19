@@ -430,6 +430,7 @@ const bookingFormSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   prescription: z.any().optional(),
+  reports: z.any().optional(),
   notes: z.string().optional(),
   consent_terms: z.boolean().refine(val => val === true, { message: 'You must agree to the Terms of Use.' }),
   consent_medical: z.boolean().refine(val => val === true, { message: 'You must agree to the Medical Consent Terms.' }),
@@ -501,6 +502,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       sessionMode: 'home',
       isHomeVisit: true,
       prescription: null,
+      reports: null,
       notes: '',
       dob: "",
       consent_terms: false,
@@ -542,14 +544,14 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     if (isPast(set(selectedDate, { hours: h, minutes: m }))) return false;
     const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
     return !therapistAppointments.some(a =>
-      a.date.startsWith(selectedDateStr) && a.time === time && a.status !== 'Cancelled'
+      String(a.date).startsWith(selectedDateStr) && a.time === time && a.status !== 'Cancelled'
     );
   };
 
   const isDateFullyBooked = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return timeSlots.length > 0 &&
-      therapistAppointments.filter(a => a.date.startsWith(dateStr) && a.status !== 'Cancelled').length >= timeSlots.length;
+      therapistAppointments.filter(a => String(a.date).startsWith(dateStr) && a.status !== 'Cancelled').length >= timeSlots.length;
   };
 
   // ── Address handlers ──────────────────────────────────────────────────────
@@ -630,6 +632,24 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
 
     const serviceAmount = therapist.hourlyRate ?? 500;
 
+    // Convert reports to base64 if provided
+    let reportsBase64: any = null;
+    if (data.reports) {
+      // In a real app, you might loop over a FileList. Here we assume one file for simplicity.
+      const file = data.reports;
+      if (file instanceof File) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          reportsBase64 = [{ name: file.name, type: file.type, data: reader.result }];
+          proceedWithPayment(reportsBase64);
+        };
+        reader.readAsDataURL(file);
+        return; // wait for onloadend
+      }
+    }
+    proceedWithPayment(reportsBase64);
+
+    function proceedWithPayment(processedReports: any) {
     console.log("booking new data", data);
     openPayment({
       amount: serviceAmount * 100,
@@ -637,12 +657,12 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       receipt: `receipt_booking_${therapist.id}_${Date.now()}`,
       productName: `Session with ${therapist.name}`,
       productDescription: `A ${data.serviceType} session on ${data.scheduledDate.toLocaleDateString()} at ${data.scheduledTime}.`,
-      prefill: { name: user.name, email: user.email },
+      prefill: { name: user!.name, email: user!.email },
       onSuccess: (paymentResponse) => {
         startTransition(async () => {
           const result = await createBookingAndInvoice({
-            patientId: user.id,
-            patientName: data.patientFullName || user.name || 'N/A',
+            patientId: user!.id,
+            patientName: data.patientFullName || user!.name || 'N/A',
             dateofBirth: data.dob,
             therapistId: therapist.id,
             therapist: therapist.name,
@@ -650,10 +670,11 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             therapyType: data.serviceType,
             serviceAmount,
             totalAmount: serviceAmount,
-            date: format(data.scheduledDate, 'yyyy-MM-dd'),
+            date: format(data.scheduledDate, 'yyyy-MM-dd') as unknown as Date,
             time: data.scheduledTime,
             mode: data.sessionMode,
             notes: data.notes,
+            reports: processedReports,
             addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,  // ← yahan
             status: 'Pending',
             verificationStatus: 'Not Verified',
@@ -668,6 +689,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
         });
       },
     });
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -867,6 +889,18 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                 <Input type="file" accept="image/*,.pdf" onChange={e => onChange(e.target.files?.[0] ?? null)} {...fieldProps} />
               </FormControl>
               <FormDescription>Upload an image or PDF of your prescription.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          {/* Reports */}
+          <FormField control={form.control} name="reports" render={({ field: { onChange, ...fieldProps } }) => (
+            <FormItem>
+              <FormLabel>Upload Reports (Optional)</FormLabel>
+              <FormControl>
+                <Input type="file" accept="image/*,.pdf,.doc,.docx" onChange={e => onChange(e.target.files?.[0] ?? null)} {...fieldProps} />
+              </FormControl>
+              <FormDescription>Upload any relevant medical reports.</FormDescription>
               <FormMessage />
             </FormItem>
           )} />

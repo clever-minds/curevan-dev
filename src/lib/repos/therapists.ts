@@ -141,6 +141,7 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       platformFeePct: item.platformFeePct,
       isHighlighted: item.isHighlighted,
       distance:item.distance_km,
+      documents: item.documents || [],
       tax: item.tax
         ? {
             pan: item.tax.pan || '',
@@ -245,5 +246,46 @@ export async function listTherapistsByLocation(
   } catch (error: any) {
     console.log('THERAPISTS BY LOCATION ERROR:', error?.message);
       return [];
+  }
+}
+
+export async function uploadTherapistDocument(therapistId: string, documentType: string, fileUrl: string): Promise<boolean> {
+  try {
+    const res = await serverApi.post(`/api/therapists/document`, {
+      therapist_id: therapistId,
+      document_type: documentType,
+      file_url: fileUrl
+    });
+    return res.data.status;
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    return false;
+  }
+}
+
+export async function getTherapistDashboardStats(therapistId: number): Promise<any> {
+  try {
+    const res = await serverApi.get(`/api/therapists/dashboard-stats/${therapistId}`);
+    if (res.data.status) {
+      return res.data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return null;
+  }
+}
+
+export async function saveAvailability(availabilityData: any): Promise<boolean> {
+  try {
+    const { data } = await serverApi.post('/api/therapists/availability', availabilityData, {
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+      },
+    });
+    return data?.success === true;
+  } catch (error: any) {
+    console.error('SAVE AVAILABILITY ERROR:', error?.message);
+    return false;
   }
 }

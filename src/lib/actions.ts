@@ -426,3 +426,41 @@ export async function getMyRefundsAction() {
 export async function listReturnsAction(filters?: any) {
   return await listReturns(filters);
 }
+
+/**
+ * Submit a review for a therapist via an appointment
+ */
+export async function submitTherapistReviewAction(appointmentId: string | number, data: { rating: number, review: string }) {
+  const token = await getToken();
+  try {
+    const response = await serverApi.put(`/api/appointments/${appointmentId}/review`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return { success: true, ...response.data };
+  } catch (error: any) {
+    console.error("Failed to submit review:", error?.response?.data || error?.message);
+    return { success: false, error: error?.response?.data?.error || "Failed to submit review" };
+  }
+}
+
+/**
+ * Update FCM Token for push notifications
+ */
+export async function updateFcmTokenAction(fcmToken: string) {
+  const token = await getToken();
+  if (!token) return { success: false, message: "Unauthorized" };
+
+  try {
+    const response = await serverApi.post(`/api/auth/update-fcm`, { fcm_token: fcmToken }, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return { success: true, ...response.data };
+  } catch (error: any) {
+    console.error("Failed to update FCM token:", error?.response?.data || error?.message);
+    return { success: false, message: "Failed to update FCM token" };
+  }
+}

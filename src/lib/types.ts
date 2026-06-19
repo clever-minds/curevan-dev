@@ -46,7 +46,7 @@ export interface UserProfile {
   state?: string;
   pin?: string;
   country?: string;
-
+  image?: string;
 }
 
 
@@ -59,6 +59,14 @@ export interface PatientProfile {
   conditions?: string[];
   meds?: string[];
   lastVisitSummary?: string;
+}
+
+export interface TherapistReview {
+  id: number;
+  rating: number;
+  review: string;
+  created_at: string;
+  patient_name: string;
 }
 
 export interface Therapist {
@@ -79,8 +87,10 @@ export interface Therapist {
   lat: number;
   lng: number;
   rating: number;
+  avgRating?: string;
   fullAddress: string;
   reviews: number;
+  reviewList?: TherapistReview[];
   image: string;
   experience_years: number;
   bio: string;
@@ -95,10 +105,11 @@ export interface Therapist {
   referralActive?: boolean;
   availability?: any;
   hourlyRate?: number;
-  membershipPlan?: 'standard' | 'premium';
+  membershipPlan?: 'basic' | 'standard' | 'premium';
   platformFeePct?: number;
   isHighlighted?: boolean;
   distance?: number;
+  documents?: string[];
   tax?: {
     pan: string;
     panVerified?: boolean;
@@ -155,15 +166,18 @@ export interface Appointment {
   date: Date;
   time: string;
   mode: 'home' | 'online' | 'clinic';
-  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show';
+  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show' | 'Searching' | 'Searching Therapist' | 'Assigned' | 'Accepted' | 'Navigating' | 'On The Way' | 'Arrived' | 'In Progress' | 'Session Started';
   cancellationReason?: string | null;
   notes?: string;
+  reports?: any;
   addressId?: number;
   createdAt: Date;
   serviceAddress?: Address;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';
   pcrStatus: 'not_started' | 'in_progress' | 'submitted' | 'locked' | 'returned' | 'Draft';
   verificationStatus: 'Verified' | 'Not Verified';
+  rating?: number;
+  review?: string;
 }
 
 // --- E-commerce & Products ---
