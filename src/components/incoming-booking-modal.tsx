@@ -4,42 +4,66 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, MapPin, Calendar, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, MapPin, Calendar, Clock, User, Activity } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useToast } from "@/hooks/use-toast";
 
 export function IncomingBookingModal() {
   const { incomingBooking, clearIncomingBooking } = useAuth();
   const [isAccepting, setIsAccepting] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const intervalRef = useRef<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (incomingBooking) {
-      // Play ringing sound
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/ringtone.mp3");
-        audioRef.current.loop = true;
-      }
-      
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn("Autoplay prevented or audio file missing:", error);
-        });
+      // Web Audio API Beep Synthesizer
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new AudioContextClass();
+        }
+        const ctx = audioCtxRef.current;
+        
+        const playBeep = () => {
+          if (ctx.state === 'suspended') ctx.resume();
+          const osc = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          osc.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+          
+          gainNode.gain.setValueAtTime(0, ctx.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+          gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+          
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.3);
+        };
+
+        playBeep(); // Play first beep immediately
+        intervalRef.current = setInterval(playBeep, 1000); // Repeat every second
+      } catch (err) {
+        console.warn("Web Audio API not supported or blocked:", err);
       }
     } else {
-      // Stop ringing sound
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      // Stop ringing
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.suspend();
       }
     }
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.suspend();
       }
     };
   }, [incomingBooking]);
@@ -82,6 +106,8 @@ export function IncomingBookingModal() {
     clearIncomingBooking();
   };
 
+  const data = incomingBooking.data || {};
+
   return (
     <Dialog open={!!incomingBooking} onOpenChange={(open) => !open && clearIncomingBooking()}>
       <DialogContent className="sm:max-w-md border-4 border-primary/20 shadow-2xl animate-in zoom-in-95 duration-300">
@@ -94,18 +120,30 @@ export function IncomingBookingModal() {
           </div>
           <DialogTitle className="text-center text-2xl font-bold">New Booking Request!</DialogTitle>
           <DialogDescription className="text-center text-lg mt-2 font-medium text-foreground">
-            {incomingBooking.notification?.body || "A new appointment request is available nearby."}
+            Respond quickly before another therapist accepts it.
           </DialogDescription>
         </DialogHeader>
         
         <div className="bg-muted p-4 rounded-lg my-4 flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-muted-foreground" />
-            <span className="font-medium">Please check the details carefully.</span>
+          <div className="flex items-center gap-3">
+            <User className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-lg">{data.patientName || "Patient"}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Activity className="w-5 h-5 text-primary" />
+            <span className="font-medium">{data.therapyType || "Therapy Service"}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-muted-foreground" />
+            <span className="font-medium">{data.date || "Date not specified"}</span>
+          </div>
+          <div className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-muted-foreground" />
-            <span className="text-sm">Respond quickly before another therapist accepts it.</span>
+            <span>{data.time || "Time not specified"}</span>
+          </div>
+          <div className="flex items-start gap-3 mt-1 pt-3 border-t border-muted-foreground/20">
+            <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+            <span className="text-sm leading-tight">{data.address || "Address not provided"}</span>
           </div>
         </div>
 
