@@ -13,6 +13,7 @@ import { AIChatAssistant } from '@/components/ai-chat-assistant';
 import { Suspense } from 'react';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { LocationConsentDialog } from '@/components/location-consent-dialog';
+import { IncomingBookingModal } from '@/components/incoming-booking-modal';
 
 export const metadata: Metadata = {
   title: {
@@ -64,6 +65,7 @@ export default function RootLayout({
               <BottomNav />
               <AIChatAssistant />
               <CookieConsentBanner />
+              <IncomingBookingModal />
             </CartProvider>
           </AuthProvider>
         </Suspense>

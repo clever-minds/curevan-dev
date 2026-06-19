@@ -12,6 +12,8 @@ interface AuthContextType {
   logout: () => void;
   refreshUser: () => Promise<void>;
   isLoading: boolean;
+  incomingBooking: any | null;
+  clearIncomingBooking: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +21,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [incomingBooking, setIncomingBooking] = useState<any | null>(null);
+
+  const clearIncomingBooking = () => setIncomingBooking(null);
 
   // ✅ Check auth on mount
   useEffect(() => {
@@ -88,6 +93,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             unsubscribe = listenForMessages((payload) => {
               console.log("Foreground message received:", payload);
               
+              if (payload.data?.type === 'broadcast_booking') {
+                setIncomingBooking(payload);
+              }
+
               const title = payload.notification?.title || "New Notification";
               const body = payload.notification?.body || "You have a new message.";
               
@@ -180,7 +189,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, refreshUser, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser, isLoading, incomingBooking, clearIncomingBooking }}>
       {children}
     </AuthContext.Provider>
   );
