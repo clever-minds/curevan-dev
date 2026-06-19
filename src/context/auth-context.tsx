@@ -99,7 +99,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
               // Show Native Browser Notification Popup
               if (Notification.permission === "granted") {
-                new Notification(title, { body });
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.ready.then((registration) => {
+                    registration.showNotification(title, { 
+                      body,
+                      icon: '/favicon.ico',
+                      data: payload.data,
+                    });
+                  });
+                } else {
+                  new Notification(title, { body, icon: '/favicon.ico' });
+                }
               }
             });
           }
