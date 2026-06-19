@@ -87,10 +87,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             
             unsubscribe = listenForMessages((payload) => {
               console.log("Foreground message received:", payload);
+              
+              const title = payload.notification?.title || "New Notification";
+              const body = payload.notification?.body || "You have a new message.";
+              
+              // Show Shadcn UI Toast
               toast({
-                title: payload.notification?.title || "New Notification",
-                description: payload.notification?.body || "You have a new message.",
+                title,
+                description: body,
               });
+
+              // Show Native Browser Notification Popup
+              if (Notification.permission === "granted") {
+                new Notification(title, { body });
+              }
             });
           }
         } catch (err) {
