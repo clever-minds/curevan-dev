@@ -8,6 +8,7 @@ const libraries: ("places")[] = ["places"];
 
 interface Props {
   value?: string;
+  onChange?: (val: string) => void;
   onAddressSelect: (data: {
     line1: string;
     line2: string;
@@ -22,6 +23,7 @@ interface Props {
 
 export default function GooglePlacesInput({
   value = '',
+  onChange,
   onAddressSelect,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -109,6 +111,7 @@ export default function GooglePlacesInput({
       });
     });
   }, [isLoaded, onAddressSelect]);
+  }, [isLoaded, onAddressSelect, onChange]);
 
   if (!isLoaded) {
     return <Input placeholder="Loading..." disabled />;
@@ -117,9 +120,14 @@ export default function GooglePlacesInput({
   return (
     <Input
       ref={inputRef}
+      type="text"
+      placeholder="Search your area / building..."
       value={inputValue}
-      onChange={(e) => setInputValue(e.target.value)}
-      placeholder="Search your address"
+      onChange={(e) => {
+        setInputValue(e.target.value);
+        if (onChange) onChange(e.target.value);
+      }}
+      className="pr-10"
     />
   );
 }

@@ -54,12 +54,12 @@ const requestTherapistSchema = z.object({
   prescription: z.any().optional(),
 }).refine(data => {
     if (data.sessionMode === 'home') {
-        return !!data.line1 && !!data.city && !!data.pin;
+        return !!data.line1 && !!data.city && !!data.pin && !!data.latitude && !!data.longitude;
     }
     return true;
 }, {
-    message: "Address, City, and Pincode are required for home visits.",
-    path: ["line1"],
+    message: "Please select an address from the dropdown suggestions to accurately find nearby therapists.",
+    path: ["line1"]
 });
 
 type RequestTherapistFormValues = z.infer<typeof requestTherapistSchema>;
@@ -274,6 +274,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
                 <FormField control={form.control} name="line1" render={({ field }) => (<FormItem><FormLabel>Address Line 1</FormLabel><FormControl>
                   <GooglePlacesInput 
                     value={field.value || ''} 
+                    onChange={field.onChange} 
                     onAddressSelect={(geo) => {
                       form.setValue('line1', geo.line1, { shouldValidate: true });
                       form.setValue('city', geo.city, { shouldValidate: true });
