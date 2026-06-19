@@ -124,27 +124,18 @@ export function IncomingBookingModal() {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="bg-muted p-4 rounded-lg my-4 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-lg">{data.patientName || "Patient"}</span>
+        <div className="bg-muted p-4 rounded-lg my-4 flex flex-col gap-3 items-center text-center">
+          <div className="flex items-center gap-2 justify-center w-full">
+            <Clock className="w-6 h-6 text-primary" />
+            <span className="font-bold text-2xl">{data.time || "Time not specified"}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Activity className="w-5 h-5 text-primary" />
-            <span className="font-medium">{data.therapyType || "Therapy Service"}</span>
+          <div className="flex items-center gap-2 justify-center text-muted-foreground mt-2">
+            <Calendar className="w-5 h-5" />
+            <span className="font-medium text-lg">{data.date || "Date not specified"}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-muted-foreground" />
-            <span className="font-medium">{data.date || "Date not specified"}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-muted-foreground" />
-            <span>{data.time || "Time not specified"}</span>
-          </div>
-          <div className="flex items-start gap-3 mt-1 pt-3 border-t border-muted-foreground/20">
-            <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
-            <span className="text-sm leading-tight">{data.address || "Address not provided"}</span>
-          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Patient details and address will be revealed after you accept the request.
+          </p>
         </div>
 
         <DialogFooter className="flex flex-row justify-center gap-4 sm:justify-center">
