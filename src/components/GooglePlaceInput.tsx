@@ -110,7 +110,6 @@ export default function GooglePlacesInput({
         fullAddress,
       });
     });
-  }, [isLoaded, onAddressSelect]);
   }, [isLoaded, onAddressSelect, onChange]);
 
   if (!isLoaded) {
