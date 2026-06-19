@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import type { UserProfile } from '@/lib/types';
 import api from '@/lib/api/axios';
 import { getToken, logoutAction } from "@/lib/auth";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: UserProfile | null;
