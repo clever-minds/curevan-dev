@@ -171,6 +171,8 @@ export interface Appointment {
   notes?: string;
   reports?: any;
   addressId?: number;
+  latitude?: number;
+  longitude?: number;
   createdAt: Date;
   serviceAddress?: Address;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';

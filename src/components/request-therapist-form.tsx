@@ -17,13 +17,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Send } from 'lucide-react';
+import { MapPin, Send, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { getTherapyCategories } from '@/lib/repos/categories';
+import GooglePlacesInput from './GooglePlaceInput';
+import { useAuth } from '@/context/auth-context';
+import { createBookingAndInvoice } from '@/lib/actions/booking';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 
 const timeSlots = [
   '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
@@ -59,8 +64,11 @@ const requestTherapistSchema = z.object({
 
 type RequestTherapistFormValues = z.infer<typeof requestTherapistSchema>;
 
-export function RequestTherapistForm() {
+export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
   const { toast } = useToast();
+  const router = useRouter();
+  const { user } = useAuth();
+  const [isPending, startTransition] = useTransition();
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [therapyCategories, setTherapyCategories] = useState<string[]>([]);
   
@@ -109,12 +117,63 @@ export function RequestTherapistForm() {
   };
 
   function onSubmit(data: RequestTherapistFormValues) {
-    console.log(data);
-    toast({
-      title: 'Request Submitted',
-      description: "Our team will review your request and find the best therapist for you. We'll be in touch shortly.",
-    });
-    form.reset();
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Authentication Required', description: 'Please sign in to request a therapist.' });
+      router.push('/auth/signin');
+      return;
+    }
+
+    let reportsBase64: any = null;
+    if (data.prescription) {
+      const file = data.prescription;
+      if (file instanceof File) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          reportsBase64 = [{ name: file.name, type: file.type, data: reader.result }];
+          submitBooking(reportsBase64);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+    }
+    submitBooking(reportsBase64);
+
+    function submitBooking(processedReports: any) {
+      startTransition(async () => {
+        const result = await createBookingAndInvoice({
+          patientId: user!.id,
+          patientName: data.fullName || user!.name || 'N/A',
+          dateofBirth: '1990-01-01', // default or ask in form if needed
+          therapistId: null as any, // unassigned
+          therapist: 'Unassigned',
+          serviceTypeId: data.therapyType.toLowerCase().replace(/ /g, '-'),
+          therapyType: data.therapyType,
+          serviceAmount: 0,
+          totalAmount: 0,
+          date: format(data.scheduledDate, 'yyyy-MM-dd') as any,
+          time: data.scheduledTime,
+          mode: data.sessionMode,
+          notes: data.description,
+          reports: processedReports,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          status: 'Pending',
+          verificationStatus: 'Not Verified',
+        }, { paymentId: 'pay-later', gateway: 'none' });
+
+        if (result.success) {
+          toast({
+            title: 'Request Submitted',
+            description: "Our team will find the best therapist for you nearby. We'll notify you shortly.",
+          });
+          form.reset();
+          if (onClose) onClose();
+          router.push('/dashboard/bookings');
+        } else {
+          toast({ variant: 'destructive', title: 'Submission Failed', description: result.error || 'Failed to submit request.' });
+        }
+      });
+    }
   }
 
   return (
@@ -212,7 +271,18 @@ export function RequestTherapistForm() {
                         {isGettingLocation ? 'Fetching...' : 'Use Current Location'}
                     </Button>
                 </div>
-                <FormField control={form.control} name="line1" render={({ field }) => (<FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="Building name and street" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="line1" render={({ field }) => (<FormItem><FormLabel>Address Line 1</FormLabel><FormControl>
+                  <GooglePlacesInput 
+                    value={field.value || ''} 
+                    onAddressSelect={(geo) => {
+                      form.setValue('line1', geo.line1, { shouldValidate: true });
+                      form.setValue('city', geo.city, { shouldValidate: true });
+                      form.setValue('pin', geo.pin, { shouldValidate: true });
+                      form.setValue('latitude', geo.lat, { shouldValidate: true });
+                      form.setValue('longitude', geo.lng, { shouldValidate: true });
+                    }} 
+                  />
+                </FormControl><FormMessage /></FormItem>)}/>
                 <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Your city" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     <FormField control={form.control} name="pin" render={({ field }) => (<FormItem><FormLabel>Pincode</FormLabel><FormControl><Input placeholder="Your pincode" {...field} onChange={(e) => {
@@ -268,8 +338,8 @@ export function RequestTherapistForm() {
             )}
         />
 
-        <Button type="submit" className="w-full">
-            <Send className="mr-2 h-4 w-4"/>
+        <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
             Submit Request
         </Button>
       </form>
