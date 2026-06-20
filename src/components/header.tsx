@@ -409,9 +409,11 @@ export default function Header() {
                 </Button>
             )}
 
-            <Button asChild className="hidden sm:inline-flex bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity">
-              <Link href="/book">Book Now</Link>
-            </Button>
+            {(!user || user.roles?.includes('patient')) && (
+              <Button asChild className="hidden sm:inline-flex bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity">
+                <Link href="/book">Book Now</Link>
+              </Button>
+            )}
 
             {user && (
                 <Button 

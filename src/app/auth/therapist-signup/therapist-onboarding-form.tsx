@@ -39,7 +39,7 @@ import { useRouter } from 'next/navigation';
 import { getTherapistProfileById } from '@/lib/repos/therapistProfiles';
 import Image from 'next/image';
 import { PasswordStrengthInput } from '@/components/auth/password-strength-input';
-import { getTherapyCategories } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { MultiSelect } from '@/components/ui/multi-select';
 import GooglePlacesInput from '@/components/GooglePlaceInput';
 import MediaPicker from '@/components/MediaPicker';
@@ -287,7 +287,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
   useEffect(() => {
     const fetchData = async () => {
       const [therapyCats] = await Promise.all([
-        getTherapyCategories(),
+        getTherapyCategoriesWithIds(),
       ]);
       setMeta({ therapyCategories: therapyCats } as any);
     };
@@ -351,9 +351,14 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
             bankAccountNumber: therapist.bankAccountNo || '',
             bankIfscCode: therapist.bankIfscCode || '',
             specialty: Array.isArray(therapist.specialty)
-              ? therapist.specialty
+              ? therapist.specialty.map(s => {
+                  if (typeof s === 'object') return String(s.id);
+                  const str = String(s);
+                  const cat = therapyCats.find((c: any) => String(c.id) === str || c.name === str);
+                  return cat ? String(cat.id) : str;
+                })
               : therapist.specialty
-                ? [therapist.specialty]
+                ? [typeof therapist.specialty === 'object' ? String((therapist.specialty as any).id) : String(therapist.specialty)]
                 : [],
           });
           if (therapist.image) {
@@ -402,6 +407,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
           kycIdProof: kycIdProofId,
           kycLicense: kycLicenseId,
           kycBankProof: kycBankProofId,
+          specialty: data.specialty.map(Number),
         };
 
         console.log('=== FINAL PAYLOAD ===');
@@ -609,7 +615,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormLabel>Specialty</FormLabel>
                         <FormControl>
                           <MultiSelect
-                            options={meta.therapyCategories.map(c => ({ label: c, value: c }))}
+                            options={meta.therapyCategories.map((c: any) => ({ label: c.name, value: c.id.toString() }))}
                             selected={field.value || []}
                             onChange={field.onChange}
                             placeholder="Select Specialties"
