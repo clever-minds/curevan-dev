@@ -2,20 +2,29 @@
 import serverApi from '@/lib/repos/axios.server';
 import type { Therapist, Address, GeoPoint } from '../types';
 import { getToken } from '../auth';
+import { getTherapyCategoriesWithIds } from './categories';
+
 /**
  * List all therapists (uses cookies for auth)
  */
 export async function listTherapists(): Promise<Therapist[] | null> {
     try {
+        const [ { data }, categories ] = await Promise.all([
+            serverApi.get('/api/therapists/list', {
+                headers: {
+                    Authorization: `Bearer ${await getToken()}`,
+                },
+            }),
+            getTherapyCategoriesWithIds()
+        ]);
 
-        const { data } = await serverApi.get('/api/therapists/list', {
-         headers: {
-        Authorization: `Bearer ${await getToken()}`,
-      }, // send cookies automatically
-        });
+        const categoryMap = new Map<number, string>();
+        if (categories && Array.isArray(categories)) {
+            categories.forEach(cat => categoryMap.set(cat.id, cat.name));
+        }
 
         const therapists: Therapist[] = (data.data || []).map((item: any) => ({
-         id: item.id,
+            id: item.id,
             user_id: item.user_id,
             name: item.name,
             specialty: item.specialty,
@@ -33,11 +42,13 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             position: item.position,
             rating: item.rating || 0,
             reviews: item.reviews || 0,
-            image: item.image || '',
+            image: item.avatar || item.image || '',
             experience_years: item.experience || 0,
             bio: item.bio || '',
             qualifications: item.qualifications || [],
-            serviceTypes: item.specialty || [],
+            serviceTypes: Array.isArray(item.specialty) 
+                ? item.specialty.map((id: number) => categoryMap.get(id) || id?.toString()) 
+                : [],
             membershipPlan: item.membershipPlan || 'standard',
             isProfilePublic: item.isProfilePublic,
             profileViewCount: item.profileViewCount,
@@ -185,15 +196,23 @@ export async function listTherapistsByLocation(
   try {
     console.log('Fetching therapists by location:', lat, lng);
 
-    const { data } = await serverApi.get('/api/therapists/listnearby', {
-      params: {
-        lat,
-        lng,
-      },
-      headers: {
-        Authorization: `Bearer ${await getToken()}`,
-      },
-    });
+    const [ { data }, categories ] = await Promise.all([
+      serverApi.get('/api/therapists/listnearby', {
+        params: {
+          lat,
+          lng,
+        },
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      }),
+      getTherapyCategoriesWithIds()
+    ]);
+
+    const categoryMap = new Map<number, string>();
+    if (categories && Array.isArray(categories)) {
+        categories.forEach(cat => categoryMap.set(cat.id, cat.name));
+    }
 
     const therapists: Therapist[] = (data.data || []).map((item: any) => ({
       id: item.id,
@@ -207,8 +226,10 @@ export async function listTherapistsByLocation(
       registration_no: item.registration_no,
       address_line1: item.address_line1,
       availability: item.availability,
-      serviceTypes: item.specialty || [],
-      image: item.image,
+      serviceTypes: Array.isArray(item.specialty) 
+          ? item.specialty.map((id: number) => categoryMap.get(id) || id?.toString()) 
+          : [],
+      image: item.avatar || item.image || '',
       distance:item.distance_km,
       hourlyRate: item.hourlyRate,
       lat: item.latitude ? Number(item.latitude) : 0,

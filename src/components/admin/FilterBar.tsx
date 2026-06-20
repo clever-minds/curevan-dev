@@ -28,7 +28,9 @@ interface FilterBarProps {
   showAdminUserFilters?: boolean;
   showAppointmentFilters?: boolean;
   showSupportTicketFilters?: boolean; // New prop
+  orientation?: 'horizontal' | 'vertical';
   onFilterChange?: (filters: any) => void;
+  initialFilters?: any;
 }
 
 const defaultFilters = {
@@ -70,9 +72,11 @@ export function FilterBar({
   showAdminUserFilters,
   showAppointmentFilters,
   showSupportTicketFilters, // New prop
-  onFilterChange
+  orientation = 'horizontal',
+  onFilterChange,
+  initialFilters
 }: FilterBarProps) {
-  const [filters, setFilters] = React.useState(defaultFilters);
+  const [filters, setFilters] = React.useState(initialFilters ? { ...defaultFilters, ...initialFilters } : defaultFilters);
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [meta, setMeta] = React.useState({
@@ -131,7 +135,10 @@ export function FilterBar({
   }
 
   const FilterContent = (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
+    <div className={cn(
+      "grid gap-4 items-end",
+      orientation === 'horizontal' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
+    )}>
         {showSearch && (
             <div className="space-y-1">
                 <Label>Search</Label>
@@ -317,14 +324,14 @@ export function FilterBar({
   }
 
   return (
-    <Card className="no-print">
-      <CardContent className="p-4">
-        <div className="flex flex-wrap items-end gap-4 justify-between">
-            <div className="flex-grow">
+    <Card className={cn("no-print", orientation === 'vertical' && "border-none shadow-none bg-transparent")}>
+      <CardContent className={cn("p-4", orientation === 'vertical' && "px-0")}>
+        <div className={cn("flex flex-wrap items-end gap-4 justify-between", orientation === 'vertical' && "flex-col items-start")}>
+            <div className="flex-grow w-full">
                 {FilterContent }
             </div>
-            <div className="flex-shrink-0">
-                 <Button variant="ghost" onClick={resetFilters} className="shrink-0"><Trash2 className="mr-2"/>Reset All</Button>
+            <div className={cn("flex-shrink-0 w-full", orientation === 'vertical' && "mt-2")}>
+                 <Button variant={orientation === 'vertical' ? 'outline' : 'ghost'} onClick={resetFilters} className={cn("shrink-0", orientation === 'vertical' && "w-full")}><Trash2 className="mr-2"/>Reset All</Button>
             </div>
         </div>
       </CardContent>
