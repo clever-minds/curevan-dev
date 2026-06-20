@@ -9,7 +9,7 @@ import api from "@/lib/api/axios";
 import { useToast } from "@/hooks/use-toast";
 
 export function IncomingBookingModal() {
-  const { incomingBooking, clearIncomingBooking } = useAuth();
+  const { user, incomingBooking, clearIncomingBooking } = useAuth();
   const [isAccepting, setIsAccepting] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<any>(null);
@@ -75,7 +75,11 @@ export function IncomingBookingModal() {
     
     setIsAccepting(true);
     try {
-      const response = await api.post(`/api/appointments/accept/${incomingBooking.data.appointmentId}`);
+      const response = await api.post(`/api/appointments/accept/${incomingBooking.data.appointmentId}`, {
+        therapistId: user?.id,
+        therapistName: user?.name,
+        therapistPhone: user?.phone
+      });
       
       if (response.data.success) {
         toast({
