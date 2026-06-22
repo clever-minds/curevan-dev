@@ -160,7 +160,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
       <div className={cn(
-          "bg-animated-gradient text-white transition-all duration-300 lg:hidden",
+          "bg-animated-gradient text-white transition-all duration-300",
           showTopBar ? "h-8 sm:h-10 opacity-100" : "h-0 opacity-0 overflow-hidden"
           )}>
         <div className="container h-full max-w-screen-2xl items-center justify-between flex px-3 sm:px-4">
