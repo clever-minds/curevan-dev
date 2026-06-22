@@ -31,7 +31,7 @@ import useRazorpay from '@/hooks/use-razorpay';
 import { isSameDay, isPast, set, format } from 'date-fns';
 import { Price } from '@/components/money/price';
 import { listAppointmentsForUser } from '@/lib/repos/appointments';
-import { getTherapyCategories } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { createBookingAndInvoice } from '@/lib/actions/booking';
 import { createAddress, deleteAddress, listAddresses, updateAddress } from '@/lib/repos/address';
 import { getIndianStates } from '@/lib/repos/meta';
@@ -458,7 +458,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const { openPayment, isLoaded } = useRazorpay();
 
   const [therapistAppointments, setTherapistAppointments] = useState<Appointment[]>([]);
-  const [therapyCategories, setTherapyCategories] = useState<string[]>([]);
+  const [therapyCategories, setTherapyCategories] = useState<{id: number, name: string}[]>([]);
 
   // Address state
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -472,11 +472,11 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     const fetchData = async () => {
       const [apps, cats, states] = await Promise.all([
         listAppointmentsForUser(therapist.id, 'therapist'),
-        getTherapyCategories(),
+        getTherapyCategoriesWithIds(),
         getIndianStates(),
       ]);
       setTherapistAppointments(apps);
-      setTherapyCategories(cats);
+      setTherapyCategories(cats || []);
       setIndianStates(states);
     };
     fetchData();
@@ -660,13 +660,16 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       prefill: { name: user!.name, email: user!.email },
       onSuccess: (paymentResponse) => {
         startTransition(async () => {
+          const selectedCategory = therapyCategories.find(c => c.name === data.serviceType);
+          const serviceTypeId = selectedCategory ? selectedCategory.id : null;
+
           const result = await createBookingAndInvoice({
             patientId: user!.id,
             patientName: data.patientFullName || user!.name || 'N/A',
             dateofBirth: data.dob,
             therapistId: therapist.id,
             therapist: therapist.name,
-            serviceTypeId: data.serviceType.toLowerCase().replace(/ /g, '-'),
+            serviceTypeId: serviceTypeId,
             therapyType: data.serviceType,
             serviceAmount,
             totalAmount: serviceAmount,
@@ -749,7 +752,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               <FormLabel>Service Type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl><SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger></FormControl>
-                <SelectContent>{therapyCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+                <SelectContent>{therapyCategories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent>
               </Select>
               <FormMessage />
             </FormItem>
