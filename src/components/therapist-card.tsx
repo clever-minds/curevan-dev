@@ -38,7 +38,7 @@
                         </div>
                         
                         <div className="flex items-center gap-2 mt-3">
-                            <span className="font-bold text-gray-900">₹{therapist.hourly_rate || 500}</span>
+                            <span className="font-bold text-gray-900">₹{therapist.hourlyRate || (therapist as any).hourly_rate || 500}</span>
                             <span className="text-gray-300">•</span>
                             <span className="text-gray-600 text-sm font-medium">{therapist.experience_years} yrs exp</span>
                         </div>

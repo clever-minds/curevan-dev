@@ -84,14 +84,14 @@ export async function getTherapyCategories(): Promise<string[]> {
   ];
 }
 
-export async function getTherapyCategoriesWithIds(): Promise<{id: number, name: string}[]> {
+export async function getTherapyCategoriesWithIds(): Promise<{id: number, name: string, icon_path?: string}[]> {
   try {
     const token = await getToken();
     const { data: response } = await serverApi.get("/api/service-types/list", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (response?.success && Array.isArray(response.data)) {
-      return response.data.map((cat: any) => ({ id: cat.id, name: cat.name }));
+      return response.data.map((cat: any) => ({ id: cat.id, name: cat.name, icon_path: cat.icon_path }));
     }
   } catch (error) {
     console.error("Failed to fetch service types:", error);

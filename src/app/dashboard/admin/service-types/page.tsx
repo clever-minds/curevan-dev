@@ -9,13 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, Edit2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Edit2, Image as ImageIcon } from "lucide-react";
 import clientApi from '@/lib/repos/axios';
+import { imageUrl } from '@/lib/image';
 
 interface ServiceType {
   id: number;
   name: string;
   is_active: boolean;
+  icon_path?: string;
   created_at: string;
 }
 
@@ -24,12 +26,14 @@ export default function AdminServiceTypesPage() {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newTypeName, setNewTypeName] = useState("");
+  const [newIcon, setNewIcon] = useState<File | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
   // Edit State
   const [editingType, setEditingType] = useState<ServiceType | null>(null);
   const [editName, setEditName] = useState("");
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editIcon, setEditIcon] = useState<File | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -58,10 +62,18 @@ export default function AdminServiceTypesPage() {
     
     try {
       setIsAdding(true);
-      const { data } = await clientApi.post('/api/service-types/add', { name: newTypeName.trim() });
+      const formData = new FormData();
+      formData.append('name', newTypeName.trim());
+      if (newIcon) {
+        formData.append('icon', newIcon);
+      }
+      const { data } = await clientApi.post('/api/service-types/add', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       if (data?.success) {
         toast({ title: "Success", description: "Service type added successfully" });
         setNewTypeName("");
+        setNewIcon(null);
         fetchServiceTypes();
       } else {
         toast({ title: "Error", description: data?.message || "Failed to add service type", variant: "destructive" });
@@ -93,15 +105,22 @@ export default function AdminServiceTypesPage() {
     setEditingType(st);
     setEditName(st.name);
     setEditIsActive(st.is_active);
+    setEditIcon(null);
   };
 
   const handleUpdateServiceType = async () => {
     if (!editingType || !editName.trim()) return;
     try {
       setIsUpdating(true);
-      const { data } = await clientApi.put(`/api/service-types/update/${editingType.id}`, { 
-        name: editName.trim(), 
-        is_active: editIsActive 
+      const formData = new FormData();
+      formData.append('name', editName.trim());
+      formData.append('is_active', String(editIsActive));
+      if (editIcon) {
+        formData.append('icon', editIcon);
+      }
+
+      const { data } = await clientApi.put(`/api/service-types/update/${editingType.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (data?.success) {
         toast({ title: "Success", description: "Service type updated successfully" });
@@ -130,8 +149,9 @@ export default function AdminServiceTypesPage() {
           <CardDescription>Enter the name of the new service type.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start gap-4">
-            <div className="w-full sm:max-w-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-start gap-4">
+            <div className="w-full sm:max-w-sm space-y-2">
+                <Label>Service Name</Label>
                 <Input 
                   placeholder="e.g. Acupuncture" 
                   value={newTypeName} 
@@ -139,7 +159,15 @@ export default function AdminServiceTypesPage() {
                   onKeyDown={(e) => e.key === 'Enter' && handleAddServiceType()}
                 />
             </div>
-            <Button onClick={handleAddServiceType} disabled={isAdding || !newTypeName.trim()} className="shrink-0">
+            <div className="w-full sm:max-w-xs space-y-2">
+                <Label>Icon (Optional)</Label>
+                <Input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setNewIcon(e.target.files?.[0] || null)}
+                />
+            </div>
+            <Button onClick={handleAddServiceType} disabled={isAdding || !newTypeName.trim()} className="shrink-0 mt-6 sm:mt-0">
               {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
               Add
             </Button>
@@ -160,7 +188,7 @@ export default function AdminServiceTypesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  <TableHead>Icon</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -176,7 +204,15 @@ export default function AdminServiceTypesPage() {
                 ) : (
                   serviceTypes.map((st) => (
                     <TableRow key={st.id}>
-                      <TableCell>{st.id}</TableCell>
+                      <TableCell>
+                        {st.icon_path ? (
+                          <img src={imageUrl(st.icon_path)} alt={st.name} className="w-8 h-8 object-cover rounded shadow-sm" />
+                        ) : (
+                          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{st.name}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${st.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
@@ -215,6 +251,21 @@ export default function AdminServiceTypesPage() {
                 placeholder="Service type name"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Icon (Optional)</Label>
+              {editingType?.icon_path && !editIcon && (
+                <div className="mb-2">
+                  <p className="text-xs text-muted-foreground mb-1">Current Icon:</p>
+                  <img src={imageUrl(editingType.icon_path)} alt="Current icon" className="h-12 w-12 object-cover rounded shadow-sm border" />
+                </div>
+              )}
+              <Input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => setEditIcon(e.target.files?.[0] || null)}
+              />
+              <p className="text-xs text-muted-foreground">Upload a new image to replace the current icon.</p>
+            </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="space-y-0.5">
                 <Label>Active Status</Label>
@@ -238,4 +289,3 @@ export default function AdminServiceTypesPage() {
     </div>
   );
 }
-

@@ -25,7 +25,7 @@ import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import ReportAiSummary from "@/components/report/report-ai-summary";
-import { getEarningsHistory } from "@/services/earnings-service";
+import { fetchEarningsData, EarningsData } from "@/services/earnings-service";
 import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
@@ -33,26 +33,7 @@ import { getTherapyCategories } from "@/lib/repos/meta";
 export const dynamic = 'force-dynamic';
 
 
-const sessionData = [
-    { date: '2024-07-22', sessionCount: 2 },
-    { date: '2024-07-23', sessionCount: 3 },
-    { date: '2024-07-24', sessionCount: 1 },
-    { date: '2024-07-25', sessionCount: 4 },
-    { date: '2024-07-26', sessionCount: 2 },
-    { date: '2024-07-29', sessionCount: 3 },
-    { date: '2024-07-30', sessionCount: 1 },
-];
-const modeSplitData = [
-    { name: 'Home Visit', value: 9 },
-    { name: 'Online', value: 3 },
-    { name: 'Clinic', value: 1 },
-];
-const weeklyEarningsData = [
-  { week: 'Jul 1-7', Service: 6500, Product: 400 },
-  { week: 'Jul 8-14', Service: 7200, Product: 650 },
-  { week: 'Jul 15-21', Service: 8100, Product: 300 },
-  { week: 'Jul 22-28', Service: 7500, Product: 800 },
-];
+
 
 const DashboardSection = ({ id, title, children, className }: { id: string, title: string, children: React.ReactNode, className?: string }) => (
     <section id={id} className={cn("scroll-mt-24 space-y-4 avoid-break", className)}>
@@ -86,16 +67,14 @@ export default function TherapistDashboard() {
   const { toast } = useToast();
   const [topServicesData, setTopServicesData] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
 
-  const therapistId = user?.uid || '';
-  const earningsHistory = useMemo(() => getEarningsHistory(therapistId, 'mtd'), [therapistId]);
-  
   const todayStart = new Date();
   todayStart.setHours(0,0,0,0);
   const todayEnd = new Date();
   todayEnd.setHours(23,59,59,999);
 
-  const excludedItems = earningsHistory.filter(e => e.status === 'On-Hold');
+  const excludedItems = earningsData?.earningsHistory?.filter((e: any) => e.status === 'On-Hold') || [];
 
   useEffect(() => {
     if (user && user.role !== 'therapist') {
@@ -108,17 +87,19 @@ export default function TherapistDashboard() {
         if (!user) return;
         setLoading(true);
         try {
-            const [appointmentData, availableReqs, therapistData, therapyCats, dashboardStats] = await Promise.all([
+            const [appointmentData, availableReqs, therapistData, therapyCats, dashboardStats, eData] = await Promise.all([
                 listAppointmentsForUser(user.id, 'therapist'),
                 getAvailableRequests(user.id),
                 getTherapistById(user.id),
                 getTherapyCategories(),
-                import('@/lib/repos/therapists').then(m => m.getTherapistDashboardStats(user.id))
+                import('@/lib/repos/therapists').then(m => m.getTherapistDashboardStats(user.id)),
+                fetchEarningsData(user.id)
             ]);
             setAppointments(appointmentData);
             setAvailableRequests(availableReqs);
             setTherapist(therapistData);
             setStats(dashboardStats);
+            setEarningsData(eData);
             setTopServicesData(therapyCats.slice(0,3).map(cat => ({
                 name: cat.split(" ")[0],
                 count: Math.floor(Math.random() * 20) + 5,
@@ -265,9 +246,9 @@ export default function TherapistDashboard() {
 
             <DashboardSection id="charts" title="Insights (Dynamic)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Sessions Per Day" type="line" data={stats?.charts?.sessionData || sessionData} categoryKey="date" valueKey="sessionCount" />
-                    <DashboardCard title="Session Mode Split" type="pie" data={stats?.charts?.modeSplitData || modeSplitData} categoryKey="name" valueKey="value" />
-                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={stats?.charts?.weeklyEarningsData || weeklyEarningsData} categoryKey="week" valueKey="Service" className="lg:col-span-2" />
+                    <DashboardCard title="Sessions Per Day" type="line" data={stats?.charts?.sessionData || []} categoryKey="date" valueKey="sessionCount" />
+                    <DashboardCard title="Session Mode Split" type="pie" data={stats?.charts?.modeSplitData || []} categoryKey="name" valueKey="value" />
+                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={stats?.charts?.weeklyEarningsData || []} categoryKey="week" valueKey="Service" className="lg:col-span-2" />
                     <DashboardCard title="Top Services by Count" type="bar" data={topServicesData} categoryKey="name" valueKey="count" className="lg:col-span-2" />
                 </div>
             </DashboardSection>
@@ -424,7 +405,7 @@ export default function TherapistDashboard() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {earningsHistory.map((item) => (
+                        {(earningsData?.earningsHistory || []).slice(0, 5).map((item: any) => (
                             <TableRow key={item.source}>
                                 <TableCell>{new Date(item.sessionDate).toLocaleDateString()}</TableCell>
                                 <TableCell><Badge variant={item.type === 'service' ? 'default' : 'secondary'}>{item.type}</Badge></TableCell>
@@ -441,6 +422,11 @@ export default function TherapistDashboard() {
                                 </TableCell>
                             </TableRow>
                         ))}
+                        {(!earningsData?.earningsHistory || earningsData.earningsHistory.length === 0) && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center text-muted-foreground py-4">No earnings found.</TableCell>
+                            </TableRow>
+                        )}
                         </TableBody>
                     </Table>
                     </CardContent>

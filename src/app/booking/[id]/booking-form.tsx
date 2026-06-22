@@ -40,7 +40,7 @@ import { getIndianStates } from '@/lib/repos/meta';
 // Reverse Geocoding helper (OpenStreetMap Nominatim — free, no key needed)
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function reverseGeocode(lat: number, lng: number): Promise<{
+export async function reverseGeocode(lat: number, lng: number): Promise<{
   fullAddress: string;
   city: string;
   state: string;
@@ -84,7 +84,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<{
 // Add / Edit Address Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AddressFormModal({
+export function AddressFormModal({
   isOpen,
   onClose,
   onSave,
@@ -164,7 +164,7 @@ function AddressFormModal({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">{isEdit ? 'Edit Address' : 'Add New Address'}</h3>
-                <p className="text-white/75 text-sm">{isEdit ? 'Update delivery details' : 'Add a new delivery location'}</p>
+                <p className="text-white/75 text-sm">{isEdit ? 'Update home visit address' : 'Add a new home visit address'}</p>
               </div>
             </div>
             <button onClick={() => { handleReset(); onClose(); }} className="p-2 hover:bg-white/15 rounded-xl text-white transition-colors">
@@ -281,7 +281,7 @@ function AddressFormModal({
 // Address Picker Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AddressPickerModal({
+export function AddressPickerModal({
   isOpen,
   onClose,
   addresses,
@@ -318,7 +318,7 @@ function AddressPickerModal({
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white">Select Address</h3>
-                <p className="text-white/70 text-xs">Choose a delivery location</p>
+                <p className="text-white/70 text-xs">Choose a home visit location</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-white/15 rounded-xl text-white transition-colors">
@@ -341,7 +341,7 @@ function AddressPickerModal({
               </div>
               <div className="text-center">
                 <p className="font-medium text-gray-500">No addresses saved</p>
-                <p className="text-sm text-gray-400 mt-1">Add your first delivery address</p>
+                <p className="text-sm text-gray-400 mt-1">Add your first home visit address</p>
               </div>
             </div>
           ) : (
@@ -440,7 +440,7 @@ const bookingFormSchema = z.object({
   if (data.sessionMode === 'home') return !!data.addressId;
   return true;
 }, {
-  message: 'Please select a delivery address for home visits.',
+  message: 'Please select a home visit address.',
   path: ['addressId'],
 });
 
@@ -794,7 +794,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
           {/* ── Home Visit: Address Picker ── */}
           {sessionMode === 'home' && (
             <div className="space-y-3">
-              <FormLabel className="text-base">Delivery Address</FormLabel>
+              <FormLabel className="text-base">Home Visit Address</FormLabel>
 
               {/* Selected address card OR empty state */}
               {selectedAddress ? (
@@ -819,7 +819,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                   {isAddressLoading ? (
                     <><Loader2 className="animate-spin text-gray-400 w-6 h-6" /><p className="text-sm text-gray-400">Loading addresses...</p></>
                   ) : (
-                    <><MapPin className="text-gray-300 w-8 h-8" /><p className="text-sm font-medium text-gray-500">Select or add a delivery address</p><p className="text-xs text-gray-400">Tap to open address picker</p></>
+                    <><MapPin className="text-gray-300 w-8 h-8" /><p className="text-sm font-medium text-gray-500">Select or add a home visit address</p><p className="text-xs text-gray-400">Tap to open address picker</p></>
                   )}
                 </div>
               )}
