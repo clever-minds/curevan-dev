@@ -90,7 +90,7 @@ export async function curevanAssistant(input: ChatAssistantInput): Promise<ChatA
 
       **Contact Information:**
       - Email: care@curevan.com
-      - Phone: +91 79 9060 2143
+      - Phone: +91 95144 46292
       - Address: Himaya Care Pvt. Ltd., Office 704, Time Square, Vasna - Bhayli Main Rd, Ashwamegh Nagar, Tandalja, Vadodara, Gujarat 390012.
 
       **Earnings & Payments:**

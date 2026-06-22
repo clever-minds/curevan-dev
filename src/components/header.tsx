@@ -222,9 +222,9 @@ export default function Header() {
                                 <Mail className="w-5 h-5" />
                                 <span>care@curevan.com</span>
                               </a>
-                              <a href="tel:+917990602143" className="flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors font-semibold text-lg">
+                              <a href="tel:+919514446292" className="flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors font-semibold text-lg">
                                 <Phone className="w-5 h-5" />
-                                <span>+91 79 9060 2143</span>
+                                <span>+91 95144 46292</span>
                               </a>
                           </div>
                       </div>
