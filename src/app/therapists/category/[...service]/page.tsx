@@ -6,8 +6,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FilterBar } from '@/components/admin/FilterBar';
 import { LocationConsentDialog } from '@/components/location-consent-dialog';
 import { useToast } from '@/hooks/use-toast';
-import type { Therapist } from '@/lib/types';
+import type { Therapist, Product, ProductCategory } from '@/lib/types';
 import { listTherapistsByLocation, listTherapists } from '@/lib/repos/therapists';
+import { fetchPublicProducts, fetchPublicProductCategories } from '@/lib/repos/products';
+import ProductCard from '@/components/product-card';
 import { getDistance } from 'geolib';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { List, Map as MapIcon, Loader2, MapPin, ChevronRight, SlidersHorizontal, SearchX } from 'lucide-react';
@@ -31,14 +33,31 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
   const rawService = Array.isArray(params?.service) ? params.service.join('/') : params?.service || '';
   const serviceName = decodeURIComponent(rawService);
   const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showMap, setShowMap] = useState(false);
-
-  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [showConsent, setShowConsent] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const [productsData, categoriesData] = await Promise.all([
+          fetchPublicProducts(),
+          fetchPublicProductCategories()
+        ]);
+        setProducts(productsData || []);
+        setProductCategories(categoriesData || []);
+      } catch (err) {
+        console.error("Failed to load products", err);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const [filters, setFilters] = useState({
     specialty: [serviceName],
@@ -239,10 +258,34 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
     setVisibleCount(PAGE_SIZE);
   }, [filters]);
 
-  const currentTherapists = filteredAndSortedTherapists.slice(
-    0,
-    visibleCount
-  );
+  const currentTherapists = filteredAndSortedTherapists.slice(0, visibleCount);
+
+  const recommendedProductsData = useMemo(() => {
+    if (!products.length || !productCategories.length) return { products: [], categoryName: '', isFallback: true };
+
+    const searchStr = serviceName.toLowerCase();
+    const matchingCategories = productCategories.filter(cat => 
+       cat.name.toLowerCase().includes(searchStr) || 
+       searchStr.includes(cat.name.toLowerCase())
+    );
+
+    let filtered: Product[] = [];
+    let matchedCategoryName = '';
+
+    if (matchingCategories.length > 0) {
+       const categoryIds = matchingCategories.map(c => c.id);
+       filtered = products.filter(p => categoryIds.includes(p.categoryId));
+       matchedCategoryName = matchingCategories[0].name;
+    }
+
+    if (filtered.length > 0) {
+      return { products: filtered.slice(0, 4), categoryName: matchedCategoryName, isFallback: false };
+    }
+
+    // Fallback: general products
+    return { products: products.slice(0, 4), categoryName: 'General Wellness', isFallback: true };
+  }, [products, productCategories, serviceName]);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Ultra Premium Hero Section */}
@@ -401,6 +444,33 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
           </div>
         </div>
       </div>
+
+      {/* Recommended Products Section */}
+      {recommendedProductsData.products.length > 0 && (
+        <div className="bg-white border-t border-gray-100 py-16">
+          <div className="container mx-auto px-4 md:px-0">
+            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-bold font-headline mb-2">Recommended Products</h2>
+                <p className="text-muted-foreground text-lg">
+                  Top medical devices and wellness products for {serviceName}.
+                </p>
+              </div>
+              <div className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-semibold w-fit border border-primary/20">
+                Filtered by: {recommendedProductsData.categoryName} {recommendedProductsData.isFallback ? '(Fallback)' : ''}
+              </div>
+            </div>
+            
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {recommendedProductsData.products.map(product => (
+                <div key={product.id} className="h-full">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Map Toggle Button */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
