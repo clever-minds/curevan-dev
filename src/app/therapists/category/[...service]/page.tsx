@@ -7,7 +7,7 @@ import { FilterBar } from '@/components/admin/FilterBar';
 import { LocationConsentDialog } from '@/components/location-consent-dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Therapist } from '@/lib/types';
-import { listTherapistsByLocation } from '@/lib/repos/therapists';
+import { listTherapistsByLocation, listTherapists } from '@/lib/repos/therapists';
 import { getDistance } from 'geolib';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { List, Map as MapIcon, Loader2, MapPin, ChevronRight, SlidersHorizontal, SearchX } from 'lucide-react';
@@ -26,8 +26,10 @@ const SPECIALTIES = [
 
 const PAGE_SIZE = 12;
 
-export default function TherapistCategoryPage({ params }: { params: { service: string } }) {
-  const serviceName = decodeURIComponent(params.service);
+export default function TherapistCategoryPage({ params }: { params: { service: string | string[] } }) {
+  // Safe fallback since React.use is not available in React 18
+  const rawService = Array.isArray(params?.service) ? params.service.join('/') : params?.service || '';
+  const serviceName = decodeURIComponent(rawService);
   const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -47,6 +49,9 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
     experience_years: 0,
     language: 'any',
     search: '',
+    location: '',
+    lat: null as number | null,
+    lng: null as number | null,
   });
 
   // -----------------------------
@@ -113,10 +118,23 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
       try {
         setLoading(true);
 
-        const therapistsData = await listTherapistsByLocation(
-          userPosition.lat,
-          userPosition.lng
-        );
+        let therapistsData;
+        if (filters.lat && filters.lng) {
+          // User searched for a specific location using Google Places
+          therapistsData = await listTherapistsByLocation(
+            filters.lat,
+            filters.lng
+          );
+        } else if (filters.search) {
+          // User is searching by name only, fetch all to search globally
+          therapistsData = await listTherapists();
+        } else {
+          // Default: nearby to user's GPS
+          therapistsData = await listTherapistsByLocation(
+            userPosition.lat,
+            userPosition.lng
+          );
+        }
         console.log("therapistsData",therapistsData);
 
         // Null-safe fix
@@ -133,7 +151,7 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
     };
 
     fetchData();
-  }, [userPosition, toast]);
+  }, [userPosition, toast, filters.lat, filters.lng, filters.search]);
 
   // -----------------------------
   // FILTER + SORT (NO RADIUS FILTER)
@@ -160,12 +178,29 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
         !filters.search ||
         therapist.name.toLowerCase().includes(filters.search.toLowerCase());
 
-      return specialtyMatch && planMatch  && searchMatch;
+      // If we used Google Places to fetch by location, the backend already 
+      // filtered by radius, so we don't strictly need this local locationMatch.
+      // But we'll keep it for cases where someone types text without selecting from Google.
+      const locationMatch =
+        (!filters.location || filters.lat) ||
+        (therapist.city && therapist.city.toLowerCase().includes(filters.location.toLowerCase())) ||
+        (therapist.state && therapist.state.toLowerCase().includes(filters.location.toLowerCase())) ||
+        (therapist.pin && therapist.pin.toString().includes(filters.location));
+
+      return specialtyMatch && planMatch  && searchMatch && locationMatch;
     });
 
+    const refLat = filters.lat || (userPosition ? userPosition.lat : 0);
+    const refLng = filters.lng || (userPosition ? userPosition.lng : 0);
+
     const therapistsWithDistance = filtered.map((therapist) => {
+      // Only calculate distance if we have a valid reference point
+      if (!refLat || !refLng) {
+        return { ...therapist, distance: 0 };
+      }
+
       const distance = getDistance(
-        { latitude: userPosition.lat, longitude: userPosition.lng },
+        { latitude: refLat, longitude: refLng },
         {
           latitude: therapist.lat,
           longitude: therapist.lng,
@@ -340,6 +375,9 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
                               experience_years: 0,
                               language: 'any',
                               search: '',
+                              location: '',
+                              lat: null,
+                              lng: null,
                             })}
                             className="rounded-full px-8 hover:scale-105 transition-transform"
                             size="lg"

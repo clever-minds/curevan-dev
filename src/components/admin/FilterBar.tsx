@@ -18,6 +18,7 @@ import { listProductCategories } from '@/lib/repos/products';
 import { Label } from '../ui/label';
 import { listTherapists } from '@/lib/repos/therapists';
 import type { Therapist } from '@/lib/types';
+import GooglePlacesInput from '../GooglePlaceInput';
 
 interface FilterBarProps {
   showDatePicker?: boolean;
@@ -61,6 +62,9 @@ const defaultFilters = {
     payoutStatus: '',
     supportTopic: '',
     supportStatus: '',
+    location: '',
+    lat: null,
+    lng: null,
 };
 
 export function FilterBar({
@@ -158,8 +162,23 @@ export function FilterBar({
         {showLocationFilters && (
             <div className="space-y-1">
                 <Label>Location</Label>
-                 <Input 
-                    placeholder="City, State, or Pincode..."
+                 <GooglePlacesInput 
+                    value={filters.location || ''}
+                    onChange={(val) => {
+                      if (!val) {
+                        const newFilters = { ...filters, location: '', lat: null, lng: null };
+                        setFilters(newFilters);
+                      }
+                    }}
+                    onAddressSelect={(data) => {
+                      const newFilters = { 
+                        ...filters, 
+                        location: data.fullAddress,
+                        lat: data.lat,
+                        lng: data.lng
+                      };
+                      setFilters(newFilters);
+                    }}
                 />
             </div>
         )}
