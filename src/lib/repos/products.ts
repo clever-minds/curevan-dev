@@ -78,9 +78,9 @@ export async function listProductCategories(): Promise<ProductCategory[]> {
   }
 }
 
-export async function fetchPublicProducts(): Promise<Product[]> {
+export async function fetchPublicProducts(params?: { category_id?: number }): Promise<Product[]> {
   try {
-    const { data } = await serverApi.get("/api/products/frontend/list");
+    const { data } = await serverApi.get("/api/products/frontend/list", { params });
     console.log("api/products/frontend/list", data);
     return (data.data || []).map(mapProduct);
   } catch (error: any) {

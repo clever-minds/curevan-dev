@@ -103,10 +103,8 @@ export default function ProductDetailsPage() {
           setReviews(reviewsData);
           
           // Fetch related products
-          const allProducts = await fetchPublicProducts();
-          const related = allProducts
-            .filter(p => p.categoryId === productData.categoryId && p.id !== productData.id);
-          setRelatedProducts(related);
+          const allCategoryProducts = await fetchPublicProducts({ category_id: productData.categoryId });
+          setRelatedProducts(allCategoryProducts.filter(p => p.id !== productData.id).slice(0, 4));
         } else {
           toast({
             variant: 'destructive',
