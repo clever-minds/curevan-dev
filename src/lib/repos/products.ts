@@ -89,6 +89,17 @@ export async function fetchPublicProducts(): Promise<Product[]> {
   }
 }
 
+export async function fetchRecommendedProducts(params?: { service_type_id?: number; category_id?: number }): Promise<Product[]> {
+  try {
+    const { data } = await serverApi.get("/api/products/frontend/recommended", { params });
+    console.log("api/products/frontend/recommended", data);
+    return (data.data || []).map(mapProduct);
+  } catch (error: any) {
+    console.error("RECOMMENDED PRODUCT FETCH ERROR:", error?.message);
+    return [];
+  }
+}
+
 export async function fetchPublicProductCategories(): Promise<ProductCategory[]> {
   try {
     const { data } = await serverApi.get("/api/category/get-all");

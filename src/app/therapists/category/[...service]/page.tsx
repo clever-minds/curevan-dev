@@ -472,7 +472,7 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
       {recommendedProductsData.products.length > 0 && (
         <div className="bg-white border-t border-gray-100 py-16">
           <div className="container mx-auto px-4 md:px-0">
-            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-bold font-headline mb-2">Recommended Products</h2>
                 <p className="text-muted-foreground text-lg">
@@ -484,7 +484,7 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
               </div>
             </div>
             
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {recommendedProductsData.products.map(product => (
                 <div key={product.id} className="h-full">
                   <ProductCard product={product} />

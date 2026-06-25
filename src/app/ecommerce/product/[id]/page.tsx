@@ -51,7 +51,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
-import { fetchProductById, fetchPublicProducts } from '@/lib/repos/products';
+import { fetchProductById, fetchPublicProducts, fetchRecommendedProducts } from '@/lib/repos/products';
 import { fetchProductReviews } from '@/lib/repos/reviews';
 
 import { estimateShipping, ShippingEstimate } from '@/lib/repos/shipment';
@@ -103,11 +103,8 @@ export default function ProductDetailsPage() {
           setReviews(reviewsData);
           
           // Fetch related products
-          const allProducts = await fetchPublicProducts();
-          const related = allProducts
-            .filter(p => p.categoryId === productData.categoryId && p.id !== productData.id)
-            .slice(0, 4);
-          setRelatedProducts(related);
+          const related = await fetchRecommendedProducts({ category_id: productData.categoryId });
+          setRelatedProducts(related.filter(p => p.id !== productData.id).slice(0, 4));
         } else {
           toast({
             variant: 'destructive',
