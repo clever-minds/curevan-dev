@@ -92,7 +92,7 @@ export const therapistOnboardingSchema = z.object({
   }),
   qualification: z.string().min(1, 'Qualifications are required.'),
   registrationNo: z.string().min(1, 'Registration number is required.'),
-  specialty: z.array(z.string())
+  specialty: z.array(z.union([z.string(), z.number()]))
     .min(1, "Select at least one specialty"),
   kycIdProof: z.any().optional(),
   kycLicense: z.any().optional(),

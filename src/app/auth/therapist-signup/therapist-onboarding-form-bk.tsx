@@ -81,8 +81,8 @@
     mobile: z.string(),
     qualification: z.string().min(1, 'Qualifications are required.'),
     registrationNo: z.string().min(1, 'Registration number is required.'),
-    specialty: z.array(z.string())
-    .min(1, "Select at least one specialty"),
+    specialty: z.array(z.union([z.string(), z.number()]))
+      .min(1, "Select at least one specialty"),
     kycIdProof: z.any().optional(),
     kycLicense: z.any().optional(),
     profileImageId:z.any().optional(),
