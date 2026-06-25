@@ -470,7 +470,7 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
 
       {/* Recommended Products Section */}
       {recommendedProductsData.products.length > 0 && (
-        <div className="bg-white border-t border-gray-100 py-16">
+        <div className="py-16">
           <div className="container mx-auto px-4 md:px-0">
             <div className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
