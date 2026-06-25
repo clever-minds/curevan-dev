@@ -267,8 +267,8 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
   const recommendedProductsData = useMemo(() => {
     if (!products.length || !productCategories.length || !serviceTypes.length) return { products: [], categoryName: '', isFallback: true };
 
-    const searchStr = serviceName.toLowerCase();
-    const currentServiceType = serviceTypes.find(st => st.name.toLowerCase() === searchStr);
+    const searchStr = serviceName?.toLowerCase() || '';
+    const currentServiceType = serviceTypes.find(st => st.name?.toLowerCase() === searchStr);
     
     if (currentServiceType) {
        const recommended = products.filter(p => p.is_recommended && p.service_type_id === currentServiceType.id);
@@ -279,8 +279,8 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
 
     // Try finding by category mapping if no recommended products exist for this exact service type
     const matchingCategories = productCategories.filter(cat => 
-       cat.name.toLowerCase().includes(searchStr) || 
-       searchStr.includes(cat.name.toLowerCase())
+       cat.name?.toLowerCase().includes(searchStr) || 
+       (cat.name && searchStr.includes(cat.name.toLowerCase()))
     );
 
     let filtered: Product[] = [];
@@ -297,7 +297,7 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
     }
 
     // Fallback: find the actual 'General' category from the database
-    const generalCategory = productCategories.find(c => c.name.toLowerCase().includes('general'));
+    const generalCategory = productCategories.find(c => c.name?.toLowerCase().includes('general'));
     if (generalCategory) {
       const generalProducts = products.filter(p => p.categoryId === generalCategory.id);
       if (generalProducts.length > 0) {

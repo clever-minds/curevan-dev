@@ -83,6 +83,8 @@ export default function EditProductPage() {
                 value: f.value,
                 isHighlighted: f.is_highlighted,
               })) || [],
+              isRecommended: product.is_recommended,
+              serviceTypeId: product.service_type_id,
             }}
           />
           </CardContent>
