@@ -18,6 +18,8 @@ interface ServiceType {
   name: string;
   is_active: boolean;
   icon_path?: string;
+  fa_icon?: string;
+  description?: string;
   created_at: string;
 }
 
@@ -26,14 +28,16 @@ export default function AdminServiceTypesPage() {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newTypeName, setNewTypeName] = useState("");
-  const [newIcon, setNewIcon] = useState<File | null>(null);
+  const [newFaIcon, setNewFaIcon] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
   // Edit State
   const [editingType, setEditingType] = useState<ServiceType | null>(null);
   const [editName, setEditName] = useState("");
+  const [editFaIcon, setEditFaIcon] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editIsActive, setEditIsActive] = useState(true);
-  const [editIcon, setEditIcon] = useState<File | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -62,18 +66,18 @@ export default function AdminServiceTypesPage() {
     
     try {
       setIsAdding(true);
-      const formData = new FormData();
-      formData.append('name', newTypeName.trim());
-      if (newIcon) {
-        formData.append('icon', newIcon);
-      }
-      const { data } = await clientApi.post('/api/service-types/add', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const payload = {
+        name: newTypeName.trim(),
+        fa_icon: newFaIcon.trim(),
+        description: newDescription.trim()
+      };
+      
+      const { data } = await clientApi.post('/api/service-types/add', payload);
       if (data?.success) {
         toast({ title: "Success", description: "Service type added successfully" });
         setNewTypeName("");
-        setNewIcon(null);
+        setNewFaIcon("");
+        setNewDescription("");
         fetchServiceTypes();
       } else {
         toast({ title: "Error", description: data?.message || "Failed to add service type", variant: "destructive" });
@@ -104,24 +108,23 @@ export default function AdminServiceTypesPage() {
   const openEditModal = (st: ServiceType) => {
     setEditingType(st);
     setEditName(st.name);
+    setEditFaIcon(st.fa_icon || "");
+    setEditDescription(st.description || "");
     setEditIsActive(st.is_active);
-    setEditIcon(null);
   };
 
   const handleUpdateServiceType = async () => {
     if (!editingType || !editName.trim()) return;
     try {
       setIsUpdating(true);
-      const formData = new FormData();
-      formData.append('name', editName.trim());
-      formData.append('is_active', String(editIsActive));
-      if (editIcon) {
-        formData.append('icon', editIcon);
-      }
+      const payload = {
+        name: editName.trim(),
+        fa_icon: editFaIcon.trim(),
+        description: editDescription.trim(),
+        is_active: editIsActive
+      };
 
-      const { data } = await clientApi.put(`/api/service-types/update/${editingType.id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await clientApi.put(`/api/service-types/update/${editingType.id}`, payload);
       if (data?.success) {
         toast({ title: "Success", description: "Service type updated successfully" });
         setEditingType(null);
@@ -149,28 +152,42 @@ export default function AdminServiceTypesPage() {
           <CardDescription>Enter the name of the new service type.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-start gap-4">
-            <div className="w-full sm:max-w-sm space-y-2">
-                <Label>Service Name</Label>
-                <Input 
-                  placeholder="e.g. Acupuncture" 
-                  value={newTypeName} 
-                  onChange={(e) => setNewTypeName(e.target.value)} 
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddServiceType()}
-                />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-start gap-4">
+              <div className="w-full sm:max-w-sm space-y-2">
+                  <Label>Service Name</Label>
+                  <Input 
+                    placeholder="e.g. Acupuncture" 
+                    value={newTypeName} 
+                    onChange={(e) => setNewTypeName(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddServiceType()}
+                  />
+              </div>
+              <div className="w-full sm:max-w-xs space-y-2">
+                  <Label>FA Icon Class</Label>
+                  <Input 
+                    placeholder="e.g. fa-solid fa-walking" 
+                    value={newFaIcon} 
+                    onChange={(e) => setNewFaIcon(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddServiceType()}
+                  />
+              </div>
             </div>
-            <div className="w-full sm:max-w-xs space-y-2">
-                <Label>Icon (Optional)</Label>
-                <Input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => setNewIcon(e.target.files?.[0] || null)}
-                />
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-start gap-4">
+              <div className="w-full sm:max-w-[760px] space-y-2">
+                  <Label>Description</Label>
+                  <Input 
+                    placeholder="e.g. Professional healthcare services" 
+                    value={newDescription} 
+                    onChange={(e) => setNewDescription(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddServiceType()}
+                  />
+              </div>
+              <Button onClick={handleAddServiceType} disabled={isAdding || !newTypeName.trim()} className="shrink-0 mt-6 sm:mt-0">
+                {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                Add Service Type
+              </Button>
             </div>
-            <Button onClick={handleAddServiceType} disabled={isAdding || !newTypeName.trim()} className="shrink-0 mt-6 sm:mt-0">
-              {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Add
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -205,7 +222,11 @@ export default function AdminServiceTypesPage() {
                   serviceTypes.map((st) => (
                     <TableRow key={st.id}>
                       <TableCell>
-                        {st.icon_path ? (
+                        {st.fa_icon ? (
+                          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-primary">
+                            <i className={st.fa_icon}></i>
+                          </div>
+                        ) : st.icon_path ? (
                           <img src={imageUrl(st.icon_path)} alt={st.name} className="w-8 h-8 object-cover rounded shadow-sm" />
                         ) : (
                           <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400">
@@ -252,19 +273,20 @@ export default function AdminServiceTypesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Icon (Optional)</Label>
-              {editingType?.icon_path && !editIcon && (
-                <div className="mb-2">
-                  <p className="text-xs text-muted-foreground mb-1">Current Icon:</p>
-                  <img src={imageUrl(editingType.icon_path)} alt="Current icon" className="h-12 w-12 object-cover rounded shadow-sm border" />
-                </div>
-              )}
+              <Label>FA Icon Class</Label>
               <Input 
-                type="file" 
-                accept="image/*"
-                onChange={(e) => setEditIcon(e.target.files?.[0] || null)}
+                value={editFaIcon} 
+                onChange={(e) => setEditFaIcon(e.target.value)} 
+                placeholder="e.g. fa-solid fa-walking"
               />
-              <p className="text-xs text-muted-foreground">Upload a new image to replace the current icon.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input 
+                value={editDescription} 
+                onChange={(e) => setEditDescription(e.target.value)} 
+                placeholder="Service description"
+              />
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="space-y-0.5">
