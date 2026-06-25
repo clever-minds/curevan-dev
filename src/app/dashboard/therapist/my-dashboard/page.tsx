@@ -95,16 +95,18 @@ export default function TherapistDashboard() {
         if (!user) return;
         setLoading(true);
         try {
-            const [appointmentData, therapistData, therapyCats, eData] = await Promise.all([
+            const results = await Promise.all([
                 listAppointmentsForUser(user.id, 'therapist'),
                 getTherapistById(user.id),
                 getTherapyCategories(),
                 import("@/services/earnings-service").then(m => m.fetchEarningsData(user.id))
             ]);
-            setAppointments(appointmentData);
-            setTherapist(therapistData);
-            setEarningsData(eData);
-            setTopServicesData(therapyCats.slice(0,3).map(cat => ({
+            setAppointments(results[0]);
+            setTherapist(results[1]);
+            setEarningsData(results[3]);
+            
+            const fetchedCats = results[2] || [];
+            setTopServicesData(fetchedCats.slice(0,3).map((cat: string) => ({
                 name: cat.split(" ")[0],
                 count: Math.floor(Math.random() * 20) + 5,
             })))
