@@ -23,7 +23,7 @@ import { listAppointmentsForUser } from '@/lib/repos/appointments';
 
 const navLinks = [
     { href: '/about', label: 'About Us' },
-    { href: '/therapists', label: 'Services' },
+    { href: '/therapists', label: 'Therapists' },
     { href: '/shop', label: 'Shop' },
     { href: '/journal', label: 'Journal' },
     { href: '/contact', label: 'Contact' },

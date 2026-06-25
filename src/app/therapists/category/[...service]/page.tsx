@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Therapist, Product, ProductCategory } from '@/lib/types';
 import { listTherapistsByLocation, listTherapists } from '@/lib/repos/therapists';
 import { fetchPublicProducts, fetchPublicProductCategories } from '@/lib/repos/products';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import ProductCard from '@/components/product-card';
 import { getDistance } from 'geolib';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +36,7 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
   const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<{id: number, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -46,12 +48,14 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, serviceTypesData] = await Promise.all([
           fetchPublicProducts(),
-          fetchPublicProductCategories()
+          fetchPublicProductCategories(),
+          getTherapyCategoriesWithIds()
         ]);
         setProducts(productsData || []);
         setProductCategories(categoriesData || []);
+        setServiceTypes(serviceTypesData || []);
       } catch (err) {
         console.error("Failed to load products", err);
       }
@@ -261,9 +265,19 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
   const currentTherapists = filteredAndSortedTherapists.slice(0, visibleCount);
 
   const recommendedProductsData = useMemo(() => {
-    if (!products.length || !productCategories.length) return { products: [], categoryName: '', isFallback: true };
+    if (!products.length || !productCategories.length || !serviceTypes.length) return { products: [], categoryName: '', isFallback: true };
 
     const searchStr = serviceName.toLowerCase();
+    const currentServiceType = serviceTypes.find(st => st.name.toLowerCase() === searchStr);
+    
+    if (currentServiceType) {
+       const recommended = products.filter(p => p.is_recommended && p.service_type_id === currentServiceType.id);
+       if (recommended.length > 0) {
+           return { products: recommended.slice(0, 4), categoryName: currentServiceType.name, isFallback: false };
+       }
+    }
+
+    // Try finding by category mapping if no recommended products exist for this exact service type
     const matchingCategories = productCategories.filter(cat => 
        cat.name.toLowerCase().includes(searchStr) || 
        searchStr.includes(cat.name.toLowerCase())
@@ -279,12 +293,21 @@ export default function TherapistCategoryPage({ params }: { params: { service: s
     }
 
     if (filtered.length > 0) {
-      return { products: filtered.slice(0, 4), categoryName: matchedCategoryName, isFallback: false };
+      return { products: filtered.slice(0, 4), categoryName: matchedCategoryName, isFallback: true };
     }
 
-    // Fallback: general products
-    return { products: products.slice(0, 4), categoryName: 'General Wellness', isFallback: true };
-  }, [products, productCategories, serviceName]);
+    // Fallback: find the actual 'General' category from the database
+    const generalCategory = productCategories.find(c => c.name.toLowerCase().includes('general'));
+    if (generalCategory) {
+      const generalProducts = products.filter(p => p.categoryId === generalCategory.id);
+      if (generalProducts.length > 0) {
+        return { products: generalProducts.slice(0, 4), categoryName: generalCategory.name, isFallback: true };
+      }
+    }
+
+    // Ultimate fallback if no 'General' category exists or it has no products
+    return { products: [], categoryName: 'General', isFallback: true };
+  }, [products, productCategories, serviceTypes, serviceName]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

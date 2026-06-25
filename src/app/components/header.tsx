@@ -9,7 +9,7 @@ import { Menu, User, Search, ShoppingCart, LogIn } from 'lucide-react';
 
 const navLinks = [
     { href: '/about', label: 'About Us' },
-    { href: '/services', label: 'Services' },
+    { href: '/services', label: 'Therapists' },
     { href: '/therapists', label: 'Therapists' },
     { href: '/ecommerce', label: 'Shop' },
     { href: '/journal', label: 'Journal' },

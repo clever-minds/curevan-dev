@@ -28,6 +28,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { AIRichText } from '@/components/ai/ai-rich-text';
 import { listProductCategories } from '@/lib/repos/products';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { createProducts } from '@/lib/api/products';
 import { updateProduct } from '@/lib/api/products';
 
@@ -60,6 +61,8 @@ const productFormSchema = z.object({
   hsnCode: z.string().nullable().optional(),
   sacCode: z.string().nullable().optional(),
   gstSlab: z.coerce.number().nullable().optional(),
+  isRecommended: z.boolean().default(false).describe("Mark as a recommended product for a specific service"),
+  serviceTypeId: z.coerce.number().nullable().optional().describe("Service Type this product is recommended for"),
   
   // Inventory & Fulfillment
   trackInventory: z.boolean().default(true),
@@ -135,13 +138,19 @@ export function ProductForm({
 }) {
    const { toast } = useToast();
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<{id: number, name: string}[]>([]);
   const router = useRouter();
    useEffect(() => {
     const fetchCategories = async () => {
         const data = await listProductCategories();
         setProductCategories(data);
     };
+    const fetchServiceTypes = async () => {
+        const data = await getTherapyCategoriesWithIds();
+        setServiceTypes(data);
+    };
     fetchCategories();
+    fetchServiceTypes();
   }, []);
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -158,6 +167,8 @@ export function ProductForm({
       stock: 0,
       reorderPoint: 0,
       additionalFeatures: [],
+      isRecommended: false,
+      serviceTypeId: undefined,
     },
   });
   
@@ -191,7 +202,9 @@ export function ProductForm({
         heightCm: initialData.dimensions?.heightCm ?? undefined,
         weightKg: initialData.dimensions?.weightKg ?? undefined,
       },
-      additionalFeatures: (initialData as any).additionalFeatures || []
+      additionalFeatures: (initialData as any).additionalFeatures || [],
+      isRecommended: initialData.isRecommended || false,
+      serviceTypeId: initialData.serviceTypeId ?? undefined,
     });
   }
 }, [initialData, form]);
@@ -295,6 +308,8 @@ export function ProductForm({
                 value: f.value,
                 is_highlighted: f.isHighlighted
             })) ?? [],
+            is_recommended: data.isRecommended,
+            service_type_id: data.serviceTypeId ?? undefined,
         };
 
         if (productId) {
@@ -340,7 +355,35 @@ export function ProductForm({
                 <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                
+                <FormField control={form.control} name="isRecommended" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 mt-1 shadow-sm h-[72px]">
+                        <div className="space-y-0.5">
+                            <FormLabel>Recommended</FormLabel>
+                        </div>
+                        <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                    </FormItem>
+                )}/>
+                
+                <FormField control={form.control} name="serviceTypeId" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Service Type {form.watch("isRecommended") && <span className="text-red-500">*</span>}</FormLabel>
+                        <Select onValueChange={field.onChange} key={field.value} value={field.value ? String(field.value) : undefined} disabled={!form.watch("isRecommended")}>
+                            <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Select a therapy/service" /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {serviceTypes.map(st => (
+                                    <SelectItem key={st.id} value={String(st.id)}>{st.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
                 <FormField
                     control={form.control}
                     name="tags"

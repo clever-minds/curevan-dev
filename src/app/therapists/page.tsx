@@ -38,18 +38,46 @@ export default async function ServicesDirectoryPage() {
       <div className="bg-white pt-12 pb-16 border-b border-gray-100">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-            {/* Left Side */}
+            {/* Left Side: Services Grid & Text */}
             <div className="w-full lg:w-1/2">
-              <h1 className="text-4xl lg:text-5xl lg:leading-[1.15] font-extrabold tracking-tight text-[#0f172a] mb-6">
-                Expert healthcare, <br/> at your doorstep
-              </h1>
-              <p className="text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
-                Connect with trusted professionals for personalized in-home healthcare, therapy, and recovery services. We bring the clinic to you.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="px-8 rounded-xl text-base shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-transform">
-                  <Link href="#services">Explore Services</Link>
-                </Button>
+              {/* UC Style White Box Container */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
+                <h2 className="text-xl font-bold text-gray-800 mb-6">What are you looking for?</h2>
+                
+                {/* Small Service Boxes Grid */}
+                <div className="grid grid-cols-3 gap-4 md:gap-6">
+                  {categories.map((category: any) => {
+                    const { icon: Icon, color, bg, shortName, desc: fallbackDesc } = getServiceStyle(category.name);
+                    const displayDesc = category.description || fallbackDesc;
+                    const hasDynamicIcon = !!category.fa_icon;
+
+                    return (
+                      <Link 
+                        key={category.id || category.name} 
+                        href={`/therapists/category/${encodeURIComponent(category.name)}`}
+                        className="group flex flex-col items-center text-center gap-2 transition-transform duration-200 hover:scale-105"
+                      >
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${bg} ${color} group-hover:shadow-md transition-shadow border border-gray-50`}>
+                          {category.icon_path ? (
+                            <img src={imageUrl(category.icon_path)} alt={shortName} className="w-[32px] h-[32px] object-contain" />
+                          ) : hasDynamicIcon ? (
+                            <i className={`${category.fa_icon} text-[28px]`}></i>
+                          ) : (
+                            <Icon className="w-[28px] h-[28px]" strokeWidth={1.5} />
+                          )}
+                        </div>
+                        <div className="flex flex-col mt-1">
+                          <span className="text-sm font-bold text-gray-800 group-hover:text-primary leading-tight">
+                            {shortName}
+                          </span>
+                          <span className="text-[11px] text-gray-500 leading-snug mt-1 line-clamp-2">
+                            {displayDesc}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -66,7 +94,7 @@ export default async function ServicesDirectoryPage() {
                 />
               </div>
               {/* Top Right Image */}
-              <div className="absolute right-0 top-0 w-[40%] h-[45%] rounded-[2rem] overflow-hidden shadow-xl z-20 transition-transform duration-500 hover:scale-[1.05]">
+              <div className="absolute right-0 top-0 w-[40%] h-[48.5%] rounded-[2rem] overflow-hidden shadow-xl z-20 transition-transform duration-500 hover:scale-[1.05]">
                 <Image 
                   src="https://plus.unsplash.com/premium_photo-1661779581951-eb3a2fe942bb?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Therapist consulting"
@@ -75,7 +103,7 @@ export default async function ServicesDirectoryPage() {
                 />
               </div>
               {/* Bottom Right Image */}
-              <div className="absolute right-0 bottom-0 w-[40%] h-[45%] rounded-[2rem] overflow-hidden shadow-xl z-20 transition-transform duration-500 hover:scale-[1.05]">
+              <div className="absolute right-0 bottom-0 w-[40%] h-[48.5%] rounded-[2rem] overflow-hidden shadow-xl z-20 transition-transform duration-500 hover:scale-[1.05]">
                 <Image 
                   src="https://plus.unsplash.com/premium_photo-1663126777540-6fa2e2e577d0?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Physical therapy session"
@@ -88,62 +116,7 @@ export default async function ServicesDirectoryPage() {
         </div>
       </div>
 
-      {/* New Services Grid Section (The Image Design) */}
-      <section id="services" className="py-20 bg-[#f8fafc] relative z-20">
-        <div className="container mx-auto px-4 max-w-[1250px]">
-          <div className="text-center mb-12">
-            <h2 className="text-[32px] md:text-[36px] font-extrabold text-[#0f172a] mb-3 tracking-tight">Our Therapy & Services</h2>
-            <p className="text-[15px] text-slate-500 max-w-2xl mx-auto">
-              Specialized care tailored to your needs. Choose a service to find the right therapist.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {categories.map((category: any) => {
-              const { icon: Icon, color, bg, borderTop, shortName, desc: fallbackDesc } = getServiceStyle(category.name);
-              
-              // Use dynamic values from database if available, otherwise use hardcoded fallbacks
-              const displayDesc = category.description || fallbackDesc;
-              const hasDynamicIcon = !!category.fa_icon;
-              
-              return (
-                <Link 
-                  key={category.id || category.name}
-                  href={`/therapists/category/${encodeURIComponent(category.name)}`}
-                  className={`group relative flex items-start p-9 bg-white rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 border-t-[3px] ${borderTop} hover:border-slate-200 hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.08)] transition-all duration-300 min-h-[200px]`}
-                >
-                  {/* Icon Box */}
-                  <div className={`w-[92px] h-[92px] shrink-0 rounded-[22px] flex items-center justify-center ${bg} ${color} transition-transform group-hover:scale-[1.05] mr-7`}>
-                    {category.icon_path ? (
-                      <img src={imageUrl(category.icon_path)} alt={shortName} className="w-[48px] h-[48px] object-contain" />
-                    ) : hasDynamicIcon ? (
-                      <i className={`${category.fa_icon} text-[42px]`}></i>
-                    ) : (
-                      <Icon className="w-[42px] h-[42px]" />
-                    )}
-                  </div>
-                  
-                  {/* Text Content */}
-                  <div className="flex-1 min-w-0 pr-12 pt-3">
-                    <h3 className="text-[22px] font-bold text-[#0f172a] mb-2.5 leading-tight">{shortName}</h3>
-                    <p className="text-[16px] text-slate-500 leading-relaxed">{displayDesc}</p>
-                  </div>
-                  
-                  {/* Arrow Button */}
-                  <div className={`absolute bottom-7 right-7 w-[40px] h-[40px] rounded-full flex items-center justify-center ${bg} ${color} group-hover:bg-primary group-hover:text-white transition-colors`}>
-                    <ChevronRight className="w-[22px] h-[22px] ml-[2px]" strokeWidth={3} />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="mt-12 flex items-center justify-center gap-2 text-[13px] text-slate-500 font-medium">
-            <CheckCircle2 className="text-[#22c55e] w-[18px] h-[18px]" strokeWidth={2.5} />
-            <span>Trusted care. Professional therapists. Better recovery.</span>
-          </div>
-        </div>
-      </section>
 
       {/* Join Our Growing Network - Redesigned Section */}
       <section className="py-24 bg-gray-50 border-y border-gray-100 relative overflow-hidden">

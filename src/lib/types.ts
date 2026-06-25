@@ -232,6 +232,8 @@ export interface Product {
   additionalFeatures?: { title: string; value: string; isHighlighted?: boolean }[];
   offer?: any;
   discountedPrice?: string | number;
+  is_recommended?: boolean;
+  service_type_id?: number;
 }
 
 export interface Review {
