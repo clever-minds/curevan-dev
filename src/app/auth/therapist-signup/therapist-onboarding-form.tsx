@@ -746,7 +746,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         </Tabs>
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" size="lg" disabled={isPending}>
+          <Button type="submit" size="lg" disabled={isPending || !form.formState.isValid}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isEditing ? <Save className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
             {isEditing ? 'Submit Changes for Review' : 'Submit for Verification'}
           </Button>
