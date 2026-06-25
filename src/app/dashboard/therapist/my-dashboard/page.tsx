@@ -24,7 +24,6 @@ import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import ReportAiSummary from "@/components/report/report-ai-summary";
-import { getEarningsHistory } from "@/services/earnings-service";
 import { Price } from "@/components/money/price";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
@@ -80,9 +79,10 @@ export default function TherapistDashboard() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [topServicesData, setTopServicesData] = useState<any[]>([]);
+  const [earningsData, setEarningsData] = useState<any>(null);
 
-  const earningsHistory = useMemo(() => getEarningsHistory('therapist-123', 'mtd'), []);
-  const excludedItems = earningsHistory.filter(e => e.status === 'On-Hold');
+  const earningsHistory = earningsData?.earningsHistory || [];
+  const excludedItems = earningsHistory.filter((e: any) => e.status === 'On-Hold');
 
   useEffect(() => {
     if (user && user.role !== 'therapist') {
@@ -95,13 +95,15 @@ export default function TherapistDashboard() {
         if (!user) return;
         setLoading(true);
         try {
-            const [appointmentData, therapistData, therapyCats] = await Promise.all([
+            const [appointmentData, therapistData, therapyCats, eData] = await Promise.all([
                 listAppointmentsForUser(user.id, 'therapist'),
                 getTherapistById(user.id),
-                getTherapyCategories()
+                getTherapyCategories(),
+                import("@/services/earnings-service").then(m => m.fetchEarningsData(user.id))
             ]);
             setAppointments(appointmentData);
             setTherapist(therapistData);
+            setEarningsData(eData);
             setTopServicesData(therapyCats.slice(0,3).map(cat => ({
                 name: cat.split(" ")[0],
                 count: Math.floor(Math.random() * 20) + 5,
