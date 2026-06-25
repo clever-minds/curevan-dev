@@ -430,7 +430,11 @@ console.log('formState', form.formState);
 
     return (
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form Validation Errors:", errors);
+          const errorFields = Object.keys(errors).join(', ');
+          alert("Please check the following fields for errors: " + errorFields);
+        })} className="space-y-4">
           <Tabs defaultValue="account">
               <TabsList className="flex flex-wrap h-auto justify-start">
                   <TabsTrigger value="account">Account</TabsTrigger>
