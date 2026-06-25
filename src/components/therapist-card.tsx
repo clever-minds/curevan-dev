@@ -15,10 +15,11 @@
         const isPremium = therapist.membershipPlan === 'premium';
         return (
             <CardComponent className={cn(
-                'group flex flex-col overflow-hidden h-full',
+                'group flex flex-col overflow-hidden h-full hover:shadow-md transition-shadow',
                 !isMapPopup && 'relative border-b sm:border border-gray-200 bg-white sm:rounded-2xl',
                 isPremium && !isMapPopup ? 'border-primary/30 bg-primary/5' : ''
             )}>
+            <Link href={`/therapists/${therapist.name.toLowerCase().replace(/ /g, '-')}`} className="flex flex-col h-full cursor-pointer">
             <CardContent className={cn('flex flex-col h-full', isMapPopup ? 'p-0' : 'p-6')}>
                 <div className="flex justify-between gap-6 h-full">
                     {/* Left: Details Area */}
@@ -28,7 +29,7 @@
                                <ShieldCheck className="w-3 h-3"/> PRO VERIFIED
                            </div>
                         )}
-                        <h3 className="font-bold text-xl md:text-2xl text-gray-900 leading-tight">
+                        <h3 className="font-bold text-xl md:text-2xl text-gray-900 leading-tight group-hover:text-primary transition-colors">
                             {therapist.name}
                         </h3>
                         <div className="flex items-center gap-1 mt-1.5 text-sm text-gray-600">
@@ -67,17 +68,16 @@
                             data-ai-hint="therapist portrait"
                         />
                         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-full flex justify-center">
-                            <Button asChild className="font-bold px-4 shadow-md border border-gray-100 text-primary bg-white hover:bg-gray-50 rounded-lg h-10 w-36 uppercase tracking-wide text-xs sm:text-sm">
-                                <Link href={`/therapists/${therapist.name.toLowerCase().replace(/ /g, '-')}`}>
-                                    View Profile
-                                </Link>
-                            </Button>
+                            <div className="inline-flex items-center justify-center font-bold px-4 shadow-md border border-gray-100 text-primary bg-white group-hover:bg-gray-50 rounded-lg h-10 w-36 uppercase tracking-wide text-xs sm:text-sm transition-colors">
+                                View Profile
+                            </div>
                         </div>
                     </div>
                 </div>
                 {/* Extra Bottom Padding for floating button */}
                 <div className="pb-2"></div>
             </CardContent>
+            </Link>
             </CardComponent>
         );
         }
