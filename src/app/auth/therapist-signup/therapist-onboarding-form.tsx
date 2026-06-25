@@ -351,11 +351,11 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
             bankAccountNumber: therapist.bankAccountNo || '',
             bankIfscCode: therapist.bankIfscCode || '',
             specialty: Array.isArray(therapist.specialty)
-              ? therapist.specialty.map(s => {
+              ? therapist.specialty.map((s: any) => {
                   if (typeof s === 'object') return String(s.id);
                   const str = String(s);
-                  const cat = therapyCats.find((c: any) => String(c.id) === str || c.name === str);
-                  return cat ? String(cat.id) : str;
+                  const cat = meta.therapyCategories.find((c: any) => String(c.id) === str || c.name === str);
+                  return cat ? String((cat as any).id) : str;
                 })
               : therapist.specialty
                 ? [typeof therapist.specialty === 'object' ? String((therapist.specialty as any).id) : String(therapist.specialty)]
@@ -371,7 +371,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
       }
     };
     loadInitialData();
-  }, [user, isEditing, dataLoaded, form]);
+  }, [user, isEditing, dataLoaded, form, meta.therapyCategories]);
 
   const experience_years = form.watch('experience_years');
   const recommendedRate = useMemo(() => recommendPrice(experience_years), [experience_years]);

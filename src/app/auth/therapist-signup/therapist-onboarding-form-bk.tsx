@@ -305,12 +305,15 @@
               bankAccountNumber: therapist.bankAccountNo, // Mock data
               bankIfscCode: therapist.bankIfscCode, // Mock data
               specialty: Array.isArray(therapist.specialty)
-                        ? therapist.specialty
-                        : therapist.specialty
-                          ? [therapist.specialty]
-                          : [],
-
-
+                ? therapist.specialty.map((s: any) => {
+                    if (typeof s === 'object') return String(s.id);
+                    const str = String(s);
+                    const cat = meta.therapyCategories.find((c: any) => String(c.id) === str || c.name === str);
+                    return cat ? String((cat as any).id) : str;
+                  })
+                : therapist.specialty
+                  ? [typeof therapist.specialty === 'object' ? String((therapist.specialty as any).id) : String(therapist.specialty)]
+                  : [],
             });
             if (therapist.image) {
                 setImagePreview(therapist.image);
@@ -322,7 +325,7 @@
         }
       };
       loadInitialData();
-    }, [user, isEditing, dataLoaded, form]);
+    }, [user, isEditing, dataLoaded, form, meta.therapyCategories]);
     
     const experienceYears = form.watch('experienceYears');
     const recommendedRate = useMemo(() => recommendPrice(experienceYears), [experienceYears]);
