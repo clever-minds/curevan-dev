@@ -87,20 +87,22 @@ export default function TherapistDashboard() {
         if (!user) return;
         setLoading(true);
         try {
-            const [appointmentData, availableReqs, therapistData, therapyCats, dashboardStats, eData] = await Promise.all([
+            const results = await Promise.all([
                 listAppointmentsForUser(user.id, 'therapist'),
                 getAvailableRequests(user.id),
                 getTherapistById(user.id),
                 getTherapyCategories(),
                 import('@/lib/repos/therapists').then(m => m.getTherapistDashboardStats(user.id)),
-                fetchEarningsData(user.id)
+                import("@/services/earnings-service").then(m => m.fetchEarningsData(user.id))
             ]);
-            setAppointments(appointmentData);
-            setAvailableRequests(availableReqs);
-            setTherapist(therapistData);
-            setStats(dashboardStats);
-            setEarningsData(eData);
-            setTopServicesData(therapyCats.slice(0,3).map(cat => ({
+            setAppointments(results[0]);
+            setAvailableRequests(results[1]);
+            setTherapist(results[2]);
+            setStats(results[4]);
+            setEarningsData(results[5]);
+            
+            const fetchedCats = results[3] || [];
+            setTopServicesData(fetchedCats.slice(0,3).map((cat: string) => ({
                 name: cat.split(" ")[0],
                 count: Math.floor(Math.random() * 20) + 5,
             })))
