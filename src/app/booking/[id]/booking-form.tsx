@@ -47,32 +47,35 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{
   pincode: string;
 } | null> {
   try {
-    const GOOGLE_API_KEY = "AIzaSyA6KvzdZ_YMaclHz0_MJ93JzKWDEqlE__k";
     const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}&language=en&region=IN`
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      }
     );
     const data = await res.json();
 
-    if (data.status !== 'OK' || !data.results?.length) return null;
+    if (!data || !data.address) return null;
 
-    const components: { types: string[]; long_name: string; short_name: string }[] =
-      data.results[0].address_components ?? [];
+    const address = data.address;
 
-    const get = (type: string) =>
-      components.find(c => c.types.includes(type))?.long_name || '';
-
-    const streetNumber = get('street_number');
-    const route = get('route');
-    const sublocality = get('sublocality_level_1') || get('sublocality') || get('neighborhood');
+    const streetNumber = address.house_number || '';
+    const route = address.road || '';
+    const sublocality = address.suburb || address.neighbourhood || address.residential || '';
+    
     const fullAddress = [streetNumber, route, sublocality].filter(Boolean).join(', ');
 
     const city =
-      get('locality') ||
-      get('administrative_area_level_3') ||
-      get('administrative_area_level_2');
+      address.city ||
+      address.town ||
+      address.county ||
+      address.state_district ||
+      '';
 
-    const state = get('administrative_area_level_1');
-    const pincode = get('postal_code');
+    const state = address.state || '';
+    const pincode = address.postcode || '';
 
     return { fullAddress, city, state, pincode };
   } catch {
