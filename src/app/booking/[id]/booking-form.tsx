@@ -947,16 +947,31 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
           </div>
 
           {/* Submit */}
-          <Button
-            size="lg"
-            type="submit"
-            disabled={!isLoaded || isPending}
-            className="w-full text-white hover:opacity-90 transition-opacity border-0"
-            style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
-          >
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-            Proceed to Payment
-          </Button>
+          {!user ? (
+            <Button
+              size="lg"
+              type="button"
+              onClick={() => {
+                toast({ title: 'Authentication Required', description: 'Please sign in to book an appointment.' });
+                router.push('/auth/signin');
+              }}
+              className="w-full text-white hover:opacity-90 transition-opacity border-0"
+              style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
+            >
+              Sign In to Book
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              type="submit"
+              disabled={!isLoaded || isPending}
+              className="w-full text-white hover:opacity-90 transition-opacity border-0"
+              style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
+            >
+              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+              Proceed to Payment
+            </Button>
+          )}
 
         </form>
       </Form>
