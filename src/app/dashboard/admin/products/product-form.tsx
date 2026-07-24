@@ -106,6 +106,7 @@ images: z
     sellingPrice: z.coerce.number().min(0, "Selling price must be positive"),
     stock: z.coerce.number().min(0, "Stock cannot be negative"),
     reorderPoint: z.coerce.number().min(0).optional(),
+    image: z.array(z.any()).optional(),
     attributes: z.record(z.string()),
   })).optional(),
 }).refine(data => {
@@ -255,6 +256,10 @@ export function ProductForm({
       additionalFeatures: (initialData as any).additionalFeatures || [],
       isRecommended: initialData.isRecommended || false,
       serviceTypeId: initialData.serviceTypeId ?? undefined,
+      variants: (initialData.variants || []).map((v: any) => ({
+        ...v,
+        image: v.imageId && v.imageUrl ? [{ id: v.imageId, url: v.imageUrl, type: 'image' }] : []
+      })),
     });
   }
 }, [initialData, form]);
@@ -360,7 +365,10 @@ export function ProductForm({
             })) ?? [],
             is_recommended: data.isRecommended,
             service_type_id: data.serviceTypeId ?? undefined,
-            variants: data.hasVariants ? data.variants : []
+            variants: data.hasVariants ? (data.variants || []).map((v: any) => ({
+                ...v,
+                imageId: v.image && v.image.length > 0 ? v.image[0].id : undefined
+            })) : []
         };
 
         if (productId) {
@@ -548,6 +556,7 @@ export function ProductForm({
                                  <tr>
                                      <th className="p-2 text-left font-medium">SKU</th>
                                      <th className="p-2 text-left font-medium min-w-[200px]">Options (e.g. Size: M, Color: Red)</th>
+                                     <th className="p-2 text-left font-medium">Image</th>
                                      <th className="p-2 text-left font-medium">MRP</th>
                                      <th className="p-2 text-left font-medium">Selling Price</th>
                                      <th className="p-2 text-left font-medium">Stock</th>
@@ -562,6 +571,17 @@ export function ProductForm({
                                          </td>
                                          <td className="p-2">
                                              <FormField control={form.control} name={`variants.${index}.attributes` as any} render={({ field }) => (<FormControl><VariantAttributesInput value={field.value as any} onChange={field.onChange} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2">
+                                             <FormField control={form.control} name={`variants.${index}.image` as any} render={({ field }) => (
+                                                 <FormControl>
+                                                     <MediaPicker
+                                                         value={field.value || []}
+                                                         onChange={(media: MediaItem[]) => field.onChange(media)}
+                                                         multiple={false}
+                                                     />
+                                                 </FormControl>
+                                             )} />
                                          </td>
                                          <td className="p-2">
                                              <FormField control={form.control} name={`variants.${index}.mrp` as any} render={({ field }) => (<FormControl><Input type="number" placeholder="MRP" {...field} /></FormControl>)} />

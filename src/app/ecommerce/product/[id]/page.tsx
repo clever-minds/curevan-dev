@@ -165,10 +165,21 @@ export default function ProductDetailsPage() {
         return Object.entries(v.attributes).every(([k, val]) => selectedAttributes[k] === val);
       });
       setSelectedVariant(matched || null);
+      
+      if (matched?.imageUrl && product.images) {
+        let idx = product.images.findIndex((img: string) => img === matched.imageUrl);
+        if (idx === -1) {
+          product.images.unshift(matched.imageUrl);
+          idx = 0;
+          carouselApi?.reInit();
+        }
+        carouselApi?.scrollTo(idx);
+        setActiveImageIndex(idx);
+      }
     } else {
       setSelectedVariant(null);
     }
-  }, [selectedAttributes, product?.variants]);
+  }, [selectedAttributes, product?.variants, carouselApi, product]);
 
   // Calculate final displayed price (Variant overrides main price)
   const basePrice = selectedVariant ? Number(selectedVariant.selling_price || selectedVariant.mrp || originalPrice) : (pricing?.finalPrice ?? originalPrice);
