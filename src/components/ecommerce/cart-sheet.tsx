@@ -80,6 +80,13 @@ console.log("CartSheet render - cart items:", cart);
                                         </div>
                                         <div className="flex-1 min-w-0 pr-8">
                                             <p className="font-bold text-base leading-tight truncate-2-lines mb-1">{item.name}</p>
+                                            {item.variantAttributes && Object.keys(item.variantAttributes).length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mb-1">
+                                                    {Object.entries(item.variantAttributes).map(([k, v]) => (
+                                                        <span key={k} className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-medium text-muted-foreground">{k}: {v as string}</span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <span>Qty: {item.quantity}</span>
                                             </div>

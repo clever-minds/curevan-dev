@@ -251,9 +251,10 @@ export function FilterBar({
             <>
                 <div className="space-y-1">
                     <Label>Product Category</Label>
-                    <Select onValueChange={(v) => handleFilterChange('categories', [v])} value={filters.categories[0] || ''}>
+                    <Select onValueChange={(v) => handleFilterChange('categories', v === 'all' ? [] : [v])} value={filters.categories[0] || 'all'}>
                         <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                         <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
                             {meta.productCategories.map((cat:any) => <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>)}
                         </SelectContent>
                     </Select>

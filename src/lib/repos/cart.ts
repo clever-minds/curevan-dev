@@ -12,6 +12,7 @@ export interface SaveCartPayload {
   userId: number;
   product_id: number;
   quantity: number;
+  variant_id?: number | null;
 }
 
 /**

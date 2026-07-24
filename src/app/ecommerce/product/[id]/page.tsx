@@ -71,6 +71,9 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
 
+  const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [reviewCount, setReviewCount] = useState(0);
@@ -139,8 +142,39 @@ export default function ProductDetailsPage() {
 
   const originalPrice = product?.price || 0;
   const pricing = product ? calculateProductPrice(product, [], null) : null;
-  const price = pricing?.finalPrice ?? originalPrice;
-  const therapistPrice = price * 0.90;
+  
+  const availableOptions = useMemo(() => {
+    if (!product?.variants) return {};
+    const options: Record<string, Set<string>> = {};
+    product.variants.forEach((variant: any) => {
+      Object.entries(variant.attributes || {}).forEach(([key, value]) => {
+        if (!options[key]) options[key] = new Set();
+        options[key].add(value as string);
+      });
+    });
+    const result: Record<string, string[]> = {};
+    Object.entries(options).forEach(([key, set]) => {
+      result[key] = Array.from(set);
+    });
+    return result;
+  }, [product?.variants]);
+
+  useEffect(() => {
+    if (product?.variants && Object.keys(selectedAttributes).length > 0) {
+      const matched = product.variants.find((v: any) => {
+        return Object.entries(v.attributes).every(([k, val]) => selectedAttributes[k] === val);
+      });
+      setSelectedVariant(matched || null);
+    } else {
+      setSelectedVariant(null);
+    }
+  }, [selectedAttributes, product?.variants]);
+
+  // Calculate final displayed price (Variant overrides main price)
+  const basePrice = selectedVariant ? Number(selectedVariant.selling_price || selectedVariant.mrp || originalPrice) : (pricing?.finalPrice ?? originalPrice);
+  const displayPrice = basePrice;
+  const therapistPrice = displayPrice * 0.90;
+  const displayStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
 
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
@@ -211,18 +245,22 @@ export default function ProductDetailsPage() {
       router.push('/auth/signin');
       return;
     }
-    
-    // If already in cart, just update quantity
-    if (quantityInCart > 0) {
-      const newQty = Math.min(quantityInCart + quantity, product.stock);
-      updateQuantity(product.id, newQty);
-    } else {
-      addToCart(product, quantity);
+
+    // Require variant selection if product has variants
+    if (product.variants?.length > 0 && !selectedVariant) {
+      toast({
+        variant: 'destructive',
+        title: "Please Select Options",
+        description: "You must select product variants (like Size/Color) before adding to cart.",
+      });
+      return;
     }
+    
+    addToCart(product, quantity, selectedVariant?.id, selectedAttributes);
 
     toast({
       title: 'Added to Cart!',
-      description: `${quantity} x ${product.name} has been added to your cart.`,
+      description: `${quantity} x ${product.name} ${selectedVariant ? '(Variant selected)' : ''} has been added to your cart.`,
     });
 
     // Automatically open the cart sidebar for the user
@@ -595,7 +633,7 @@ export default function ProductDetailsPage() {
                   <div className="space-y-4">
                     <div className="flex items-baseline flex-wrap gap-x-4 gap-y-2">
                        <span className="text-2xl sm:text-4xl font-bold text-green-600">
-                        <Price amount={price} showDecimals />
+                        <Price amount={displayPrice} showDecimals />
                       </span>
                       <span className="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/50">
                         <Price amount={originalPrice} showDecimals />
@@ -615,7 +653,7 @@ export default function ProductDetailsPage() {
                         <Price amount={therapistPrice} showDecimals />
                       </span>
                       <span className="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/50">
-                        <Price amount={price} showDecimals />
+                        <Price amount={displayPrice} showDecimals />
                       </span>
                     </div>
                     <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] sm:text-sm font-bold border border-primary/20">
@@ -626,11 +664,11 @@ export default function ProductDetailsPage() {
                 ) : (
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span className="text-2xl sm:text-4xl font-bold">
-                      <Price amount={price} showDecimals />
+                      <Price amount={displayPrice} showDecimals />
                     </span>
-                    {product.mrp && product.mrp > price && (
+                    {product.mrp && product.mrp > displayPrice && (
                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 font-bold text-xs">
-                         SAVE {Math.round(((product.mrp - price) / product.mrp) * 100)}%
+                         SAVE {Math.round(((product.mrp - displayPrice) / product.mrp) * 100)}%
                        </Badge>
                     )}
                   </div>
@@ -711,6 +749,30 @@ export default function ProductDetailsPage() {
                 )}
               </div>
 
+              {Object.keys(availableOptions).length > 0 && (
+                <div className="space-y-4 py-4 border-t">
+                  <p className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Select Options</p>
+                  {Object.entries(availableOptions).map(([key, values]) => (
+                    <div key={key} className="space-y-2">
+                      <p className="text-sm font-semibold text-foreground">{key}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {values.map((val) => (
+                          <Button
+                            key={val}
+                            variant={selectedAttributes[key] === val ? "default" : "outline"}
+                            size="sm"
+                            className={`rounded-lg ${selectedAttributes[key] === val ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+                            onClick={() => setSelectedAttributes(prev => ({ ...prev, [key]: val }))}
+                          >
+                            {val}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="hidden md:block space-y-4">
                 {quantityInCart > 0 ? (
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
@@ -724,7 +786,7 @@ export default function ProductDetailsPage() {
                            <Minus className="w-4 h-4" />
                          </Button>
                          <span className="w-12 text-center font-bold text-lg">{quantityInCart}</span>
-                         <Button variant="ghost" size="icon" className="rounded-r-xl" onClick={() => handleUpdateCartQuantity(quantityInCart + 1)} disabled={quantityInCart >= product.stock}>
+                         <Button variant="ghost" size="icon" className="rounded-r-xl" onClick={() => handleUpdateCartQuantity(quantityInCart + 1)} disabled={quantityInCart >= displayStock}>
                            <Plus className="w-4 h-4" />
                          </Button>
                       </div>
@@ -740,7 +802,7 @@ export default function ProductDetailsPage() {
                         <Minus className="w-4 h-4" />
                        </Button>
                        <span className="w-14 text-center font-bold text-xl">{quantity}</span>
-                       <Button variant="ghost" size="icon" className="h-full px-4 rounded-none border-l" onClick={() => setQuantity(q => q + 1)} disabled={product.stock > 0 && quantity >= product.stock}>
+                       <Button variant="ghost" size="icon" className="h-full px-4 rounded-none border-l" onClick={() => setQuantity(q => q + 1)} disabled={displayStock > 0 && quantity >= displayStock}>
                         <Plus className="w-4 h-4" />
                        </Button>
                     </div>
@@ -748,19 +810,19 @@ export default function ProductDetailsPage() {
                       onClick={handleAddToCart} 
                       size="lg" 
                       className="flex-1 h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      disabled={product.stock <= 0}
+                      disabled={displayStock <= 0}
                     >
                       <ShoppingCart className="mr-3 w-6 h-6 text-white" />
-                      {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                      {displayStock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                     </Button>
                   </div>
                 )}
               </div>
               
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
-                <div className={`flex items-center gap-2 ${product.stock > 0 ? 'text-green-600' : 'text-destructive'}`}>
-                  {product.stock > 0 ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
-                  <span className="font-bold">{product.stock > 0 ? 'In Stock (Ready to dispatch)' : 'Currently Unavailable'}</span>
+                <div className={`flex items-center gap-2 ${displayStock > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                  {displayStock > 0 ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                  <span className="font-bold">{displayStock > 0 ? 'In Stock (Ready to dispatch)' : 'Currently Unavailable'}</span>
                 </div>
                 <div className="hidden sm:block h-4 w-[1px] bg-border" />
                 <div className="flex items-center gap-2 text-muted-foreground">

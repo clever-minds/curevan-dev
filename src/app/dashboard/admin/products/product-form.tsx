@@ -99,6 +99,15 @@ images: z
       value: z.string().min(1, 'Value is required'),
       isHighlighted: z.boolean().default(false)
   })).optional(),
+  hasVariants: z.boolean().default(false),
+  variants: z.array(z.object({
+    sku: z.string().min(1, "SKU is required for variant"),
+    mrp: z.coerce.number().min(0, "MRP must be positive"),
+    sellingPrice: z.coerce.number().min(0, "Selling price must be positive"),
+    stock: z.coerce.number().min(0, "Stock cannot be negative"),
+    reorderPoint: z.coerce.number().min(0).optional(),
+    attributes: z.record(z.string()),
+  })).optional(),
 }).refine(data => {
     if (data.mrp !== undefined && data.sellingPrice !== undefined) {
         return data.sellingPrice <= data.mrp;
@@ -127,6 +136,40 @@ const allTagsOptions = [
     { value: 'elderly-care', label: 'Elderly Care' },
     { value: 'orthopedic', label: 'Orthopedic' },
 ];
+
+
+const VariantAttributesInput = ({ value, onChange }: { value: Record<string, string>, onChange: (val: Record<string, string>) => void }) => {
+  const [text, setText] = useState(() => 
+    value ? Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ') : ''
+  );
+
+  const parseText = useCallback((t: string) => {
+    const attrs: Record<string, string> = {};
+    t.split(',').forEach(pair => {
+      const parts = pair.split(':');
+      if (parts.length >= 2) {
+        const k = parts[0].trim();
+        const v = parts.slice(1).join(':').trim();
+        if (k && v) attrs[k] = v;
+      }
+    });
+    return attrs;
+  }, []);
+
+  useEffect(() => {
+    const currentParsed = parseText(text);
+    if (JSON.stringify(currentParsed) !== JSON.stringify(value || {})) {
+      setText(value ? Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ') : '');
+    }
+  }, [value, text, parseText]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setText(e.target.value);
+    onChange(parseText(e.target.value));
+  };
+
+  return <Input placeholder="e.g. Size: M, Color: Red" value={text} onChange={handleChange} />;
+};
 
 
 export function ProductForm({
@@ -169,12 +212,19 @@ export function ProductForm({
       additionalFeatures: [],
       isRecommended: false,
       serviceTypeId: undefined,
+      hasVariants: false,
+      variants: [],
     },
   });
   
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "additionalFeatures" as any
+  });
+
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+    control: form.control,
+    name: "variants" as any
   });
 
   useEffect(() => {
@@ -310,6 +360,7 @@ export function ProductForm({
             })) ?? [],
             is_recommended: data.isRecommended,
             service_type_id: data.serviceTypeId ?? undefined,
+            variants: data.hasVariants ? data.variants : []
         };
 
         if (productId) {
@@ -475,21 +526,75 @@ export function ProductForm({
             </div>
         </div>
         <Separator />
+        
         <div className="space-y-6">
-             <h3 className="text-lg font-medium font-headline border-b pb-2">Pricing, Taxes & Promotions</h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP (₹) <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 6000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price (₹) <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" min="0" step="0.01" placeholder="e.g., 4999" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                {productType === 'Service' ? (<FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="e.g., 99834" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>) : (<FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="e.g., 901910" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>)}
-                <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><Select onValueChange={(val) => field.onChange(Number(val))} key={field.value} value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}><FormControl><SelectTrigger><SelectValue placeholder="Select GST rate" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                 <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel className="text-sm">Price includes tax?</FormLabel><FormDescription className="text-xs">Is GST already included?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-                 <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel className="text-sm">Exclude from Coupons</FormLabel><FormDescription className="text-xs">Disable therapist referral codes?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-              </div>
+             <div className="flex items-center justify-between border-b pb-2">
+                 <h3 className="text-lg font-medium font-headline">Product Variants</h3>
+                 <FormField control={form.control} name="hasVariants" render={({ field }) => (
+                     <FormItem className="flex items-center gap-2 space-y-0">
+                         <FormLabel className="m-0">Enable Variants</FormLabel>
+                         <FormControl>
+                             <Switch checked={field.value} onCheckedChange={field.onChange} />
+                         </FormControl>
+                     </FormItem>
+                 )}/>
+             </div>
+             {form.watch("hasVariants") && (
+                 <div className="space-y-4">
+                     <Alert><Info className="h-4 w-4" /><AlertDescription>Add specific SKUs, prices, and stock for each variant (e.g. Size M, Color Red).</AlertDescription></Alert>
+                     <div className="border rounded-md overflow-x-auto">
+                         <table className="w-full text-sm">
+                             <thead className="bg-muted">
+                                 <tr>
+                                     <th className="p-2 text-left font-medium">SKU</th>
+                                     <th className="p-2 text-left font-medium min-w-[200px]">Options (e.g. Size: M, Color: Red)</th>
+                                     <th className="p-2 text-left font-medium">MRP</th>
+                                     <th className="p-2 text-left font-medium">Selling Price</th>
+                                     <th className="p-2 text-left font-medium">Stock</th>
+                                     <th className="p-2 text-center font-medium">Actions</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 {variantFields.map((field, index) => (
+                                     <tr key={field.id} className="border-t">
+                                         <td className="p-2">
+                                             <FormField control={form.control} name={`variants.${index}.sku` as any} render={({ field }) => (<FormControl><Input placeholder="Variant SKU" {...field} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2">
+                                             <FormField control={form.control} name={`variants.${index}.attributes` as any} render={({ field }) => (<FormControl><VariantAttributesInput value={field.value as any} onChange={field.onChange} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2">
+                                             <FormField control={form.control} name={`variants.${index}.mrp` as any} render={({ field }) => (<FormControl><Input type="number" placeholder="MRP" {...field} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2">
+                                             <FormField control={form.control} name={`variants.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" placeholder="Price" {...field} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2">
+                                             <FormField control={form.control} name={`variants.${index}.stock` as any} render={({ field }) => (<FormControl><Input type="number" placeholder="Stock" {...field} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2 text-center">
+                                             <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)} className="text-destructive"><X className="h-4 w-4" /></Button>
+                                         </td>
+                                     </tr>
+                                 ))}
+                                 {variantFields.length === 0 && (
+                                     <tr>
+                                         <td colSpan={6} className="p-4 text-center text-muted-foreground">No variants added yet.</td>
+                                     </tr>
+                                 )}
+                             </tbody>
+                         </table>
+                     </div>
+                     <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ sku: "", mrp: 0, sellingPrice: 0, stock: 0, attributes: {} })}>
+                         <Plus className="h-4 w-4 mr-2" /> Add Variant
+                     </Button>
+                 </div>
+             )}
         </div>
+
         <Separator />
-        {(productType === 'Physical' || productType === 'Bundle') && (
+        <Separator />
+        {!form.watch("hasVariants") && (productType === 'Physical' || productType === 'Bundle') && (
             <div className="space-y-4">
                 <h3 className="text-lg font-medium font-headline">Inventory & Fulfillment</h3>
                 <FormField control={form.control} name="trackInventory" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Track Inventory</FormLabel><FormDescription>Enable stock management for this product.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>

@@ -248,15 +248,15 @@ export interface Review {
 }
 
 export interface ProductVariant {
-  id: string;
-  productId: string;
+  id?: number | string;
+  productId?: number | string;
   sku: string;
-  attributes: Record<string, string>; // { size: "L", color: "Blue" }
-  mrp: number;
-  price: number;
-  taxCode: string; // HSN/SAC
-  stockQty: number;
-  isActive: boolean;
+  attributes: Record<string, string>; // { "Size": "M", "Color": "Blue" }
+  mrp?: number;
+  sellingPrice?: number;
+  stock: number;
+  reorderPoint?: number;
+  isActive?: boolean;
 }
 
 export interface Inventory {

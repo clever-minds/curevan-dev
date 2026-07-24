@@ -85,6 +85,14 @@ export default function EditProductPage() {
               })) || [],
               isRecommended: product.is_recommended,
               serviceTypeId: product.service_type_id,
+              hasVariants: (product.variants && product.variants.length > 0) ? true : false,
+              variants: product.variants?.map((v: any) => ({
+                sku: v.sku,
+                mrp: v.mrp || 0,
+                sellingPrice: v.selling_price || 0,
+                stock: v.stock || 0,
+                attributes: v.attributes || {},
+              })) || [],
             }}
           />
           </CardContent>

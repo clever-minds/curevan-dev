@@ -82,7 +82,7 @@ export default function AdminProductsPage() {
       console.log("featuredpro", p);
 
       const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = !categories || categories.length === 0 || categories.includes(p.categoryId);
+      const matchesCategory = !categories || categories.length === 0 || categories.some((c: any) => String(c) === String(p.categoryId));
       const matchesBrand = !brand || p.brand?.toLowerCase().includes(brand.toLowerCase());
 
       let matchesStock = true;
@@ -198,7 +198,7 @@ export default function AdminProductsPage() {
                             {product.name}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{product.categoryId}</Badge>
+                            {product.categoryname}
                           </TableCell>
                           <TableCell><Price amount={product.price} showDecimals /></TableCell>
                           <TableCell className="text-center">{product.onHand}</TableCell>

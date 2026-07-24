@@ -118,11 +118,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   //   }
   // };
 
-  const addToCart = async (product: Product, quantity: number = 1) => {
+  const addToCart = async (product: Product, quantity: number = 1, variantId?: number, variantAttributes?: Record<string, string>) => {
   if (!user) return;
 
   const existingItem = cart.find(
-    (item) => Number(item.productId) === Number(product.id)
+    (item) => Number(item.productId) === Number(product.id) && item.variantId === variantId
   );
 
   try {
@@ -134,12 +134,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         userId: user.id,
         product_id: product.id,
         quantity: newQuantity,
+        variant_id: variantId
       });
 
       // 2️⃣ Then update state
       setCart((prevCart: CartItem[]) =>
         prevCart.map((item): CartItem =>
-          Number(item.productId) === Number(product.id)
+          (Number(item.productId) === Number(product.id) && item.variantId === variantId)
             ? { ...item, quantity: newQuantity }
             : item
         )
@@ -149,17 +150,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await saveCart({
         userId: user.id,
         product_id: product.id,
-        quantity: quantity,
+        quantity,
+        variant_id: variantId
       });
-
-      // 2️⃣ Add properly structured CartItem
-      const newItem: CartItem = {
-        ...product,
-        productId: product.id, // ✅ MUST
-        quantity: quantity,
-      };
-
-      setCart((prevCart: CartItem[]) => [...prevCart, newItem]);
+      // 2️⃣ Fetch fresh cart to get all details (like DB IDs)
+      await loadCart();
     }
   } catch (error) {
     console.error("Add to cart error:", error);
