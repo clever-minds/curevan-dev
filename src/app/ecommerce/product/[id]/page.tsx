@@ -105,6 +105,10 @@ export default function ProductDetailsPage() {
           setProduct(productData);
           setReviews(reviewsData);
           
+          if (productData.variants && productData.variants.length > 0) {
+            setSelectedAttributes(productData.variants[0].attributes || {});
+          }
+          
           // Fetch related products
           const allCategoryProducts = await fetchPublicProducts({ category_id: productData.categoryId });
           setRelatedProducts(allCategoryProducts.filter(p => p.id !== productData.id).slice(0, 4));
@@ -140,7 +144,7 @@ export default function ProductDetailsPage() {
     return `${cleanBase}${cleanPath}`;
   };
 
-  const originalPrice = product?.price || 0;
+  const baseOriginalPrice = product?.price || 0;
   const pricing = product ? calculateProductPrice(product, [], null) : null;
   
   const availableOptions = useMemo(() => {
@@ -182,6 +186,7 @@ export default function ProductDetailsPage() {
   }, [selectedAttributes, product?.variants, carouselApi, product]);
 
   // Calculate final displayed price (Variant overrides main price)
+  const originalPrice = selectedVariant ? Number(selectedVariant.mrp || selectedVariant.selling_price || baseOriginalPrice) : baseOriginalPrice;
   const basePrice = selectedVariant ? Number(selectedVariant.selling_price || selectedVariant.mrp || originalPrice) : (pricing?.finalPrice ?? originalPrice);
   const displayPrice = basePrice;
   const therapistPrice = displayPrice * 0.90;
@@ -677,14 +682,14 @@ export default function ProductDetailsPage() {
                     <span className="text-2xl sm:text-4xl font-bold">
                       <Price amount={displayPrice} showDecimals />
                     </span>
-                    {product.mrp && product.mrp > displayPrice && (
+                    {originalPrice > displayPrice && (
                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 font-bold text-xs">
-                         SAVE {Math.round(((product.mrp - displayPrice) / product.mrp) * 100)}%
+                         SAVE {Math.round(((originalPrice - displayPrice) / originalPrice) * 100)}%
                        </Badge>
                     )}
                   </div>
                 )}
-                {product.mrp && <p className="text-xs sm:text-sm text-muted-foreground mr-2">MRP: <span className="line-through decoration-muted-foreground/70"><Price amount={product.mrp} showDecimals /></span></p>}
+                {originalPrice > displayPrice && <p className="text-xs sm:text-sm text-muted-foreground mr-2">MRP: <span className="line-through decoration-muted-foreground/70"><Price amount={originalPrice} showDecimals /></span></p>}
                 {product.gstPercent !== undefined && product.gstPercent > 0 && (
                   <div className="flex flex-col gap-1 mt-1">
                     <div className="flex items-center gap-2">
