@@ -180,13 +180,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // -------------------------------
 const updateQuantity = async (
   productId: number,
-  quantity: number
+  quantity: number,
+  variantId?: number
 ) => {
   if (!user) return;
 
   // 🔥 Always compare as Number
   const cartItem = cart.find(
-    (item) => Number(item.productId) === Number(productId)
+    (item) => Number(item.productId) === Number(productId) && item.variantId === variantId
   );
 
   if (!cartItem) return;
@@ -201,13 +202,14 @@ const updateQuantity = async (
       userId: user.id,
       product_id: Number(productId),
       quantity,
+      variant_id: variantId
     });
 
     // 2️⃣ Update UI locally (NO loadCart)
     console.log('Updated quantity:', quantity, 'for product ID:', productId);
     setCart((prevCart: CartItem[]) =>
       prevCart.map((item): CartItem =>
-        Number(item.productId) === Number(productId)
+        (Number(item.productId) === Number(productId) && item.variantId === variantId)
           ? { ...item, quantity }
           : item
       )
