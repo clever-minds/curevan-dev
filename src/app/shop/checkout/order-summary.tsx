@@ -86,6 +86,13 @@ export function OrderSummary() {
               />
               <div className="flex-1">
                 <p className="font-semibold">{item.name}</p>
+                {item.variantAttributes && Object.keys(item.variantAttributes).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-1">
+                        {Object.entries(item.variantAttributes).map(([k, v]) => (
+                            <span key={k} className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-medium text-muted-foreground">{k}: {v as string}</span>
+                        ))}
+                    </div>
+                )}
                 <div className="flex flex-col">
                   <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
                   {item.gstAmount !== undefined && item.gstAmount > 0 && (

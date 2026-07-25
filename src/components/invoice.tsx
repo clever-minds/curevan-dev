@@ -227,6 +227,13 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                                         <TableCell className="border-r border-gray-400 text-center p-2 align-top text-gray-500 font-bold">{index + 1}</TableCell>
                                         <TableCell className="border-r border-gray-400 p-2 align-top">
                                             <p className="font-black text-xs text-black">{item.name}</p>
+                                            {item.variantAttributes && Object.keys(item.variantAttributes).length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {Object.entries(item.variantAttributes).map(([k, v]) => (
+                                                        <span key={k} className="text-[9px] text-gray-700 bg-gray-100 px-1 py-0.5 rounded">{k}: {v as string}</span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <p className="text-[9px] text-gray-500 mt-2 font-mono uppercase tracking-tight">HSN: {item.hsnCode}</p>
                                         </TableCell>
                                         <TableCell className="border-r border-gray-400 text-center p-2 align-top font-bold text-xs">{item.quantity}<br /><span className="text-[8px] font-black uppercase text-gray-400 tracking-tighter">Nos</span></TableCell>

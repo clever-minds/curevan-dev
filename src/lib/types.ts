@@ -282,6 +282,8 @@ export interface CartItem extends Product {
   id: number;
   quantity: number
   productId: number;
+  variantId?: number;
+  variantAttributes?: Record<string, string>;
 }
 interface InvoiceAddress {
   id: number;

@@ -60,6 +60,8 @@ export async function getCart(): Promise<CartItem[] | null> {
            return 0;
         })(),
         isTaxInclusive: isTaxInclusive,
+        variantId: item.variantId || item.variant_id,
+        variantAttributes: item.variantAttributes || item.attributes || {},
       };
     });
     console.log("Cart API response123:", cartArray);
@@ -111,6 +113,7 @@ export async function saveCart(
         userId: payload.userId,
         product_id: payload.product_id,
         quantity: payload.quantity,
+        variant_id: payload.variant_id,
       },
       {
         headers: {

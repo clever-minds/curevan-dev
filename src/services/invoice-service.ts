@@ -147,7 +147,8 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
       cgst: finalCgst,
       sgst: finalSgst,
       igst: finalIgst,
-      taxableValue: lineTaxableValue // Amount (Taxable)
+      taxableValue: lineTaxableValue, // Amount (Taxable)
+      variantAttributes: item.variantAttributes || item.attributes || null
     };
   });
 
