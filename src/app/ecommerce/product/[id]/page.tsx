@@ -88,7 +88,10 @@ export default function ProductDetailsPage() {
   const [estimating, setEstimating] = useState(false);
 
   const isTherapist = user?.role === 'therapist';
-  const cartItem = cart.find(item => Number(item.productId) === Number(id));
+  const cartItem = cart.find(item => 
+    Number(item.productId) === Number(id) && 
+    (selectedVariant ? item.variantId === selectedVariant.id : true)
+  );
   const quantityInCart = cartItem?.quantity || 0;
 
   useEffect(() => {
@@ -293,7 +296,7 @@ export default function ProductDetailsPage() {
 
   const handleUpdateCartQuantity = (newQty: number) => {
     if (!product) return;
-    updateQuantity(product.id, newQty);
+    updateQuantity(product.id, newQty, selectedVariant?.id);
   };
 
   const handleCheckShipping = async () => {

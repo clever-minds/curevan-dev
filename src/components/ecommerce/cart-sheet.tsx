@@ -7,7 +7,7 @@ import { Button } from "../ui/button";
 import { useCart } from "@/context/cart-context";
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
-import { Trash2, Loader2, X, Tag } from "lucide-react";
+import { Trash2, Loader2, X, Tag, Plus, Minus } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from "@/context/auth-context";
 import { Badge } from "../ui/badge";
@@ -87,8 +87,26 @@ console.log("CartSheet render - cart items:", cart);
                                                     ))}
                                                 </div>
                                             )}
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <span>Qty: {item.quantity}</span>
+                                            <div className="flex items-center gap-3 mt-2 mb-2">
+                                                <div className="flex items-center border rounded-lg bg-background">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-7 w-7 rounded-none rounded-l-lg hover:bg-muted" 
+                                                        onClick={() => updateQuantity(Number(item.productId), item.quantity - 1, item.variantId)} 
+                                                    >
+                                                        <Minus className="w-3 h-3" />
+                                                    </Button>
+                                                    <span className="w-8 text-center font-bold text-xs">{item.quantity}</span>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-7 w-7 rounded-none rounded-r-lg hover:bg-muted" 
+                                                        onClick={() => updateQuantity(Number(item.productId), item.quantity + 1, item.variantId)} 
+                                                    >
+                                                        <Plus className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className="font-bold text-lg text-foreground">
