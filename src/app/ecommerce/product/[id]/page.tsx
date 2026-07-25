@@ -186,8 +186,8 @@ export default function ProductDetailsPage() {
   }, [selectedAttributes, product?.variants, carouselApi, product]);
 
   // Calculate final displayed price (Variant overrides main price)
-  const originalPrice = selectedVariant ? Number(selectedVariant.mrp || selectedVariant.selling_price || baseOriginalPrice) : baseOriginalPrice;
-  const basePrice = selectedVariant ? Number(selectedVariant.selling_price || selectedVariant.mrp || originalPrice) : (pricing?.finalPrice ?? originalPrice);
+  const originalPrice = selectedVariant ? Number(selectedVariant.mrp || selectedVariant.selling_price || selectedVariant.sellingPrice || baseOriginalPrice) : baseOriginalPrice;
+  const basePrice = selectedVariant ? Number(selectedVariant.selling_price || selectedVariant.sellingPrice || selectedVariant.mrp || originalPrice) : (pricing?.finalPrice ?? originalPrice);
   const displayPrice = basePrice;
   const therapistPrice = displayPrice * 0.90;
   const displayStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
