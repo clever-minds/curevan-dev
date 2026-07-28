@@ -24,24 +24,55 @@ const formatNumber = (num: number): string => {
     return m.toFixed(2).replace(/\.00$/, '') + 'M';
 };
 
-const StatItem = ({ icon: Icon, value, label, loading }: { icon: React.ElementType, value: number, label: string, loading: boolean }) => (
-  <div className="flex flex-col items-center justify-center p-4 text-center">
-    <div className="p-4 bg-white/20 rounded-full mb-4">
-        <Icon className="w-8 h-8" />
+const StatItem = ({ icon: Icon, value, label, loading }: { icon: React.ElementType, value: number, label: string, loading: boolean }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (loading || value === 0) {
+        setDisplayValue(0);
+        return;
+    }
+    
+    let startTimestamp: number | null = null;
+    const duration = 2000;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      
+      setDisplayValue(Math.floor(easeProgress * value));
+
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        setDisplayValue(value);
+      }
+    };
+
+    window.requestAnimationFrame(step);
+  }, [value, loading]);
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4 text-center">
+      <div className="p-4 bg-white/20 rounded-full mb-4">
+          <Icon className="w-8 h-8" />
+      </div>
+      {loading && value === 0 ? (
+          <>
+              <Skeleton className="h-9 w-24 mb-2" />
+              <Skeleton className="h-5 w-32" />
+          </>
+      ) : (
+          <>
+              <p className={cn("text-4xl font-bold", loading && "opacity-50")}>{formatNumber(displayValue)}</p>
+              <p className="text-sm font-medium uppercase tracking-wider text-white/80">{label}</p>
+          </>
+      )}
     </div>
-    {loading && value === 0 ? (
-        <>
-            <Skeleton className="h-9 w-24 mb-2" />
-            <Skeleton className="h-5 w-32" />
-        </>
-    ) : (
-        <>
-            <p className={cn("text-4xl font-bold", loading && "opacity-50")}>{formatNumber(value)}</p>
-            <p className="text-sm font-medium uppercase tracking-wider text-white/80">{label}</p>
-        </>
-    )}
-  </div>
-);
+  );
+};
 
 
 export function ImpactStats() {
