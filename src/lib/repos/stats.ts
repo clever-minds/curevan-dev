@@ -16,15 +16,15 @@ export async function getPublicStats(): Promise<{
     console.log("🔥 SERVER: Entering getPublicStats...");
   try {
     const token = await getToken();
-    if (!token) {
-      throw new Error('Token missing, please login again');
+
+    const headers: any = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await serverApi.get('/api/stats/public', {
       withCredentials: true,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
     });
 
     console.log("RAW STATS RESPONSE:", response.data);
