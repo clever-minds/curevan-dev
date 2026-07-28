@@ -529,7 +529,7 @@ export default function ProductDetailsPage() {
                 />
               )}
 
-              <div className="absolute top-6 left-6 flex flex-col gap-2 z-10">
+              <div className="absolute top-6 left-6 flex flex-col items-start gap-2 z-10">
                 <Badge className="bg-primary/95 text-white backdrop-blur-md px-3 py-1 text-sm font-semibold shadow-sm">
                   {product.categoryname}
                 </Badge>
