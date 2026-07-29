@@ -42,6 +42,7 @@ const ecomNavItems = (openTicketCount: number) => [
     { type: 'group', label: 'Storefront', icon: ShoppingBasket, items: [
         { href: '/dashboard/ecom-admin/products', label: 'Products', icon: Boxes },
         { href: '/dashboard/admin/products/categories', label: 'Categories', icon: Tags },
+        { href: '/dashboard/admin/products/subcategories', label: 'Subcategories', icon: Tags },
     ]},
     { type: 'group', label: 'Sales', icon: ShoppingBag, items: [
         { href: '/dashboard/ecom-admin/orders', label: 'Orders', icon: ShoppingBag },

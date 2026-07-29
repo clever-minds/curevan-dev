@@ -121,3 +121,89 @@ export async function deleteProductCategory(
 
   return data;
 }
+
+/* =========================
+    SUBCATEGORIES API
+   ========================= */
+
+export async function listAllSubCategories() {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+    
+    const res = await fetch(`${API}/api/subcategory/list`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
+      cache: 'no-store'
+    });
+    
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch subcategories');
+    return data;
+}
+
+export async function addSubCategory(
+    token: string,
+    payload: {
+      category_id: number | string;
+      name: string;
+      status: boolean;
+    }
+  ) {
+    const res = await fetch(`${API}/api/subcategory/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  
+    const data = await res.json();
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Failed to add subcategory');
+    }
+    return data;
+}
+
+export async function updateSubCategory(
+    id: number | string,
+    payload: {
+      category_id?: number | string;
+      name?: string;
+      status?: boolean;
+    },
+    token: string
+  ) {
+    const res = await fetch(`${API}/api/subcategory/edit/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  
+    const data = await res.json();
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Failed to update subcategory');
+    }
+    return data;
+}
+
+export async function deleteSubCategory(id: number | string, token: string) {
+    const res = await fetch(`${API}/api/subcategory/delete/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  
+    const data = await res.json();
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Failed to delete subcategory');
+    }
+    return data;
+}
