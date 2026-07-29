@@ -28,7 +28,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { AIRichText } from '@/components/ai/ai-rich-text';
 import { listProductCategories } from '@/lib/repos/products';
-import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds, listSubCategories } from '@/lib/repos/categories';
 import { createProducts } from '@/lib/api/products';
 import { updateProduct } from '@/lib/api/products';
 
@@ -188,6 +188,7 @@ export function ProductForm({
 }) {
    const { toast } = useToast();
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [subCategories, setSubCategories] = useState<{id: number, name: string}[]>([]);
   const [serviceTypes, setServiceTypes] = useState<{id: number, name: string}[]>([]);
   const router = useRouter();
    useEffect(() => {
@@ -248,12 +249,36 @@ export function ProductForm({
       import('@/lib/api/products').then(api => {
         api.listProducts().then(data => {
           if (data && data.products) {
-            setAllProducts(data.products);
+            setAllProducts(data.products.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
+          } else if (Array.isArray(data)) {
+            setAllProducts(data.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
           }
-        }).catch(console.error);
+        }).catch(err => console.error("Error fetching products for bundle:", err));
       });
     }
   }, [productType]);
+
+  const selectedCategory = form.watch('category');
+  
+  useEffect(() => {
+    let isMounted = true;
+    if (selectedCategory) {
+      listSubCategories(selectedCategory).then(data => {
+        if (isMounted) {
+          setSubCategories(data);
+          // Only clear if the current subcategory is not in the new list (to prevent clearing on initial load if valid)
+          const currentSubCat = form.getValues('subCategory');
+          if (currentSubCat && !data.find(s => String(s.id) === String(currentSubCat))) {
+            form.setValue('subCategory', '');
+          }
+        }
+      });
+    } else {
+      setSubCategories([]);
+      form.setValue('subCategory', '');
+    }
+    return () => { isMounted = false; };
+  }, [selectedCategory, form]);
 
   useEffect(() => {
   if (initialData) {
@@ -446,7 +471,7 @@ export function ProductForm({
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="subCategory" render={({ field }) => (<FormItem><FormLabel>Sub Category ID</FormLabel><FormControl><Input placeholder="Sub Category ID" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="subCategory" render={({ field }) => (<FormItem><FormLabel>Sub Category</FormLabel><Select onValueChange={field.onChange} key={field.value || "sub-empty"} value={field.value || ""} disabled={!selectedCategory || subCategories.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={!selectedCategory ? "Select a category first" : subCategories.length === 0 ? "No subcategories found" : "Select a sub category"} /></SelectTrigger></FormControl><SelectContent>{subCategories.map(sub => <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 
                 <FormField control={form.control} name="isRecommended" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 mt-1 shadow-sm h-[72px]">
