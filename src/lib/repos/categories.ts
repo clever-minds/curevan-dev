@@ -29,6 +29,22 @@ export async function listProductCategories1(): Promise<ProductCategory[]> {
   }
 }
 
+export async function listSubCategories(categoryId: number | string): Promise<{id: number, name: string}[]> {
+  if (!categoryId) return [];
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.get(`/api/subcategory/category/${categoryId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (response?.success && Array.isArray(response.data)) {
+      return response.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch subcategories via API:", error);
+  }
+  return [];
+}
+
 export async function addJournalTag(name: string): Promise<any> {
   try {
     const token = await getToken();
