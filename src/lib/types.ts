@@ -200,6 +200,8 @@ export interface Product {
   categoryId: number;
   brand?: string;
   tags?: string[];
+  productType?: string;
+  bundleItems?: any[];
   featuredImage: string;
   images?: string[];
   price: number;
