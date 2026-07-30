@@ -61,7 +61,7 @@ export async function listProducts(): Promise<Product[]> {
         Authorization: `Bearer ${token}`
       }
     });
-    const products = (data.data || data || []).map(mapProduct);
+    const products: Product[] = (data.data || data || []).map(mapProduct);
     return Array.from(new Map(products.map((p: Product) => [p.id, p])).values());
   } catch (error: any) {
     console.error("PRODUCT FETCH ERROR:", error?.message);
@@ -87,7 +87,7 @@ export async function fetchPublicProducts(params?: { category_id?: number }): Pr
   try {
     const { data } = await serverApi.get("/api/products/frontend/list", { params });
     console.log("api/products/frontend/list", data);
-    const products = (data.data || []).map(mapProduct);
+    const products: Product[] = (data.data || []).map(mapProduct);
     return Array.from(new Map(products.map((p: Product) => [p.id, p])).values());
   } catch (error: any) {
     console.error("PRODUCT FETCH ERROR:", error?.message);
@@ -99,7 +99,7 @@ export async function fetchRecommendedProducts(params?: { service_type_id?: numb
   try {
     const { data } = await serverApi.get("/api/products/frontend/recommended", { params });
     console.log("api/products/frontend/recommended", data);
-    const products = (data.data || []).map(mapProduct);
+    const products: Product[] = (data.data || []).map(mapProduct);
     return Array.from(new Map(products.map((p: Product) => [p.id, p])).values());
   } catch (error: any) {
     console.error("RECOMMENDED PRODUCT FETCH ERROR:", error?.message);

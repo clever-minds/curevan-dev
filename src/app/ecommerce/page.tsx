@@ -106,6 +106,18 @@ function EcommerceContent() {
         if (title.includes('suitable user')) suitableUsers.add(f.value);
         if (title.includes('use type')) useTypes.add(f.value);
       });
+
+      (p as any).variants?.forEach((variant: any) => {
+          Object.entries(variant.attributes || {}).forEach(([key, value]) => {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.includes('color') || lowerKey.includes('colour')) colors.add(value as string);
+              if (lowerKey.includes('size')) sizes.add(value as string);
+              if (lowerKey.includes('body part')) bodyParts.add(value as string);
+              if (lowerKey.includes('intended use')) intendedUses.add(value as string);
+              if (lowerKey.includes('suitable user')) suitableUsers.add(value as string);
+              if (lowerKey.includes('use type')) useTypes.add(value as string);
+          });
+      });
     });
 
     return {
@@ -158,7 +170,14 @@ function EcommerceContent() {
       const hasFeature = (titleMatch: string, selectedValues: string[]) => {
         if (selectedValues.length === 0) return true;
         const feature = product.additionalFeatures?.find(f => f.title.toLowerCase().includes(titleMatch));
-        return feature && selectedValues.includes(feature.value);
+        if (feature && selectedValues.includes(feature.value)) return true;
+
+        const hasVariantFeature = (product as any).variants?.some((v: any) => {
+            return Object.entries(v.attributes || {}).some(([key, value]) => {
+                return key.toLowerCase().includes(titleMatch) && selectedValues.includes(value as string);
+            });
+        });
+        return hasVariantFeature || false;
       };
 
       const matchesColor = hasFeature('color', filters.colors) || hasFeature('colour', filters.colors);
