@@ -105,6 +105,12 @@ export default function EditProductPage() {
                 stock: v.stock || 0,
                 attributes: v.attributes || {},
               })) || [],
+              bundleItems: (product.bundle_items || product.bundleItems)?.map((item: any) => ({
+                componentProductId: item.component_product_id || item.componentProductId,
+                componentVariantSku: item.component_variant_sku || item.componentVariantSku,
+                quantity: item.quantity,
+              })) || [],
+              subCategory: (product.sub_category_id || product.subCategoryId) ? String(product.sub_category_id || product.subCategoryId) : undefined,
             }}
           />
           </CardContent>
