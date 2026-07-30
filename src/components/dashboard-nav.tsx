@@ -119,6 +119,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
     { type: 'group', label: 'Storefront', icon: ShoppingBasket, items: [
         { href: '/dashboard/admin/products', label: 'Products', icon: Boxes },
         { href: '/dashboard/admin/products/categories', label: 'Categories', icon: Tags },
+        { href: '/dashboard/admin/products/subcategories', label: 'Subcategories', icon: Tags },
     ]},
     { type: 'group', label: 'Sales', icon: HandCoins, items: [
         { href: '/dashboard/admin/orders', label: 'Orders', icon: ShoppingBag },
