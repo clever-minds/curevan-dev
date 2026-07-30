@@ -57,12 +57,12 @@ export default function EditProductPage() {
               shortDescription: product.short_description,
               longDescription: product.long_description,
               sku: product.sku,
-              category: product.category_id ? String(product.category_id) : undefined,
+              category: (product.category_id || product.categoryId) ? String(product.category_id || product.categoryId) : undefined,
               mrp: product.mrp,
-              sellingPrice: product.selling_price,
+              sellingPrice: product.selling_price || product.sellingPrice,
               status: product.status,
-              stock: product.on_hand,
-              reorderPoint: product.reorder_point,
+              stock: product.on_hand || product.stock,
+              reorderPoint: product.reorder_point || product.reorderPoint,
               brand: product.brand,
               images: product.images || [],
               dimensions: {
@@ -83,22 +83,22 @@ export default function EditProductPage() {
                 value: f.value,
                 isHighlighted: f.is_highlighted,
               })) || [],
-              isRecommended: product.is_recommended,
-              serviceTypeId: product.service_type_id,
+              isRecommended: product.is_recommended || product.isRecommended,
+              serviceTypeId: product.service_type_id || product.serviceTypeId,
               hasVariants: (product.variants && product.variants.length > 0) ? true : false,
               variants: product.variants?.map((v: any) => ({
                 sku: v.sku,
                 mrp: v.mrp || 0,
-                sellingPrice: v.selling_price || 0,
+                sellingPrice: v.selling_price || v.sellingPrice || 0,
                 stock: v.stock || 0,
                 attributes: v.attributes || {},
               })) || [],
-              bundleItems: product.bundle_items?.map((item: any) => ({
-                componentProductId: item.component_product_id,
-                componentVariantSku: item.component_variant_sku,
+              bundleItems: (product.bundle_items || product.bundleItems)?.map((item: any) => ({
+                componentProductId: item.component_product_id || item.componentProductId,
+                componentVariantSku: item.component_variant_sku || item.componentVariantSku,
                 quantity: item.quantity,
               })) || [],
-              subCategory: product.sub_category_id ? String(product.sub_category_id) : undefined,
+              subCategory: (product.sub_category_id || product.subCategoryId) ? String(product.sub_category_id || product.subCategoryId) : undefined,
             }}
           />
           </CardContent>
