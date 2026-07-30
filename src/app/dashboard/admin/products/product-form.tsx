@@ -424,7 +424,15 @@ export function ProductForm({
                 ...v,
                 imageId: v.image && v.image.length > 0 ? v.image[0].id : undefined
             })) : [],
-            bundleItems: data.productType === 'Bundle' ? data.bundleItems : []
+            bundleItems: data.productType === 'Bundle' ? data.bundleItems : [],
+            bundle_items: data.productType === 'Bundle' ? data.bundleItems?.map((item: any) => ({
+                component_product_id: item.componentProductId,
+                component_variant_sku: item.componentVariantSku,
+                quantity: item.quantity,
+                // Include camelCase as well for safety
+                componentProductId: item.componentProductId,
+                componentVariantSku: item.componentVariantSku
+            })) : []
         };
 
         if (productId) {
