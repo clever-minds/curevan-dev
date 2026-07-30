@@ -632,7 +632,6 @@ export function ProductForm({
              )}
         </div>
 
-        </div>
 
         {productType === 'Bundle' && (
             <>
