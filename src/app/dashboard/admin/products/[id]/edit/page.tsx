@@ -62,7 +62,10 @@ export default function EditProductPage() {
               shortDescription: product.short_description || product.shortDescription,
               longDescription: product.long_description || product.longDescription,
               sku: product.sku,
-              category: (product.category_id || product.categoryId || product.category) ? String(product.category_id || product.categoryId || product.category) : undefined,
+              category: (() => {
+                const cat = product.category_id || product.categoryId || (typeof product.category === 'object' ? product.category?.id : product.category);
+                return cat ? String(cat) : undefined;
+              })(),
               mrp: product.mrp,
               sellingPrice: product.selling_price || product.sellingPrice,
               status: product.status,
