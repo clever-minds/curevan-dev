@@ -57,7 +57,7 @@ export default function EditProductPage() {
               shortDescription: product.short_description || product.shortDescription,
               longDescription: product.long_description || product.longDescription,
               sku: product.sku,
-              category: (product.category_id || product.categoryId) ? String(product.category_id || product.categoryId) : undefined,
+              category: (product.category_id || product.categoryId || product.category) ? String(product.category_id || product.categoryId || product.category) : undefined,
               mrp: product.mrp,
               sellingPrice: product.selling_price || product.sellingPrice,
               status: product.status,
@@ -98,7 +98,7 @@ export default function EditProductPage() {
                 componentVariantSku: item.component_variant_sku || item.componentVariantSku,
                 quantity: item.quantity,
               })) || [],
-              subCategory: (product.sub_category_id || product.subCategoryId) ? String(product.sub_category_id || product.subCategoryId) : undefined,
+              subCategory: (product.sub_category_id || product.subCategoryId || product.subCategory || product.sub_category) ? String(product.sub_category_id || product.subCategoryId || product.subCategory || product.sub_category) : undefined,
             }}
           />
           </CardContent>
