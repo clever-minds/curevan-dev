@@ -28,7 +28,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { AIRichText } from '@/components/ai/ai-rich-text';
 import { listProductCategories } from '@/lib/repos/products';
-import { getTherapyCategoriesWithIds, listSubCategories } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { createProducts } from '@/lib/api/products';
 import { updateProduct } from '@/lib/api/products';
 
@@ -107,13 +107,12 @@ images: z
     sellingPrice: z.coerce.number().min(0, "Selling price must be positive"),
     stock: z.coerce.number().min(0, "Stock cannot be negative"),
     reorderPoint: z.coerce.number().min(0).optional(),
-    image: z.array(z.any()).optional(),
     attributes: z.record(z.string()),
   })).optional(),
   bundleItems: z.array(z.object({
-    componentProductId: z.coerce.number(),
-    componentVariantSku: z.string().nullable().optional(),
-    quantity: z.coerce.number().min(1, 'Quantity must be at least 1')
+      componentProductId: z.number({ required_error: 'Product is required' }),
+      componentVariantSku: z.string().nullable().optional(),
+      quantity: z.coerce.number().min(1, 'Quantity must be at least 1')
   })).optional(),
 }).refine(data => {
     if (data.mrp !== undefined && data.sellingPrice !== undefined) {
@@ -188,7 +187,6 @@ export function ProductForm({
 }) {
    const { toast } = useToast();
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
-  const [subCategories, setSubCategories] = useState<{id: number, name: string}[]>([]);
   const [serviceTypes, setServiceTypes] = useState<{id: number, name: string}[]>([]);
   const router = useRouter();
    useEffect(() => {
@@ -241,52 +239,13 @@ export function ProductForm({
     name: "bundleItems" as any
   });
 
-  const [allProducts, setAllProducts] = useState<any[]>([]);
-  const productType = form.watch('productType');
-
-  useEffect(() => {
-    if (productType === 'Bundle') {
-      import('@/lib/api/products').then(api => {
-        api.listProducts().then(data => {
-          if (data && data.products) {
-            setAllProducts(data.products.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
-          } else if (Array.isArray(data)) {
-            setAllProducts(data.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
-          }
-        }).catch(err => console.error("Error fetching products for bundle:", err));
-      });
-    }
-  }, [productType]);
-
-  const selectedCategory = form.watch('category');
-  
-  useEffect(() => {
-    let isMounted = true;
-    if (selectedCategory) {
-      listSubCategories(selectedCategory).then(data => {
-        if (isMounted) {
-          setSubCategories(data);
-          // Only clear if the current subcategory is not in the new list (to prevent clearing on initial load if valid)
-          const currentSubCat = form.getValues('subCategory');
-          if (currentSubCat && !data.find(s => String(s.id) === String(currentSubCat))) {
-            form.setValue('subCategory', '');
-          }
-        }
-      });
-    } else {
-      setSubCategories([]);
-      form.setValue('subCategory', '');
-    }
-    return () => { isMounted = false; };
-  }, [selectedCategory, form]);
-
   useEffect(() => {
   if (initialData) {
     console.log("Initial Data →", initialData);
     form.reset({
       ...initialData,
-      category: initialData.category ? String(initialData.category) : undefined,
-      subCategory: initialData.subCategoryId ? String(initialData.subCategoryId) : undefined,
+      category: initialData.category !== undefined && initialData.category !== null ? String(initialData.category) : undefined,
+      subCategory: (initialData.subCategory || initialData.subCategoryId) !== undefined && (initialData.subCategory || initialData.subCategoryId) !== null ? String(initialData.subCategory || initialData.subCategoryId) : undefined,
       gstSlab: initialData.gstSlab ?? undefined,
       mfgDate: initialData.mfgDate ? new Date(initialData.mfgDate) : undefined,
       expiryDate: initialData.expiryDate ? new Date(initialData.expiryDate) : undefined,
@@ -309,16 +268,26 @@ export function ProductForm({
       additionalFeatures: (initialData as any).additionalFeatures || [],
       isRecommended: initialData.isRecommended || false,
       serviceTypeId: initialData.serviceTypeId ?? undefined,
-      variants: (initialData.variants || []).map((v: any) => ({
-        ...v,
-        image: v.imageId && v.imageUrl ? [{ id: v.imageId, url: v.imageUrl, type: 'image' }] : []
-      })),
-      bundleItems: (initialData as any).bundleItems || [],
     });
   }
 }, [initialData, form]);
 
+  const productType = form.watch('productType');
+  const [allProducts, setAllProducts] = useState<any[]>([]);
 
+  useEffect(() => {
+    if (productType === 'Bundle') {
+      import('@/lib/api/products').then(api => {
+        api.listProducts().then(data => {
+          if (data && data.products) {
+            setAllProducts(data.products.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
+          } else if (Array.isArray(data)) {
+            setAllProducts(data.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
+          }
+        }).catch(err => console.error("Error fetching products for bundle:", err));
+      });
+    }
+  }, [productType]);
 
   // async function onSubmit(data: ProductFormValues) {
   //   console.log("category,,,,,",data.category);
@@ -390,7 +359,6 @@ export function ProductForm({
             brand: data.brand ?? undefined,
             sku: data.sku,
             category: Number(data.category),
-            sub_category_id: data.subCategory ? Number(data.subCategory) : undefined,
             mrp: data.mrp,
             sellingPrice: data.sellingPrice,
             isTaxInclusive: data.isTaxInclusive,
@@ -420,11 +388,19 @@ export function ProductForm({
             })) ?? [],
             is_recommended: data.isRecommended,
             service_type_id: data.serviceTypeId ?? undefined,
-            variants: data.hasVariants ? (data.variants || []).map((v: any) => ({
-                ...v,
-                imageId: v.image && v.image.length > 0 ? v.image[0].id : undefined
+            sub_category_id: data.subCategory ? Number(data.subCategory) : undefined,
+            variants: data.hasVariants ? data.variants : [],
+            bundleItems: data.productType === 'Bundle' ? data.bundleItems : [],
+            bundle_items: data.productType === 'Bundle' ? data.bundleItems?.map((item: any) => ({
+                component_product_id: item.componentProductId,
+                component_variant_sku: item.componentVariantSku,
+                quantity: item.quantity
             })) : [],
-            bundleItems: data.productType === 'Bundle' ? data.bundleItems : []
+            additionalFeatures: data.additionalFeatures?.map(f => ({
+                title: f.title,
+                value: f.value,
+                isHighlighted: f.isHighlighted
+            })) ?? []
         };
 
         if (productId) {
@@ -465,13 +441,12 @@ export function ProductForm({
         <div className="space-y-6">
             <h3 className="text-lg font-medium font-headline border-b pb-2">Core Information</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="subCategory" render={({ field }) => (<FormItem><FormLabel>Sub Category</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={!selectedCategory || subCategories.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={!selectedCategory ? "Select a category first" : subCategories.length === 0 ? "No subcategories found" : "Select a sub category"} /></SelectTrigger></FormControl><SelectContent>{subCategories.map(sub => <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 
                 <FormField control={form.control} name="isRecommended" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 mt-1 shadow-sm h-[72px]">
@@ -487,7 +462,7 @@ export function ProductForm({
                 <FormField control={form.control} name="serviceTypeId" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Service Type {form.watch("isRecommended") && <span className="text-red-500">*</span>}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined} disabled={!form.watch("isRecommended")}>
+                        <Select onValueChange={field.onChange} key={field.value} value={field.value ? String(field.value) : undefined} disabled={!form.watch("isRecommended")}>
                             <FormControl>
                                 <SelectTrigger><SelectValue placeholder="Select a therapy/service" /></SelectTrigger>
                             </FormControl>
@@ -613,7 +588,6 @@ export function ProductForm({
                                  <tr>
                                      <th className="p-2 text-left font-medium">SKU</th>
                                      <th className="p-2 text-left font-medium min-w-[200px]">Options (e.g. Size: M, Color: Red)</th>
-                                     <th className="p-2 text-left font-medium">Image</th>
                                      <th className="p-2 text-left font-medium">MRP</th>
                                      <th className="p-2 text-left font-medium">Selling Price</th>
                                      <th className="p-2 text-left font-medium">Stock</th>
@@ -628,17 +602,6 @@ export function ProductForm({
                                          </td>
                                          <td className="p-2">
                                              <FormField control={form.control} name={`variants.${index}.attributes` as any} render={({ field }) => (<FormControl><VariantAttributesInput value={field.value as any} onChange={field.onChange} /></FormControl>)} />
-                                         </td>
-                                         <td className="p-2">
-                                             <FormField control={form.control} name={`variants.${index}.image` as any} render={({ field }) => (
-                                                 <FormControl>
-                                                     <MediaPicker
-                                                         value={field.value || []}
-                                                         onChange={(media: MediaItem[]) => field.onChange(media)}
-                                                         multiple={false}
-                                                     />
-                                                 </FormControl>
-                                             )} />
                                          </td>
                                          <td className="p-2">
                                              <FormField control={form.control} name={`variants.${index}.mrp` as any} render={({ field }) => (<FormControl><Input type="number" placeholder="MRP" {...field} /></FormControl>)} />
@@ -669,69 +632,72 @@ export function ProductForm({
              )}
         </div>
 
-        <Separator />
+        </div>
 
         {productType === 'Bundle' && (
-            <div className="space-y-6">
-                <h3 className="text-lg font-medium font-headline border-b pb-2">Bundle Components</h3>
-                <div className="border rounded-md">
-                    <table className="w-full text-sm">
-                        <thead className="bg-muted text-muted-foreground border-b">
-                            <tr>
-                                <th className="p-2 text-left font-medium min-w-[300px]">Component Product</th>
-                                <th className="p-2 text-left font-medium">Quantity</th>
-                                <th className="p-2 text-center font-medium">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {bundleFields.map((field, index) => (
-                                <tr key={field.id} className="border-t">
-                                    <td className="p-2">
-                                        <FormField control={form.control} name={`bundleItems.${index}.componentProductId` as any} render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <select
-                                                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        value={field.value || ""}
-                                                        onChange={(e) => field.onChange(Number(e.target.value))}
-                                                    >
-                                                        <option value="" disabled>Select a product...</option>
-                                                        {allProducts.map((p: any) => (
-                                                            <option key={p.id} value={p.id}>{p.title}</option>
-                                                        ))}
-                                                    </select>
-                                                </FormControl>
-                                            </FormItem>
-                                        )} />
-                                    </td>
-                                    <td className="p-2">
-                                        <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (
-                                            <FormControl>
-                                                <Input type="number" min="1" placeholder="Qty" {...field} />
-                                            </FormControl>
-                                        )} />
-                                    </td>
-                                    <td className="p-2 text-center">
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeBundleItem(index)} className="text-destructive">
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {bundleFields.length === 0 && (
-                                <tr>
-                                    <td colSpan={3} className="p-4 text-center text-muted-foreground">No components added yet.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+            <>
+                <Separator />
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b pb-2">
+                        <h3 className="text-lg font-medium font-headline">Bundle Components</h3>
+                    </div>
+                    <div className="space-y-4">
+                        <Alert><Info className="h-4 w-4" /><AlertDescription>Select the products that make up this bundle.</AlertDescription></Alert>
+                        <div className="border rounded-md overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted">
+                                    <tr>
+                                        <th className="p-2 text-left font-medium">Product <span className="text-red-500">*</span></th>
+                                        <th className="p-2 text-left font-medium">Variant SKU (Optional)</th>
+                                        <th className="p-2 text-left font-medium">Quantity <span className="text-red-500">*</span></th>
+                                        <th className="p-2 text-center font-medium">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bundleFields.map((field, index) => (
+                                        <tr key={field.id} className="border-t">
+                                            <td className="p-2 min-w-[200px]">
+                                                <FormField control={form.control} name={`bundleItems.${index}.componentProductId` as any} render={({ field }) => (
+                                                    <FormControl>
+                                                        <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : undefined}>
+                                                            <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
+                                                            <SelectContent>
+                                                                {allProducts.map(p => (
+                                                                    <SelectItem key={p.id} value={String(p.id)}>{p.title} (SKU: {p.sku})</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormControl>
+                                                )} />
+                                            </td>
+                                            <td className="p-2">
+                                                <FormField control={form.control} name={`bundleItems.${index}.componentVariantSku` as any} render={({ field }) => (<FormControl><Input placeholder="Variant SKU" {...field} value={field.value ?? ''} /></FormControl>)} />
+                                            </td>
+                                            <td className="p-2 w-24">
+                                                <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (<FormControl><Input type="number" min="1" {...field} /></FormControl>)} />
+                                            </td>
+                                            <td className="p-2 text-center">
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => removeBundleItem(index)} className="text-destructive"><X className="h-4 w-4" /></Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {bundleFields.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="p-4 text-center text-muted-foreground">No components added yet.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendBundleItem({ componentProductId: 0, quantity: 1 })}>
+                            <Plus className="h-4 w-4 mr-2" /> Add Component
+                        </Button>
+                    </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => appendBundleItem({ componentProductId: 0, quantity: 1 })}>
-                    <Plus className="h-4 w-4 mr-2" /> Add Component
-                </Button>
-            </div>
+            </>
         )}
 
+        <Separator />
         <Separator />
         {!form.watch("hasVariants") && (productType === 'Physical' || productType === 'Bundle') && (
             <div className="space-y-4">
