@@ -33,6 +33,15 @@ function EcommerceContent() {
     category: 'all',
     price: [0, 10000],
     rating: 0,
+    brands: [] as string[],
+    subCategories: [] as string[],
+    colors: [] as string[],
+    sizes: [] as string[],
+    bodyParts: [] as string[],
+    intendedUses: [] as string[],
+    suitableUsers: [] as string[],
+    useTypes: [] as string[],
+    stockStatus: [] as string[],
   });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -74,6 +83,43 @@ function EcommerceContent() {
     };
   }, [products]);
 
+  const filterOptions = useMemo(() => {
+    const brands = new Set<string>();
+    const subCategories = new Set<string>();
+    const colors = new Set<string>();
+    const sizes = new Set<string>();
+    const bodyParts = new Set<string>();
+    const intendedUses = new Set<string>();
+    const suitableUsers = new Set<string>();
+    const useTypes = new Set<string>();
+
+    products.forEach(p => {
+      if (p.brand) brands.add(p.brand);
+      if (p.subCategoryName) subCategories.add(p.subCategoryName);
+      
+      p.additionalFeatures?.forEach(f => {
+        const title = f.title.toLowerCase();
+        if (title.includes('colour') || title.includes('color')) colors.add(f.value);
+        if (title.includes('size')) sizes.add(f.value);
+        if (title.includes('body part')) bodyParts.add(f.value);
+        if (title.includes('intended use')) intendedUses.add(f.value);
+        if (title.includes('suitable user')) suitableUsers.add(f.value);
+        if (title.includes('use type')) useTypes.add(f.value);
+      });
+    });
+
+    return {
+      brands: Array.from(brands),
+      subCategories: Array.from(subCategories),
+      colors: Array.from(colors),
+      sizes: Array.from(sizes),
+      bodyParts: Array.from(bodyParts),
+      intendedUses: Array.from(intendedUses),
+      suitableUsers: Array.from(suitableUsers),
+      useTypes: Array.from(useTypes),
+    };
+  }, [products]);
+
   const handleApplyCoupon = useCallback((codeToApply: string) => {
     if (coupons.length === 0) {
         toast({
@@ -98,17 +144,32 @@ function EcommerceContent() {
   }, [searchParams, appliedCoupon, handleApplyCoupon]);
 
   const filteredProducts = useMemo(() => {
-
     return products.filter(product => {
-
       const matchesSearch = product.name.toLowerCase().includes(filters.search.toLowerCase());
       const matchesCategory = filters.category === 'all' || product.categoryId.toString().toLowerCase().replace(/ /g, '-') === filters.category;
       const matchesPrice = product.price >= filters.price[0] && product.price <= filters.price[1];
-      //const matchesRating = product.rating >= filters.rating;
+      const matchesRating = filters.rating === 0 || product.rating >= filters.rating;
+      const matchesBrand = filters.brands.length === 0 || (product.brand && filters.brands.includes(product.brand));
+      const matchesSubCategory = filters.subCategories.length === 0 || (product.subCategoryName && filters.subCategories.includes(product.subCategoryName));
+      const matchesStock = filters.stockStatus.length === 0 || 
+        (filters.stockStatus.includes('In Stock') && product.stock > 0) ||
+        (filters.stockStatus.includes('Out of Stock') && product.stock <= 0);
 
-      return matchesSearch && matchesCategory && matchesPrice ;
+      const hasFeature = (titleMatch: string, selectedValues: string[]) => {
+        if (selectedValues.length === 0) return true;
+        const feature = product.additionalFeatures?.find(f => f.title.toLowerCase().includes(titleMatch));
+        return feature && selectedValues.includes(feature.value);
+      };
+
+      const matchesColor = hasFeature('color', filters.colors) || hasFeature('colour', filters.colors);
+      const matchesSize = hasFeature('size', filters.sizes);
+      const matchesBodyPart = hasFeature('body part', filters.bodyParts);
+      const matchesIntendedUse = hasFeature('intended use', filters.intendedUses);
+      const matchesSuitableUser = hasFeature('suitable user', filters.suitableUsers);
+      const matchesUseType = hasFeature('use type', filters.useTypes);
+
+      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesBrand && matchesSubCategory && matchesStock && matchesColor && matchesSize && matchesBodyPart && matchesIntendedUse && matchesSuitableUser && matchesUseType;
     });
-
   }, [filters, products]);
 
   // Reset visible count when filters change
@@ -134,6 +195,7 @@ function EcommerceContent() {
                 setFilters={setFilters} 
                 minPrice={minPrice}
                 maxPrice={maxPrice}
+                filterOptions={filterOptions}
               />
             </div>
           </ScrollArea>
@@ -172,6 +234,7 @@ function EcommerceContent() {
                                     setFilters={setFilters} 
                                     minPrice={minPrice}
                                     maxPrice={maxPrice}
+                                    filterOptions={filterOptions}
                                     isMobile={true}
                                     closeSheet={() => setIsSheetOpen(false)}
                                 />

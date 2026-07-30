@@ -214,6 +214,9 @@ export interface Product {
   reorderPoint: number;
   hsnCode: string;
   categoryname: string;
+  subCategoryId?: number;
+  subCategoryName?: string;
+  discountPercentage?: number;
   // New fields for India compliance
   manufacturer?: string;
   packer?: string;

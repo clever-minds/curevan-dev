@@ -13,6 +13,7 @@ import { Search, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SheetClose } from '../ui/sheet';
 import { Price } from '../money/price';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface FilterSidebarProps {
     categories: ProductCategory[];
@@ -20,6 +21,7 @@ interface FilterSidebarProps {
     setFilters: (filters: any) => void;
     minPrice?: number;
     maxPrice?: number;
+    filterOptions?: any;
     isMobile?: boolean;
     closeSheet?: () => void;
 }
@@ -30,6 +32,7 @@ export function FilterSidebar({
     setFilters, 
     minPrice = 0, 
     maxPrice = 10000, 
+    filterOptions,
     isMobile = false, 
     closeSheet 
 }: FilterSidebarProps) {
@@ -59,6 +62,17 @@ export function FilterSidebar({
             ...prev,
             rating: prev.rating === rating ? 0 : rating
         }));
+    };
+
+    const handleArrayFilterChange = (key: string, value: string, isChecked: boolean) => {
+        setLocalFilters((prev: any) => {
+            const currentArray = prev[key] || [];
+            if (isChecked) {
+                return { ...prev, [key]: [...currentArray, value] };
+            } else {
+                return { ...prev, [key]: currentArray.filter((item: string) => item !== value) };
+            }
+        });
     };
 
     const handleApplyFilters = () => {
@@ -158,6 +172,195 @@ export function FilterSidebar({
                         ))}
                     </div>
                 </div>
+
+                <Accordion type="multiple" className="w-full">
+                    {/* Brand */}
+                    {filterOptions?.brands?.length > 0 && (
+                        <AccordionItem value="brand">
+                            <AccordionTrigger className="text-base font-semibold">Brand</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.brands.map((brand: string) => (
+                                        <div key={brand} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`brand-${brand}`} 
+                                                checked={localFilters.brands?.includes(brand)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('brands', brand, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`brand-${brand}`} className="font-normal">{brand}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Sub-Category */}
+                    {filterOptions?.subCategories?.length > 0 && (
+                        <AccordionItem value="subCategory">
+                            <AccordionTrigger className="text-base font-semibold">Sub-Category</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.subCategories.map((sub: string) => (
+                                        <div key={sub} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`sub-${sub}`} 
+                                                checked={localFilters.subCategories?.includes(sub)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('subCategories', sub, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`sub-${sub}`} className="font-normal">{sub}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Colour */}
+                    {filterOptions?.colors?.length > 0 && (
+                        <AccordionItem value="color">
+                            <AccordionTrigger className="text-base font-semibold">Colour</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.colors.map((color: string) => (
+                                        <div key={color} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`color-${color}`} 
+                                                checked={localFilters.colors?.includes(color)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('colors', color, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`color-${color}`} className="font-normal">{color}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Size */}
+                    {filterOptions?.sizes?.length > 0 && (
+                        <AccordionItem value="size">
+                            <AccordionTrigger className="text-base font-semibold">Size</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.sizes.map((size: string) => (
+                                        <div key={size} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`size-${size}`} 
+                                                checked={localFilters.sizes?.includes(size)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('sizes', size, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`size-${size}`} className="font-normal">{size}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Body Part */}
+                    {filterOptions?.bodyParts?.length > 0 && (
+                        <AccordionItem value="bodyPart">
+                            <AccordionTrigger className="text-base font-semibold">Body Part</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.bodyParts.map((part: string) => (
+                                        <div key={part} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`part-${part}`} 
+                                                checked={localFilters.bodyParts?.includes(part)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('bodyParts', part, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`part-${part}`} className="font-normal">{part}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Intended Use */}
+                    {filterOptions?.intendedUses?.length > 0 && (
+                        <AccordionItem value="intendedUse">
+                            <AccordionTrigger className="text-base font-semibold">Intended Use</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.intendedUses.map((use: string) => (
+                                        <div key={use} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`use-${use}`} 
+                                                checked={localFilters.intendedUses?.includes(use)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('intendedUses', use, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`use-${use}`} className="font-normal">{use}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Suitable User */}
+                    {filterOptions?.suitableUsers?.length > 0 && (
+                        <AccordionItem value="suitableUser">
+                            <AccordionTrigger className="text-base font-semibold">Suitable User</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.suitableUsers.map((user: string) => (
+                                        <div key={user} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`user-${user}`} 
+                                                checked={localFilters.suitableUsers?.includes(user)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('suitableUsers', user, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`user-${user}`} className="font-normal">{user}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Use Type */}
+                    {filterOptions?.useTypes?.length > 0 && (
+                        <AccordionItem value="useType">
+                            <AccordionTrigger className="text-base font-semibold">Use Type</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 pt-2">
+                                    {filterOptions.useTypes.map((type: string) => (
+                                        <div key={type} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`type-${type}`} 
+                                                checked={localFilters.useTypes?.includes(type)}
+                                                onCheckedChange={(checked) => handleArrayFilterChange('useTypes', type, checked as boolean)}
+                                            />
+                                            <Label htmlFor={`type-${type}`} className="font-normal">{type}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Stock Status */}
+                    <AccordionItem value="stockStatus">
+                        <AccordionTrigger className="text-base font-semibold">Stock Status</AccordionTrigger>
+                        <AccordionContent>
+                            <div className="space-y-2 pt-2">
+                                {['In Stock', 'Out of Stock'].map((status: string) => (
+                                    <div key={status} className="flex items-center space-x-2">
+                                        <Checkbox 
+                                            id={`stock-${status}`} 
+                                            checked={localFilters.stockStatus?.includes(status)}
+                                            onCheckedChange={(checked) => handleArrayFilterChange('stockStatus', status, checked as boolean)}
+                                        />
+                                        <Label htmlFor={`stock-${status}`} className="font-normal">{status}</Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
             </div>
 
             <div className="space-y-2 mt-auto">
@@ -173,7 +376,21 @@ export function FilterSidebar({
                     className="w-full"
                     variant="outline"
                     onClick={() => {
-                        const clearedFilters = { search: '', category: 'all', price: [minPrice, maxPrice], rating: 0 };
+                        const clearedFilters = { 
+                            search: '', 
+                            category: 'all', 
+                            price: [minPrice, maxPrice], 
+                            rating: 0,
+                            brands: [],
+                            subCategories: [],
+                            colors: [],
+                            sizes: [],
+                            bodyParts: [],
+                            intendedUses: [],
+                            suitableUsers: [],
+                            useTypes: [],
+                            stockStatus: []
+                        };
                         setLocalFilters(clearedFilters);
                         if (!isMobile) {
                             setFilters(clearedFilters);
