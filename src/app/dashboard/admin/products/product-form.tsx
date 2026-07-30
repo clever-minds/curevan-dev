@@ -418,6 +418,12 @@ export function ProductForm({
                 value: f.value,
                 is_highlighted: f.isHighlighted
             })) ?? [],
+            additionalFeatures: data.additionalFeatures?.map(f => ({
+                title: f.title,
+                value: f.value,
+                is_highlighted: f.isHighlighted,
+                isHighlighted: f.isHighlighted
+            })) ?? [],
             is_recommended: data.isRecommended,
             service_type_id: data.serviceTypeId ?? undefined,
             variants: data.hasVariants ? (data.variants || []).map((v: any) => ({
