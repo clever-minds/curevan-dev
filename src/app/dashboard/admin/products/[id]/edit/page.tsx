@@ -46,7 +46,12 @@ export default function EditProductPage() {
             productId={product.id}
             initialData={{
               title: product.title,
-              productType: product.product_type || product.productType,
+              productType: (() => {
+                const pt = product.product_type || product.productType;
+                if (pt === 'Physical Good') return 'Physical';
+                if (pt === 'Digital Product') return 'Digital';
+                return pt;
+              })(),
               hsnCode: product.hsn_code || product.hsnCode,
               sacCode: product.sac_code || product.sacCode,
               gstSlab: product.gst_slab || product.gstSlab,
