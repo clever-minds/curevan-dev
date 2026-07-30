@@ -48,65 +48,63 @@ export default function EditProductPage() {
               title: product.title,
               productType: (() => {
                 const pt = product.product_type || product.productType;
-                if (pt === 'Physical Good') return 'Physical';
-                if (pt === 'Digital Product') return 'Digital';
+                if (!pt) return undefined;
+                const lowerPt = pt.toLowerCase();
+                if (lowerPt.includes('physical')) return 'Physical';
+                if (lowerPt.includes('digital')) return 'Digital';
+                if (lowerPt.includes('service')) return 'Service';
+                if (lowerPt.includes('bundle')) return 'Bundle';
                 return pt;
               })(),
-              hsnCode: product.hsn_code || product.hsnCode,
-              sacCode: product.sac_code || product.sacCode,
-              gstSlab: product.gst_slab || product.gstSlab,
-              isTaxInclusive: product.is_tax_inclusive !== undefined ? product.is_tax_inclusive : (product.isTaxInclusive !== undefined ? product.isTaxInclusive : true),
-              isCouponExcluded: product.is_coupon_excluded !== undefined ? product.is_coupon_excluded : (product.isCouponExcluded !== undefined ? product.isCouponExcluded : false),
+              hsnCode: product.hsn_code,
+              sacCode: product.sac_code,
+              gstSlab: product.gst_slab,
+              isTaxInclusive: product.is_tax_inclusive,
+              isCouponExcluded: product.is_coupon_excluded,
               tags: product.tags ||[],
               subtitle: product.subtitle,
-              shortDescription: product.short_description || product.shortDescription,
-              longDescription: product.long_description || product.longDescription,
+              shortDescription: product.short_description,
+              longDescription: product.long_description,
               sku: product.sku,
               category: (() => {
                 const cat = product.category_id || product.categoryId || (typeof product.category === 'object' ? product.category?.id : product.category);
                 return cat ? String(cat) : undefined;
               })(),
               mrp: product.mrp,
-              sellingPrice: product.selling_price || product.sellingPrice,
+              sellingPrice: product.selling_price,
               status: product.status,
-              stock: product.on_hand || product.stock,
-              reorderPoint: product.reorder_point || product.reorderPoint,
+              stock: product.on_hand,
+              reorderPoint: product.reorder_point,
               brand: product.brand,
               images: product.images || [],
               dimensions: {
-                lengthCm: product.length_cm || product.dimensions?.lengthCm,
-                widthCm: product.width_cm || product.dimensions?.widthCm,
-                heightCm: product.height_cm || product.dimensions?.heightCm,
-                weightKg: product.weight_kg || product.dimensions?.weightKg,
+                lengthCm: product.length_cm,
+                widthCm: product.width_cm,
+                heightCm: product.height_cm,
+                weightKg: product.weight_kg,
               },
               manufacturer: product.manufacturer,
-              countryOfOrigin: product.country_of_origin || product.countryOfOrigin,
+              countryOfOrigin: product.country_of_origin,
               packer: product.packer,
               importer: product.importer,
-              batchNumber: product.batch_number || product.batchNumber,
-              mfgDate: (product.manufacturing_date || product.mfgDate) ? new Date(product.manufacturing_date || product.mfgDate) : undefined,
-              expiryDate: (product.expiry_date || product.expiryDate) ? new Date(product.expiry_date || product.expiryDate) : undefined,
-              additionalFeatures: (product.additional_features || product.additionalFeatures)?.map((f: any) => ({
+              batchNumber: product.batch_number,
+              mfgDate: product.manufacturing_date ? new Date(product.manufacturing_date) : undefined,
+              expiryDate: product.expiry_date ? new Date(product.expiry_date) : undefined,
+              additionalFeatures: product.additional_features?.map((f: any) => ({
                 title: f.title,
                 value: f.value,
-                isHighlighted: f.is_highlighted || f.isHighlighted,
+                isHighlighted: f.is_highlighted,
               })) || [],
-              isRecommended: product.is_recommended || product.isRecommended,
-              serviceTypeId: product.service_type_id || product.serviceTypeId,
+              isRecommended: product.is_recommended,
+              serviceTypeId: product.service_type_id,
               hasVariants: (product.variants && product.variants.length > 0) ? true : false,
               variants: product.variants?.map((v: any) => ({
                 sku: v.sku,
                 mrp: v.mrp || 0,
-                sellingPrice: v.selling_price || v.sellingPrice || 0,
+                sellingPrice: v.selling_price || 0,
                 stock: v.stock || 0,
                 attributes: v.attributes || {},
               })) || [],
-              bundleItems: (product.bundle_items || product.bundleItems)?.map((item: any) => ({
-                componentProductId: item.component_product_id || item.componentProductId,
-                componentVariantSku: item.component_variant_sku || item.componentVariantSku,
-                quantity: item.quantity,
-              })) || [],
-              subCategory: (product.sub_category_id || product.subCategoryId || product.subCategory || product.sub_category) ? String(product.sub_category_id || product.subCategoryId || product.subCategory || product.sub_category) : undefined,
             }}
           />
           </CardContent>
