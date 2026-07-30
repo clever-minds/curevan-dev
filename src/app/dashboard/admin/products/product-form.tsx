@@ -285,8 +285,8 @@ export function ProductForm({
     console.log("Initial Data →", initialData);
     form.reset({
       ...initialData,
-      category: initialData.category && initialData.category !== 'undefined' ? String(initialData.category) : undefined,
-      subCategory: initialData.subCategory && initialData.subCategory !== 'undefined' ? String(initialData.subCategory) : undefined,
+      category: initialData.category ? String(initialData.category) : undefined,
+      subCategory: initialData.subCategoryId ? String(initialData.subCategoryId) : undefined,
       gstSlab: initialData.gstSlab ?? undefined,
       mfgDate: initialData.mfgDate ? new Date(initialData.mfgDate) : undefined,
       expiryDate: initialData.expiryDate ? new Date(initialData.expiryDate) : undefined,

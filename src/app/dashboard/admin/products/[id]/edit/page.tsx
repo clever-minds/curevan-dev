@@ -46,16 +46,7 @@ export default function EditProductPage() {
             productId={product.id}
             initialData={{
               title: product.title,
-              productType: (() => {
-                const pt = product.product_type || product.productType;
-                if (!pt) return undefined;
-                const lowerPt = pt.toLowerCase();
-                if (lowerPt.includes('physical')) return 'Physical';
-                if (lowerPt.includes('digital')) return 'Digital';
-                if (lowerPt.includes('service')) return 'Service';
-                if (lowerPt.includes('bundle')) return 'Bundle';
-                return pt;
-              })(),
+              productType: product.product_type,
               hsnCode: product.hsn_code,
               sacCode: product.sac_code,
               gstSlab: product.gst_slab,
@@ -66,10 +57,7 @@ export default function EditProductPage() {
               shortDescription: product.short_description,
               longDescription: product.long_description,
               sku: product.sku,
-              category: (() => {
-                const cat = product.category_id || product.categoryId || (typeof product.category === 'object' ? product.category?.id : product.category);
-                return cat ? String(cat) : undefined;
-              })(),
+              category: String(product.category_id),
               mrp: product.mrp,
               sellingPrice: product.selling_price,
               status: product.status,
@@ -105,12 +93,12 @@ export default function EditProductPage() {
                 stock: v.stock || 0,
                 attributes: v.attributes || {},
               })) || [],
-              bundleItems: (product.bundle_items || product.bundleItems)?.map((item: any) => ({
-                componentProductId: item.component_product_id || item.componentProductId,
-                componentVariantSku: item.component_variant_sku || item.componentVariantSku,
+              bundleItems: product.bundle_items?.map((item: any) => ({
+                componentProductId: item.component_product_id,
+                componentVariantSku: item.component_variant_sku,
                 quantity: item.quantity,
               })) || [],
-              subCategory: (product.sub_category_id || product.subCategoryId) ? String(product.sub_category_id || product.subCategoryId) : undefined,
+              subCategoryId: product.sub_category_id ? String(product.sub_category_id) : undefined,
             }}
           />
           </CardContent>
