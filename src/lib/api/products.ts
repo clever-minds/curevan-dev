@@ -29,7 +29,7 @@ export async function createProducts(payload: {
   shortDescription: string;
   longDescription?: string;
   brand?: string;
-  sku: string;
+  sku?: string;
   category: number;
   mrp: number;
   sellingPrice: number;
@@ -112,7 +112,7 @@ export async function updateProduct(
   shortDescription: string;
   longDescription?: string;
   brand?: string;
-  sku: string;
+  sku?: string;
   category: number;
   mrp: number;
   sellingPrice: number;

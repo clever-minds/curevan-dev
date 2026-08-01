@@ -108,6 +108,7 @@ export default function EditProductPage() {
                 sellingPrice: v.selling_price || v.sellingPrice || 0,
                 stock: v.stock || 0,
                 attributes: v.attributes || {},
+                image: (v.imageId || v.image_id) && v.imageUrl ? [{ id: v.imageId || v.image_id, url: v.imageUrl, type: 'image' }] : [],
               })) || [],
               bundleItems: (product.bundleItems || product.bundle_items || product.bundle_items_data)?.map((item: any) => ({
                 componentProductId: item.componentProductId || item.component_product_id,

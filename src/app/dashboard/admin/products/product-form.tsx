@@ -49,7 +49,7 @@ const productFormSchema = z.object({
   shortDescription: z.string().min(10, 'Short description must be at least 10 characters.'),
   longDescription: z.string().nullable().optional(),
   brand: z.string().nullable().optional(),
-  sku: z.string().min(1, "SKU is required."),
+  sku: z.string().optional(),
   category: z.string().min(1, 'Please select a category.'),
   subCategory: z.string().nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
@@ -108,20 +108,28 @@ images: z
     stock: z.coerce.number().min(0, "Stock cannot be negative"),
     reorderPoint: z.coerce.number().min(0).optional(),
     attributes: z.record(z.string()),
+    image: z.array(z.any()).optional(),
   })).optional(),
   bundleItems: z.array(z.object({
       componentProductId: z.number({ required_error: 'Product is required' }),
       componentVariantSku: z.string().nullable().optional(),
       quantity: z.coerce.number().min(1, 'Quantity must be at least 1')
   })).optional(),
-}).refine(data => {
-    if (data.mrp !== undefined && data.sellingPrice !== undefined) {
-        return data.sellingPrice <= data.mrp;
+}).superRefine((data, ctx) => {
+    if (data.mrp !== undefined && data.sellingPrice !== undefined && data.sellingPrice > data.mrp) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Selling price cannot be higher than MRP.",
+            path: ["sellingPrice"]
+        });
     }
-    return true;
-}, {
-    message: "Selling price cannot be higher than MRP.",
-    path: ["sellingPrice"],
+    if (!data.hasVariants && (!data.sku || data.sku.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "SKU is required when variants are not enabled.",
+            path: ["sku"]
+        });
+    }
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -389,7 +397,10 @@ export function ProductForm({
             is_recommended: data.isRecommended,
             service_type_id: data.serviceTypeId ?? undefined,
             sub_category_id: data.subCategory ? Number(data.subCategory) : undefined,
-            variants: data.hasVariants ? data.variants : [],
+            variants: data.hasVariants ? (data.variants || []).map((v: any) => ({
+                ...v,
+                imageId: v.image && v.image.length > 0 ? v.image[0].id : undefined
+            })) : [],
             bundleItems: data.productType === 'Bundle' ? data.bundleItems : [],
             bundle_items: data.productType === 'Bundle' ? data.bundleItems?.map((item: any) => ({
                 component_product_id: item.componentProductId,
@@ -445,7 +456,9 @@ export function ProductForm({
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                {!form.watch("hasVariants") && (
+                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                )}
                 <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 
                 <FormField control={form.control} name="isRecommended" render={({ field }) => (
@@ -567,6 +580,26 @@ export function ProductForm({
         </div>
         <Separator />
         
+        {!form.watch("hasVariants") && (
+            <>
+                <div className="space-y-6">
+                    <h3 className="text-lg font-medium font-headline border-b pb-2">Pricing & Taxes</h3>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g. 18" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="HSN Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="SAC Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                    </div>
+                    <div className="flex gap-6">
+                        <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Price includes taxes</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                        <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Exclude from Coupons</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                    </div>
+                </div>
+                <Separator />
+            </>
+        )}
+        
         <div className="space-y-6">
              <div className="flex items-center justify-between border-b pb-2">
                  <h3 className="text-lg font-medium font-headline">Product Variants</h3>
@@ -588,6 +621,7 @@ export function ProductForm({
                                  <tr>
                                      <th className="p-2 text-left font-medium">SKU</th>
                                      <th className="p-2 text-left font-medium min-w-[200px]">Options (e.g. Size: M, Color: Red)</th>
+                                     <th className="p-2 text-left font-medium">Image</th>
                                      <th className="p-2 text-left font-medium">MRP</th>
                                      <th className="p-2 text-left font-medium">Selling Price</th>
                                      <th className="p-2 text-left font-medium">Stock</th>
@@ -602,6 +636,17 @@ export function ProductForm({
                                          </td>
                                          <td className="p-2">
                                              <FormField control={form.control} name={`variants.${index}.attributes` as any} render={({ field }) => (<FormControl><VariantAttributesInput value={field.value as any} onChange={field.onChange} /></FormControl>)} />
+                                         </td>
+                                         <td className="p-2 min-w-[120px]">
+                                             <FormField control={form.control} name={`variants.${index}.image` as any} render={({ field }) => (
+                                                 <FormControl>
+                                                     <MediaPicker
+                                                         value={field.value || []}
+                                                         onChange={(media: any) => field.onChange(media)}
+                                                         multiple={false}
+                                                     />
+                                                 </FormControl>
+                                             )} />
                                          </td>
                                          <td className="p-2">
                                              <FormField control={form.control} name={`variants.${index}.mrp` as any} render={({ field }) => (<FormControl><Input type="number" placeholder="MRP" {...field} /></FormControl>)} />
