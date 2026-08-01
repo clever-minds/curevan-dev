@@ -222,7 +222,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                     </Link>
                                 )}
                                 <span>&bull;</span>
-                                <span>{new Date(post.publishedAt || post.createdAt).toLocaleDateString()}</span>
+                                <span>{post.publishedAt || post.createdAt ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown Date'}</span>
                                 {post.stats?.totalViews && post.stats.totalViews > 0 && (
                                     <>
                                         <span>&bull;</span>
@@ -403,7 +403,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                                                     </h3>
                                                 </Link>
                                                 <div className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider">
-                                                    {new Date(sPost.publishedAt || sPost.createdAt).toLocaleDateString()}
+                                                    {sPost.publishedAt || sPost.createdAt ? new Date(sPost.publishedAt || sPost.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
                                                 </div>
                                             </div>
                                         </div>

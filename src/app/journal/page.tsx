@@ -173,7 +173,7 @@ function JournalPageContent() {
                     </Link>
                     <CardContent className="flex-1 p-4">
                         <div className="text-[10px] uppercase font-bold tracking-widest text-primary/70 mb-4 flex items-center gap-2">
-                            <Clock className="w-3.5 h-3.5"/> 5 min read • {new Date(post.publishedAt || post.createdAt).toLocaleDateString()}
+                            <Clock className="w-3.5 h-3.5"/> 5 min read • {post.publishedAt || post.createdAt ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown Date'}
                         </div>
                         <Link href={`/journal/${post.slug}`}>
                             <CardTitle className="text-xl font-bold font-headline leading-tight group-hover:text-primary transition-colors duration-300 mb-4">
