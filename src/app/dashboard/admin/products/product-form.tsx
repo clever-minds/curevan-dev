@@ -758,7 +758,6 @@ export function ProductForm({
                                                                 }
                                                                 const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent || 0;
                                                                 form.setValue(`bundleItems.${index}.gstSlab` as any, Number(gst), { shouldValidate: true, shouldDirty: true });
-                                                                form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(selectedProduct.selling_price || selectedProduct.sellingPrice || selectedProduct.price || 0), { shouldValidate: true, shouldDirty: true });
                                                             }
                                                         }} value={field.value ? String(field.value) : undefined}>
                                                             <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
@@ -782,9 +781,6 @@ export function ProductForm({
                                                                 <Select onValueChange={(val) => {
                                                                     field.onChange(val);
                                                                     const variant = selectedProduct.variants.find((v: any) => v.sku === val);
-                                                                    if (variant) {
-                                                                        form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(variant.selling_price || variant.sellingPrice || 0), { shouldValidate: true, shouldDirty: true });
-                                                                    }
                                                                 }} value={field.value ?? undefined}>
                                                                     <SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger>
                                                                     <SelectContent>
@@ -804,13 +800,13 @@ export function ProductForm({
                                                 <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (<FormControl><Input type="number" min="1" {...field} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 font-medium">
                                                 {(() => {
@@ -836,7 +832,7 @@ export function ProductForm({
                                 </tbody>
                             </table>
                         </div>
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendBundleItem({ componentProductId: 0, quantity: 1, sellingPrice: 0, discount: 0, gstSlab: 0 })}>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendBundleItem({ componentProductId: 0, quantity: 1 })}>
                             <Plus className="h-4 w-4 mr-2" /> Add Component
                         </Button>
                     </div>
