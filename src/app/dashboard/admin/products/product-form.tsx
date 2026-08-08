@@ -302,6 +302,55 @@ export function ProductForm({
     }
   }, [productType]);
 
+  const watchedBundleItems = form.watch('bundleItems');
+  useEffect(() => {
+    if (productType === 'Bundle' && watchedBundleItems && Array.isArray(watchedBundleItems) && allProducts.length > 0) {
+      let totalMrp = 0;
+      let totalSellingPrice = 0;
+      let maxGst = 0;
+
+      watchedBundleItems.forEach((item: any) => {
+        if (item.componentProductId) {
+          const product = allProducts.find(p => p.id === item.componentProductId);
+          if (product) {
+            let itemMrp = Number(product.mrp || 0);
+            let itemSellingPrice = Number(product.selling_price || product.sellingPrice || product.price || 0);
+            const itemGst = Number(product.gst_slab || product.gstSlab || product.gstPercent || product.gst_percent || 0);
+            
+            if (item.componentVariantSku && product.variants && product.variants.length > 0) {
+              const variant = product.variants.find((v: any) => v.sku === item.componentVariantSku);
+              if (variant) {
+                if (variant.mrp) itemMrp = Number(variant.mrp);
+                if (variant.selling_price || variant.sellingPrice) itemSellingPrice = Number(variant.selling_price || variant.sellingPrice);
+              }
+            }
+            
+            const qty = Number(item.quantity) || 1;
+            totalMrp += itemMrp * qty;
+            totalSellingPrice += itemSellingPrice * qty;
+            if (itemGst > maxGst) {
+              maxGst = itemGst;
+            }
+          }
+        }
+      });
+
+      const currentMrp = Number(form.getValues('mrp') || 0);
+      const currentSellingPrice = Number(form.getValues('sellingPrice') || 0);
+      const currentGst = Number(form.getValues('gstSlab') || 0);
+      
+      if (totalMrp > 0 && currentMrp !== totalMrp) {
+        form.setValue('mrp', totalMrp, { shouldValidate: true, shouldDirty: true });
+      }
+      if (totalSellingPrice > 0 && currentSellingPrice !== totalSellingPrice) {
+        form.setValue('sellingPrice', totalSellingPrice, { shouldValidate: true, shouldDirty: true });
+      }
+      if (maxGst > 0 && currentGst !== maxGst) {
+        form.setValue('gstSlab', maxGst, { shouldValidate: true, shouldDirty: true });
+      }
+    }
+  }, [watchedBundleItems, allProducts, productType, form]);
+
   // async function onSubmit(data: ProductFormValues) {
   //   console.log("category,,,,,",data.category);
   //     const imageIds = data.images.map((img: { id: number }) => img.id);
