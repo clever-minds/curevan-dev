@@ -110,11 +110,14 @@ images: z
     attributes: z.record(z.string()),
     image: z.array(z.any()).optional(),
   })).optional(),
-  bundleItems: z.array(z.object({
-      componentProductId: z.number({ required_error: 'Product is required' }),
-      componentVariantSku: z.string().nullable().optional(),
-      quantity: z.coerce.number().min(1, 'Quantity must be at least 1')
-  })).optional(),
+    bundleItems: z.array(z.object({
+        componentProductId: z.number({ required_error: 'Product is required' }),
+        componentVariantSku: z.string().nullable().optional(),
+        quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+        sellingPrice: z.coerce.number().min(0).optional(),
+        discount: z.coerce.number().min(0).optional(),
+        gstSlab: z.coerce.number().min(0).optional()
+    })).optional(),
 }).superRefine((data, ctx) => {
     if (data.mrp !== undefined && data.sellingPrice !== undefined && data.sellingPrice > data.mrp) {
         ctx.addIssue({
@@ -757,6 +760,10 @@ export function ProductForm({
                                         <th className="p-2 text-left font-medium">Product <span className="text-red-500">*</span></th>
                                         <th className="p-2 text-left font-medium">Variant SKU (Optional)</th>
                                         <th className="p-2 text-left font-medium">Quantity <span className="text-red-500">*</span></th>
+                                        <th className="p-2 text-left font-medium">Selling Price</th>
+                                        <th className="p-2 text-left font-medium">Discount</th>
+                                        <th className="p-2 text-left font-medium">GST (%)</th>
+                                        <th className="p-2 text-left font-medium">Final Amount</th>
                                         <th className="p-2 text-center font-medium">Actions</th>
                                     </tr>
                                 </thead>
@@ -776,11 +783,9 @@ export function ProductForm({
                                                                 } else {
                                                                     form.setValue(`bundleItems.${index}.componentVariantSku` as any, "", { shouldValidate: true, shouldDirty: true });
                                                                 }
-                                                                const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent;
-                                                                console.log("GST found:", gst);
-                                                                if (gst !== undefined && gst !== null) {
-                                                                    form.setValue("gstSlab", Number(gst), { shouldValidate: true, shouldDirty: true });
-                                                                }
+                                                                const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent || 0;
+                                                                form.setValue(`bundleItems.${index}.gstSlab` as any, Number(gst), { shouldValidate: true, shouldDirty: true });
+                                                                form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(selectedProduct.selling_price || selectedProduct.sellingPrice || selectedProduct.price || 0), { shouldValidate: true, shouldDirty: true });
                                                             }
                                                         }} value={field.value ? String(field.value) : undefined}>
                                                             <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
@@ -801,7 +806,13 @@ export function ProductForm({
                                                     if (selectedProduct && selectedProduct.variants && selectedProduct.variants.length > 0) {
                                                         return (
                                                             <FormControl>
-                                                                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                                                                <Select onValueChange={(val) => {
+                                                                    field.onChange(val);
+                                                                    const variant = selectedProduct.variants.find((v: any) => v.sku === val);
+                                                                    if (variant) {
+                                                                        form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(variant.selling_price || variant.sellingPrice || 0), { shouldValidate: true, shouldDirty: true });
+                                                                    }
+                                                                }} value={field.value ?? undefined}>
                                                                     <SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger>
                                                                     <SelectContent>
                                                                         {selectedProduct.variants.map((v: any) => (
@@ -819,6 +830,26 @@ export function ProductForm({
                                             <td className="p-2 w-24">
                                                 <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (<FormControl><Input type="number" min="1" {...field} /></FormControl>)} />
                                             </td>
+                                            <td className="p-2 w-24">
+                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                            </td>
+                                            <td className="p-2 w-24">
+                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                            </td>
+                                            <td className="p-2 w-24">
+                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                            </td>
+                                            <td className="p-2 font-medium">
+                                                {(() => {
+                                                    const qty = Number(form.watch(`bundleItems.${index}.quantity` as any) || 0);
+                                                    const sp = Number(form.watch(`bundleItems.${index}.sellingPrice` as any) || 0);
+                                                    const disc = Number(form.watch(`bundleItems.${index}.discount` as any) || 0);
+                                                    const gst = Number(form.watch(`bundleItems.${index}.gstSlab` as any) || 0);
+                                                    const discountedPrice = Math.max(0, sp - disc);
+                                                    const gstAmount = discountedPrice * (gst / 100);
+                                                    return '₹' + ((discountedPrice + gstAmount) * qty).toFixed(2);
+                                                })()}
+                                            </td>
                                             <td className="p-2 text-center">
                                                 <Button type="button" variant="ghost" size="icon" onClick={() => removeBundleItem(index)} className="text-destructive"><X className="h-4 w-4" /></Button>
                                             </td>
@@ -826,13 +857,13 @@ export function ProductForm({
                                     ))}
                                     {bundleFields.length === 0 && (
                                         <tr>
-                                            <td colSpan={4} className="p-4 text-center text-muted-foreground">No components added yet.</td>
+                                            <td colSpan={8} className="p-4 text-center text-muted-foreground">No components added yet.</td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendBundleItem({ componentProductId: 0, quantity: 1 })}>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendBundleItem({ componentProductId: 0, quantity: 1, sellingPrice: 0, discount: 0, gstSlab: 0 })}>
                             <Plus className="h-4 w-4 mr-2" /> Add Component
                         </Button>
                     </div>

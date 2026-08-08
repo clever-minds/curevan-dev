@@ -54,9 +54,17 @@ const mapProduct = (p: any): Product => ({
   variants: p.variants || [],
   hasVariants: p.has_variants || p.hasVariants || (p.variants && p.variants.length > 0) || false,
   bundleItems: (p.bundle_items || p.bundleItems || []).map((b: any) => ({
+    id: b.id,
+    bundleProductId: b.bundle_product_id || b.bundleProductId,
     componentProductId: b.component_product_id || b.componentProductId,
     componentVariantSku: b.component_variant_sku || b.componentVariantSku,
-    quantity: b.quantity
+    quantity: b.quantity,
+    sellingPrice: Number(b.selling_price || b.sellingPrice || 0),
+    discount: Number(b.discount || 0),
+    gstSlab: Number(b.gst_slab || b.gstSlab || 0),
+    componentTitle: b.component_title || b.componentTitle,
+    componentImageUrl: b.component_image_url || b.componentImageUrl,
+    componentStock: b.component_stock || b.componentStock
   })),
   productType: p.product_type || p.productType,
 });

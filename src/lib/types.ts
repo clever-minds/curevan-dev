@@ -200,8 +200,22 @@ export interface Product {
   categoryId: number;
   brand?: string;
   tags?: string[];
+export interface BundleItem {
+  id?: number;
+  bundleProductId?: number;
+  componentProductId: number;
+  componentVariantSku?: string | null;
+  quantity: number;
+  sellingPrice?: number;
+  discount?: number;
+  gstSlab?: number;
+  componentTitle?: string;
+  componentImageUrl?: string;
+  componentStock?: number;
+}
+
   productType?: string;
-  bundleItems?: any[];
+  bundleItems?: BundleItem[];
   featuredImage: string;
   images?: string[];
   price: number;
