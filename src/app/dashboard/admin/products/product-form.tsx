@@ -310,9 +310,13 @@ export function ProductForm({
       let totalSellingPrice = 0;
       let maxGst = 0;
 
+      console.log("CALCULATING BUNDLE PRICE for items:", watchedBundleItems);
+
       watchedBundleItems.forEach((item: any) => {
         if (item.componentProductId) {
           const product = allProducts.find(p => String(p.id) === String(item.componentProductId));
+          console.log("Found product:", product?.name || product?.title, "MRP:", product?.mrp, "Price:", product?.price);
+          
           if (product) {
             let itemMrp = Number(product.mrp || 0);
             let itemSellingPrice = Number(product.selling_price || product.sellingPrice || product.price || 0);
@@ -320,6 +324,7 @@ export function ProductForm({
             
             if (item.componentVariantSku && product.variants && product.variants.length > 0) {
               const variant = product.variants.find((v: any) => v.sku === item.componentVariantSku);
+              console.log("Found variant:", variant?.sku, "Variant MRP:", variant?.mrp, "Variant Price:", variant?.sellingPrice || variant?.selling_price);
               if (variant) {
                 if (variant.mrp) itemMrp = Number(variant.mrp);
                 if (variant.selling_price || variant.sellingPrice) itemSellingPrice = Number(variant.selling_price || variant.sellingPrice);
@@ -327,6 +332,7 @@ export function ProductForm({
             }
             
             const qty = Number(item.quantity) || 1;
+            console.log(`Adding to total: itemMrp ${itemMrp} * qty ${qty}, itemSellingPrice ${itemSellingPrice} * qty ${qty}`);
             totalMrp += itemMrp * qty;
             totalSellingPrice += itemSellingPrice * qty;
             if (itemGst > maxGst) {
@@ -335,6 +341,8 @@ export function ProductForm({
           }
         }
       });
+
+      console.log(`FINAL TOTALS: totalMrp=${totalMrp}, totalSellingPrice=${totalSellingPrice}`);
 
       const currentMrp = Number(form.getValues('mrp') || 0);
       const currentSellingPrice = Number(form.getValues('sellingPrice') || 0);
