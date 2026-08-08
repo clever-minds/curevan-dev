@@ -317,30 +317,21 @@ export function ProductForm({
 
       watchedBundleItems.forEach((item: any) => {
         if (item.componentProductId) {
-          const product = allProducts.find(p => String(p.id) === String(item.componentProductId));
-          console.log("Found product:", product?.name || product?.title, "MRP:", product?.mrp, "Price:", product?.price);
+          const qty = Number(item.quantity) || 1;
+          const sp = Number(item.sellingPrice) || 0;
+          const disc = Number(item.discount) || 0;
+          const gst = Number(item.gstSlab) || 0;
           
-          if (product) {
-            let itemMrp = Number(product.mrp || 0);
-            let itemSellingPrice = Number(product.selling_price || product.sellingPrice || product.price || 0);
-            const itemGst = Number(product.gst_slab || product.gstSlab || product.gstPercent || product.gst_percent || 0);
-            
-            if (item.componentVariantSku && product.variants && product.variants.length > 0) {
-              const variant = product.variants.find((v: any) => v.sku === item.componentVariantSku);
-              console.log("Found variant:", variant?.sku, "Variant MRP:", variant?.mrp, "Variant Price:", variant?.sellingPrice || variant?.selling_price);
-              if (variant) {
-                if (variant.mrp) itemMrp = Number(variant.mrp);
-                if (variant.selling_price || variant.sellingPrice) itemSellingPrice = Number(variant.selling_price || variant.sellingPrice);
-              }
-            }
-            
-            const qty = Number(item.quantity) || 1;
-            console.log(`Adding to total: itemMrp ${itemMrp} * qty ${qty}, itemSellingPrice ${itemSellingPrice} * qty ${qty}`);
-            totalMrp += itemMrp * qty;
-            totalSellingPrice += itemSellingPrice * qty;
-            if (itemGst > maxGst) {
-              maxGst = itemGst;
-            }
+          const discountedPrice = Math.max(0, sp - disc);
+          const gstAmount = discountedPrice * (gst / 100);
+          const rowFinalAmount = (discountedPrice + gstAmount) * qty;
+
+          console.log(`Adding to total: SP ${sp} * qty ${qty}, FinalAmount ${rowFinalAmount}`);
+          totalMrp += sp * qty;
+          totalSellingPrice += rowFinalAmount;
+          
+          if (gst > maxGst) {
+            maxGst = gst;
           }
         }
       });
