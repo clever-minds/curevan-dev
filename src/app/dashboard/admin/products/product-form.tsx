@@ -287,10 +287,15 @@ export function ProductForm({
     if (productType === 'Bundle') {
       import('@/lib/api/products').then(api => {
         api.listProducts().then(data => {
+          const uniqueProducts = (items: any[]) => Array.from(
+            new Map(items.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active').map((p: any) => [p.id, p])).values()
+          );
           if (data && data.products) {
-            setAllProducts(data.products.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
+            setAllProducts(uniqueProducts(data.products));
           } else if (Array.isArray(data)) {
-            setAllProducts(data.filter((p: any) => p.productType !== 'Bundle' && p.status === 'Active'));
+            setAllProducts(uniqueProducts(data));
+          } else if (data && data.data && Array.isArray(data.data)) {
+            setAllProducts(uniqueProducts(data.data));
           }
         }).catch(err => console.error("Error fetching products for bundle:", err));
       });
@@ -703,7 +708,19 @@ export function ProductForm({
                                             <td className="p-2 min-w-[200px]">
                                                 <FormField control={form.control} name={`bundleItems.${index}.componentProductId` as any} render={({ field }) => (
                                                     <FormControl>
-                                                        <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : undefined}>
+                                                        <Select onValueChange={(val) => {
+                                                            field.onChange(Number(val));
+                                                            const selectedProduct = allProducts.find(p => String(p.id) === val);
+                                                            if (selectedProduct) {
+                                                                if (selectedProduct.sku) {
+                                                                    form.setValue(`bundleItems.${index}.componentVariantSku` as any, selectedProduct.sku);
+                                                                }
+                                                                const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent;
+                                                                if (gst !== undefined && gst !== null) {
+                                                                    form.setValue("gstSlab", Number(gst));
+                                                                }
+                                                            }
+                                                        }} value={field.value ? String(field.value) : undefined}>
                                                             <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
                                                             <SelectContent>
                                                                 {allProducts.map(p => (
