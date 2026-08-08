@@ -239,6 +239,8 @@ export interface Product {
   discountedPrice?: string | number;
   is_recommended?: boolean;
   service_type_id?: number;
+  variants?: any[];
+  hasVariants?: boolean;
 }
 
 export interface Review {

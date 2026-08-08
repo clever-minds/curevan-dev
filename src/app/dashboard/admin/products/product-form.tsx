@@ -712,8 +712,10 @@ export function ProductForm({
                                                             field.onChange(Number(val));
                                                             const selectedProduct = allProducts.find(p => String(p.id) === val);
                                                             if (selectedProduct) {
-                                                                if (selectedProduct.sku) {
+                                                                if (selectedProduct.sku && (!selectedProduct.variants || selectedProduct.variants.length === 0)) {
                                                                     form.setValue(`bundleItems.${index}.componentVariantSku` as any, selectedProduct.sku);
+                                                                } else {
+                                                                    form.setValue(`bundleItems.${index}.componentVariantSku` as any, "");
                                                                 }
                                                                 const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent;
                                                                 if (gst !== undefined && gst !== null) {
@@ -732,7 +734,27 @@ export function ProductForm({
                                                 )} />
                                             </td>
                                             <td className="p-2">
-                                                <FormField control={form.control} name={`bundleItems.${index}.componentVariantSku` as any} render={({ field }) => (<FormControl><Input placeholder="Variant SKU" {...field} value={field.value ?? ''} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.componentVariantSku` as any} render={({ field }) => {
+                                                    const selectedProductId = form.watch(`bundleItems.${index}.componentProductId`);
+                                                    const selectedProduct = allProducts.find(p => p.id === selectedProductId);
+                                                    
+                                                    if (selectedProduct && selectedProduct.variants && selectedProduct.variants.length > 0) {
+                                                        return (
+                                                            <FormControl>
+                                                                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                                                                    <SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {selectedProduct.variants.map((v: any) => (
+                                                                            <SelectItem key={v.sku} value={v.sku}>{v.sku}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </FormControl>
+                                                        );
+                                                    }
+                                                    
+                                                    return (<FormControl><Input placeholder="Variant SKU" {...field} value={field.value ?? ''} /></FormControl>);
+                                                }} />
                                             </td>
                                             <td className="p-2 w-24">
                                                 <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (<FormControl><Input type="number" min="1" {...field} /></FormControl>)} />

@@ -51,6 +51,8 @@ const mapProduct = (p: any): Product => ({
     value: f.value,
     isHighlighted: f.is_highlighted || f.isHighlighted || false
   })),
+  variants: p.variants || [],
+  hasVariants: p.has_variants || p.hasVariants || (p.variants && p.variants.length > 0) || false,
 });
 
 export async function listProducts(): Promise<Product[]> {
