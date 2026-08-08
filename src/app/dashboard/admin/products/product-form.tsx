@@ -637,25 +637,7 @@ export function ProductForm({
         </div>
         <Separator />
         
-        {!form.watch("hasVariants") && (
-            <>
-                <div className="space-y-6">
-                    <h3 className="text-lg font-medium font-headline border-b pb-2">Pricing & Taxes</h3>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g. 18" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="HSN Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="SAC Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                    </div>
-                    <div className="flex gap-6">
-                        <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Price includes taxes</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-                        <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Exclude from Coupons</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-                    </div>
-                </div>
-                <Separator />
-            </>
-        )}
+
         
         <div className="space-y-6">
              <div className="flex items-center justify-between border-b pb-2">
@@ -863,6 +845,27 @@ export function ProductForm({
         )}
 
         <Separator />
+        
+        {!form.watch("hasVariants") && (
+            <>
+                <div className="space-y-6">
+                    <h3 className="text-lg font-medium font-headline border-b pb-2">Pricing & Taxes</h3>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g. 18" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="HSN Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="SAC Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                    </div>
+                    <div className="flex gap-6">
+                        <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Price includes taxes</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                        <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Exclude from Coupons</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                    </div>
+                </div>
+                <Separator />
+            </>
+        )}
+
         <Separator />
         {!form.watch("hasVariants") && (productType === 'Physical' || productType === 'Bundle') && (
             <div className="space-y-4">
