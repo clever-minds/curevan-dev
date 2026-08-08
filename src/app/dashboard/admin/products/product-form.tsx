@@ -312,7 +312,7 @@ export function ProductForm({
 
       watchedBundleItems.forEach((item: any) => {
         if (item.componentProductId) {
-          const product = allProducts.find(p => p.id === item.componentProductId);
+          const product = allProducts.find(p => String(p.id) === String(item.componentProductId));
           if (product) {
             let itemMrp = Number(product.mrp || 0);
             let itemSellingPrice = Number(product.selling_price || product.sellingPrice || product.price || 0);
@@ -788,7 +788,7 @@ export function ProductForm({
                                             <td className="p-2">
                                                 <FormField control={form.control} name={`bundleItems.${index}.componentVariantSku` as any} render={({ field }) => {
                                                     const selectedProductId = form.watch(`bundleItems.${index}.componentProductId`);
-                                                    const selectedProduct = allProducts.find(p => p.id === selectedProductId);
+                                                    const selectedProduct = allProducts.find(p => String(p.id) === String(selectedProductId));
                                                     
                                                     if (selectedProduct && selectedProduct.variants && selectedProduct.variants.length > 0) {
                                                         return (
