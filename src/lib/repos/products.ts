@@ -53,6 +53,12 @@ const mapProduct = (p: any): Product => ({
   })),
   variants: p.variants || [],
   hasVariants: p.has_variants || p.hasVariants || (p.variants && p.variants.length > 0) || false,
+  bundleItems: (p.bundle_items || p.bundleItems || []).map((b: any) => ({
+    componentProductId: b.component_product_id || b.componentProductId,
+    componentVariantSku: b.component_variant_sku || b.componentVariantSku,
+    quantity: b.quantity
+  })),
+  productType: p.product_type || p.productType,
 });
 
 export async function listProducts(): Promise<Product[]> {
