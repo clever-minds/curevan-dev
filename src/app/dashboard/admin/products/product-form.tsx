@@ -712,14 +712,16 @@ export function ProductForm({
                                                             field.onChange(Number(val));
                                                             const selectedProduct = allProducts.find(p => String(p.id) === val);
                                                             if (selectedProduct) {
+                                                                console.log("Selected product for bundle:", selectedProduct);
                                                                 if (selectedProduct.sku && (!selectedProduct.variants || selectedProduct.variants.length === 0)) {
-                                                                    form.setValue(`bundleItems.${index}.componentVariantSku` as any, selectedProduct.sku);
+                                                                    form.setValue(`bundleItems.${index}.componentVariantSku` as any, selectedProduct.sku, { shouldValidate: true, shouldDirty: true });
                                                                 } else {
-                                                                    form.setValue(`bundleItems.${index}.componentVariantSku` as any, "");
+                                                                    form.setValue(`bundleItems.${index}.componentVariantSku` as any, "", { shouldValidate: true, shouldDirty: true });
                                                                 }
                                                                 const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent;
+                                                                console.log("GST found:", gst);
                                                                 if (gst !== undefined && gst !== null) {
-                                                                    form.setValue("gstSlab", Number(gst));
+                                                                    form.setValue("gstSlab", Number(gst), { shouldValidate: true, shouldDirty: true });
                                                                 }
                                                             }
                                                         }} value={field.value ? String(field.value) : undefined}>
