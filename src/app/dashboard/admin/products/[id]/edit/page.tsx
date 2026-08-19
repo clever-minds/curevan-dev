@@ -110,11 +110,19 @@ export default function EditProductPage() {
                 attributes: v.attributes || {},
                 image: (v.imageId || v.image_id) && v.imageUrl ? [{ id: v.imageId || v.image_id, url: v.imageUrl, type: 'image' }] : [],
               })) || [],
-              bundleItems: (product.bundleItems || product.bundle_items || product.bundle_items_data)?.map((item: any) => ({
-                componentProductId: item.componentProductId || item.component_product_id,
-                componentVariantSku: item.componentVariantSku || item.component_variant_sku,
-                quantity: item.quantity,
-              })) || [],
+              bundleItems: (() => {
+                const rawItems = product.bundleItems || product.bundle_items || product.bundle_items_data || [];
+                // Deduplicate due to a backend bug returning multiplied rows from inventory JOIN
+                const uniqueItems = Array.from(new Map(rawItems.map((item: any) => [item.id || `${item.componentProductId || item.component_product_id}-${item.componentVariantSku || item.component_variant_sku}`, item])).values());
+                return (uniqueItems as any[]).map((item: any) => ({
+                  componentProductId: item.componentProductId || item.component_product_id,
+                  componentVariantSku: item.componentVariantSku || item.component_variant_sku,
+                  quantity: item.quantity,
+                  sellingPrice: item.sellingPrice || item.selling_price || 0,
+                  discount: item.discount || 0,
+                  gstSlab: item.gstSlab || item.gst_slab || 0
+                }));
+              })(),
             }}
           />
           </CardContent>
