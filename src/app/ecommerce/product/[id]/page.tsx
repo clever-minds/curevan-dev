@@ -725,14 +725,14 @@ export default function ProductDetailsPage() {
                       <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-background border shadow-sm">
                         <div className="w-16 h-16 relative bg-muted rounded-md overflow-hidden flex-shrink-0">
                            <Image 
-                             src={getImageUrl(item.component_image_url)}
-                             alt={item.component_title || "Bundle Item"}
+                             src={getImageUrl(item.componentImageUrl || item.component_image_url)}
+                             alt={item.componentTitle || item.component_title || "Bundle Item"}
                              fill
                              className="object-cover"
                            />
                         </div>
                         <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-xs font-semibold text-foreground truncate">{item.component_title}</span>
+                          <span className="text-xs font-semibold text-foreground truncate">{item.componentTitle || item.component_title}</span>
                           <span className="text-[10px] text-muted-foreground mt-0.5">Quantity: <span className="font-bold text-primary">{item.quantity}</span></span>
                         </div>
                       </div>
