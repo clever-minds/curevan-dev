@@ -118,11 +118,11 @@ images: z
         discount: z.coerce.number().min(0).optional(),
         gstSlab: z.coerce.number().min(0).optional()
     })).optional(),
-}).superRefine((data, ctx) => {
+.superRefine((data, ctx) => {
     if (data.mrp !== undefined && data.sellingPrice !== undefined && data.sellingPrice > data.mrp) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Selling price cannot be higher than MRP.",
+            message: data.productType === 'Bundle' ? "Discounted price cannot be higher than Selling price." : "Selling price cannot be higher than MRP.",
             path: ["sellingPrice"]
         });
     }
@@ -308,50 +308,6 @@ export function ProductForm({
 
   const watchedBundleItems = form.watch('bundleItems');
   const bundleItemsSerialized = JSON.stringify(watchedBundleItems);
-
-  useEffect(() => {
-    if (productType === 'Bundle' && watchedBundleItems && Array.isArray(watchedBundleItems)) {
-      let totalMrp = 0;
-      let totalSellingPrice = 0;
-      let maxGst = 0;
-
-      watchedBundleItems.forEach((item: any) => {
-        const qty = Number(item.quantity) || 1;
-        const sp = Number(item.sellingPrice) || 0;
-        const disc = Number(item.discount) || 0;
-        const gst = Number(item.gstSlab) || 0;
-        
-        const discountedPrice = Math.max(0, sp - disc);
-        const gstAmount = discountedPrice * (gst / 100);
-        const rowFinalAmount = (discountedPrice + gstAmount) * qty;
-
-        // Assuming MRP in total is based on SP before discount * qty
-        totalMrp += sp * qty; 
-        totalSellingPrice += rowFinalAmount;
-        
-        if (gst > maxGst) {
-          maxGst = gst;
-        }
-      });
-
-      const currentMrp = Number(form.getValues('mrp') || 0);
-      const currentSellingPrice = Number(form.getValues('sellingPrice') || 0);
-      const currentGst = Number(form.getValues('gstSlab') || 0);
-      
-      const newMrp = Number(totalMrp.toFixed(2));
-      const newSp = Number(totalSellingPrice.toFixed(2));
-
-      if (currentMrp !== newMrp) {
-        form.setValue('mrp', newMrp, { shouldValidate: true, shouldDirty: true });
-      }
-      if (currentSellingPrice !== newSp) {
-        form.setValue('sellingPrice', newSp, { shouldValidate: true, shouldDirty: true });
-      }
-      if (currentGst !== maxGst) {
-        form.setValue('gstSlab', maxGst, { shouldValidate: true, shouldDirty: true });
-      }
-    }
-  }, [bundleItemsSerialized, productType, form]);
 
   // async function onSubmit(data: ProductFormValues) {
   //   console.log("category,,,,,",data.category);
@@ -856,8 +812,8 @@ export function ProductForm({
                 <div className="space-y-6">
                     <h3 className="text-lg font-medium font-headline border-b pb-2">Pricing & Taxes</h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>{productType === 'Bundle' ? 'Selling Price' : 'MRP'} <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>{productType === 'Bundle' ? 'Discounted Price' : 'Selling Price'} <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                         {productType !== 'Bundle' && (
                             <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g. 18" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                         )}
