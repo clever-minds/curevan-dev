@@ -118,7 +118,7 @@ images: z
         discount: z.coerce.number().min(0).optional(),
         gstSlab: z.coerce.number().min(0).optional()
     })).optional(),
-.superRefine((data, ctx) => {
+}).superRefine((data, ctx) => {
     if (data.mrp !== undefined && data.sellingPrice !== undefined && data.sellingPrice > data.mrp) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
