@@ -714,7 +714,7 @@ export default function ProductDetailsPage() {
 
 
               {/* Bundle Items UI */}
-              {product.productType === 'Bundle' && product.bundleItems && product.bundleItems.length > 0 && (
+              {(product.productType === 'Bundle' || product.product_type === 'Bundle') && product.bundleItems && product.bundleItems.length > 0 && (
                 <div className="space-y-4 border-y py-6 my-2">
                   <div className="flex items-center gap-3 mb-2">
                     <Package className="w-5 h-5 text-primary" />
