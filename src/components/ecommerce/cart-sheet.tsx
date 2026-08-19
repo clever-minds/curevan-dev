@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Price } from "../money/price";
 import { imageUrl } from '@/lib/image';
+import { BundleComponentsList } from './bundle-components-list';
 
 export function CartSheet({ children }: { children: React.ReactNode }) {
     const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, isCartOpen, setIsCartOpen, appliedCoupon, validateStock } = useCart();
@@ -87,6 +88,7 @@ console.log("CartSheet render - cart items:", cart);
                                                     ))}
                                                 </div>
                                             )}
+                                            <BundleComponentsList productId={item.productId} initialBundleItems={item.bundleItems} />
                                             <div className="flex items-center gap-3 mt-2 mb-2">
                                                 <div className="flex items-center border rounded-lg bg-background">
                                                     <Button 

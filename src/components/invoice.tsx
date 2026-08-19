@@ -7,6 +7,7 @@ import type { InvoiceData } from "@/services/invoice-service";
 import Logo from "./logo";
 import { Price } from "./money/price";
 import React from 'react';
+import { BundleComponentsList } from "./ecommerce/bundle-components-list";
 
 export function Invoice({ invoice }: { invoice: InvoiceData }) {
     // React.useEffect(() => {
@@ -234,6 +235,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                                                     ))}
                                                 </div>
                                             )}
+                                            <BundleComponentsList productId={item.id} />
                                             <p className="text-[9px] text-gray-500 mt-2 font-mono uppercase tracking-tight">HSN: {item.hsnCode}</p>
                                         </TableCell>
                                         <TableCell className="border-r border-gray-400 text-center p-2 align-top font-bold text-xs">{item.quantity}<br /><span className="text-[8px] font-black uppercase text-gray-400 tracking-tighter">Nos</span></TableCell>

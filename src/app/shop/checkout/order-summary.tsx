@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tag, X, Loader2 } from "lucide-react";
 import { imageUrl } from '@/lib/image';
 import { applyCoupon as applyCouponAPI } from "@/lib/repos/coupons";
+import { BundleComponentsList } from "@/components/ecommerce/bundle-components-list";
 
 export function OrderSummary() {
   const { cart, getCartTotal, appliedCoupon, applyCoupon, removeCoupon } = useCart();
@@ -93,6 +94,9 @@ export function OrderSummary() {
                         ))}
                     </div>
                 )}
+                <div className="mb-1">
+                    <BundleComponentsList productId={item.productId} initialBundleItems={item.bundleItems} />
+                </div>
                 <div className="flex flex-col">
                   <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
                   {item.gstAmount !== undefined && item.gstAmount > 0 && (

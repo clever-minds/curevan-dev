@@ -62,6 +62,8 @@ export async function getCart(): Promise<CartItem[] | null> {
         isTaxInclusive: isTaxInclusive,
         variantId: item.variantId || item.variant_id,
         variantAttributes: item.variantAttributes || item.attributes || {},
+        productType: item.productType || item.product_type || 'Physical',
+        bundleItems: item.bundleItems || item.bundle_items || [],
       };
     });
     console.log("Cart API response123:", cartArray);
