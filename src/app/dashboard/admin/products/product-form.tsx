@@ -307,6 +307,8 @@ export function ProductForm({
   }, [productType]);
 
   const watchedBundleItems = form.watch('bundleItems');
+  const bundleItemsSerialized = JSON.stringify(watchedBundleItems);
+
   useEffect(() => {
     if (productType === 'Bundle' && watchedBundleItems && Array.isArray(watchedBundleItems)) {
       let totalMrp = 0;
@@ -349,7 +351,7 @@ export function ProductForm({
         form.setValue('gstSlab', maxGst, { shouldValidate: true, shouldDirty: true });
       }
     }
-  }, [watchedBundleItems, productType, form]);
+  }, [bundleItemsSerialized, productType, form]);
 
   // async function onSubmit(data: ProductFormValues) {
   //   console.log("category,,,,,",data.category);
