@@ -256,7 +256,7 @@ export function ProductForm({
     form.reset({
       ...initialData,
       category: initialData.category !== undefined && initialData.category !== null ? String(initialData.category) : undefined,
-      subCategory: (initialData.subCategory || initialData.subCategoryId) !== undefined && (initialData.subCategory || initialData.subCategoryId) !== null ? String(initialData.subCategory || initialData.subCategoryId) : undefined,
+      subCategory: (initialData.subCategory || (initialData as any).subCategoryId) !== undefined && (initialData.subCategory || (initialData as any).subCategoryId) !== null ? String(initialData.subCategory || (initialData as any).subCategoryId) : undefined,
       bundleItems: initialData.bundleItems || [],
       gstSlab: initialData.gstSlab ?? undefined,
       mfgDate: initialData.mfgDate ? new Date(initialData.mfgDate) : undefined,
