@@ -308,51 +308,48 @@ export function ProductForm({
 
   const watchedBundleItems = form.watch('bundleItems');
   useEffect(() => {
-    if (productType === 'Bundle' && watchedBundleItems && Array.isArray(watchedBundleItems) && allProducts.length > 0) {
+    if (productType === 'Bundle' && watchedBundleItems && Array.isArray(watchedBundleItems)) {
       let totalMrp = 0;
       let totalSellingPrice = 0;
       let maxGst = 0;
 
-      console.log("CALCULATING BUNDLE PRICE for items:", watchedBundleItems);
-
       watchedBundleItems.forEach((item: any) => {
-        if (item.componentProductId) {
-          const qty = Number(item.quantity) || 1;
-          const sp = Number(item.sellingPrice) || 0;
-          const disc = Number(item.discount) || 0;
-          const gst = Number(item.gstSlab) || 0;
-          
-          const discountedPrice = Math.max(0, sp - disc);
-          const gstAmount = discountedPrice * (gst / 100);
-          const rowFinalAmount = (discountedPrice + gstAmount) * qty;
+        const qty = Number(item.quantity) || 1;
+        const sp = Number(item.sellingPrice) || 0;
+        const disc = Number(item.discount) || 0;
+        const gst = Number(item.gstSlab) || 0;
+        
+        const discountedPrice = Math.max(0, sp - disc);
+        const gstAmount = discountedPrice * (gst / 100);
+        const rowFinalAmount = (discountedPrice + gstAmount) * qty;
 
-          console.log(`Adding to total: SP ${sp} * qty ${qty}, FinalAmount ${rowFinalAmount}`);
-          totalMrp += sp * qty;
-          totalSellingPrice += rowFinalAmount;
-          
-          if (gst > maxGst) {
-            maxGst = gst;
-          }
+        // Assuming MRP in total is based on SP before discount * qty
+        totalMrp += sp * qty; 
+        totalSellingPrice += rowFinalAmount;
+        
+        if (gst > maxGst) {
+          maxGst = gst;
         }
       });
-
-      console.log(`FINAL TOTALS: totalMrp=${totalMrp}, totalSellingPrice=${totalSellingPrice}`);
 
       const currentMrp = Number(form.getValues('mrp') || 0);
       const currentSellingPrice = Number(form.getValues('sellingPrice') || 0);
       const currentGst = Number(form.getValues('gstSlab') || 0);
       
-      if (totalMrp > 0 && currentMrp !== totalMrp) {
-        form.setValue('mrp', totalMrp, { shouldValidate: true, shouldDirty: true });
+      const newMrp = Number(totalMrp.toFixed(2));
+      const newSp = Number(totalSellingPrice.toFixed(2));
+
+      if (currentMrp !== newMrp) {
+        form.setValue('mrp', newMrp, { shouldValidate: true, shouldDirty: true });
       }
-      if (totalSellingPrice > 0 && currentSellingPrice !== totalSellingPrice) {
-        form.setValue('sellingPrice', totalSellingPrice, { shouldValidate: true, shouldDirty: true });
+      if (currentSellingPrice !== newSp) {
+        form.setValue('sellingPrice', newSp, { shouldValidate: true, shouldDirty: true });
       }
-      if (maxGst > 0 && currentGst !== maxGst) {
+      if (currentGst !== maxGst) {
         form.setValue('gstSlab', maxGst, { shouldValidate: true, shouldDirty: true });
       }
     }
-  }, [watchedBundleItems, allProducts, productType, form]);
+  }, [watchedBundleItems, productType, form]);
 
   // async function onSubmit(data: ProductFormValues) {
   //   console.log("category,,,,,",data.category);
@@ -753,8 +750,13 @@ export function ProductForm({
                                                                 console.log("Selected product for bundle:", selectedProduct);
                                                                 if (selectedProduct.sku && (!selectedProduct.variants || selectedProduct.variants.length === 0)) {
                                                                     form.setValue(`bundleItems.${index}.componentVariantSku` as any, selectedProduct.sku, { shouldValidate: true, shouldDirty: true });
+                                                                    const sp = selectedProduct.sellingPrice ?? selectedProduct.selling_price ?? 0;
+                                                                    form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(sp), { shouldValidate: true, shouldDirty: true });
+                                                                    form.setValue(`bundleItems.${index}.discount` as any, 0, { shouldValidate: true, shouldDirty: true });
                                                                 } else {
                                                                     form.setValue(`bundleItems.${index}.componentVariantSku` as any, "", { shouldValidate: true, shouldDirty: true });
+                                                                    form.setValue(`bundleItems.${index}.sellingPrice` as any, 0, { shouldValidate: true, shouldDirty: true });
+                                                                    form.setValue(`bundleItems.${index}.discount` as any, 0, { shouldValidate: true, shouldDirty: true });
                                                                 }
                                                                 const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent || 0;
                                                                 form.setValue(`bundleItems.${index}.gstSlab` as any, Number(gst), { shouldValidate: true, shouldDirty: true });
@@ -781,6 +783,11 @@ export function ProductForm({
                                                                 <Select onValueChange={(val) => {
                                                                     field.onChange(val);
                                                                     const variant = selectedProduct.variants.find((v: any) => v.sku === val);
+                                                                    if (variant) {
+                                                                        const sp = variant.sellingPrice ?? variant.selling_price ?? 0;
+                                                                        form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(sp), { shouldValidate: true, shouldDirty: true });
+                                                                        form.setValue(`bundleItems.${index}.discount` as any, 0, { shouldValidate: true, shouldDirty: true });
+                                                                    }
                                                                 }} value={field.value ?? undefined}>
                                                                     <SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger>
                                                                     <SelectContent>
@@ -849,7 +856,9 @@ export function ProductForm({
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <FormField control={form.control} name="mrp" render={({ field }) => (<FormItem><FormLabel>MRP <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>Selling Price <span className="text-red-500">*</span></FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g. 18" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        {productType !== 'Bundle' && (
+                            <FormField control={form.control} name="gstSlab" render={({ field }) => (<FormItem><FormLabel>GST Slab (%)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g. 18" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                        )}
                         <FormField control={form.control} name="hsnCode" render={({ field }) => (<FormItem><FormLabel>HSN Code</FormLabel><FormControl><Input placeholder="HSN Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="sacCode" render={({ field }) => (<FormItem><FormLabel>SAC Code</FormLabel><FormControl><Input placeholder="SAC Code" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                     </div>
