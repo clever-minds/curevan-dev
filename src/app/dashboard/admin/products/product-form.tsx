@@ -445,7 +445,7 @@ export function ProductForm({
             batch_number: data.batchNumber ?? undefined,
             manufacturing_date: data.mfgDate?.toISOString().split('T')[0],
             expiry_date: data.expiryDate?.toISOString().split('T')[0],
-            additional_features: data.additionalFeatures?.map(f => ({
+            additional_features: data.additionalFeatures?.map(f => JSON.stringify({
                 title: f.title,
                 value: f.value,
                 is_highlighted: f.isHighlighted
