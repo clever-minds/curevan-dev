@@ -708,13 +708,8 @@ export function ProductForm({
                                                                 console.log("Selected product for bundle:", selectedProduct);
                                                                 if (selectedProduct.sku && (!selectedProduct.variants || selectedProduct.variants.length === 0)) {
                                                                     form.setValue(`bundleItems.${index}.componentVariantSku` as any, selectedProduct.sku, { shouldValidate: true, shouldDirty: true });
-                                                                    const sp = selectedProduct.sellingPrice ?? selectedProduct.selling_price ?? 0;
-                                                                    form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(sp), { shouldValidate: true, shouldDirty: true });
-                                                                    form.setValue(`bundleItems.${index}.discount` as any, 0, { shouldValidate: true, shouldDirty: true });
                                                                 } else {
                                                                     form.setValue(`bundleItems.${index}.componentVariantSku` as any, "", { shouldValidate: true, shouldDirty: true });
-                                                                    form.setValue(`bundleItems.${index}.sellingPrice` as any, 0, { shouldValidate: true, shouldDirty: true });
-                                                                    form.setValue(`bundleItems.${index}.discount` as any, 0, { shouldValidate: true, shouldDirty: true });
                                                                 }
                                                                 const gst = selectedProduct.gst_slab || selectedProduct.gstSlab || selectedProduct.gstPercent || selectedProduct.gst_percent || 0;
                                                                 form.setValue(`bundleItems.${index}.gstSlab` as any, Number(gst), { shouldValidate: true, shouldDirty: true });
@@ -741,11 +736,6 @@ export function ProductForm({
                                                                 <Select onValueChange={(val) => {
                                                                     field.onChange(val);
                                                                     const variant = selectedProduct.variants.find((v: any) => v.sku === val);
-                                                                    if (variant) {
-                                                                        const sp = variant.sellingPrice ?? variant.selling_price ?? 0;
-                                                                        form.setValue(`bundleItems.${index}.sellingPrice` as any, Number(sp), { shouldValidate: true, shouldDirty: true });
-                                                                        form.setValue(`bundleItems.${index}.discount` as any, 0, { shouldValidate: true, shouldDirty: true });
-                                                                    }
                                                                 }} value={field.value ?? undefined}>
                                                                     <SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger>
                                                                     <SelectContent>
