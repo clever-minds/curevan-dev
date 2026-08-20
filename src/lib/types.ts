@@ -192,14 +192,6 @@ export interface ProductCategory {
   isActive: boolean;
 }
 
-export interface Product {
-  id: number;
-  name: string;
-  description: string;
-  longDescription?: string;
-  categoryId: number;
-  brand?: string;
-  tags?: string[];
 export interface BundleItem {
   id?: number;
   bundleProductId?: number;
@@ -214,6 +206,14 @@ export interface BundleItem {
   componentStock?: number;
 }
 
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  longDescription?: string;
+  categoryId: number;
+  brand?: string;
+  tags?: string[];
   productType?: string;
   bundleItems?: BundleItem[];
   featuredImage: string;
