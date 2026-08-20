@@ -60,7 +60,7 @@ export function JournalCategoriesTab() {
       toast({ 
         variant: "destructive", 
         title: "Error", 
-        description: error.response?.data?.message || "Something went wrong" 
+        description: (error.response?.data?.error || error.response?.data?.message) || "Something went wrong" 
       });
     } finally {
       setSaving(false);

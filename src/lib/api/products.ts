@@ -13,7 +13,7 @@ export async function listProducts() {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch products';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to fetch products';
     throw new Error(errorMsg);
   }
 }
@@ -72,7 +72,7 @@ export async function createProducts(payload: {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to add product';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to add product';
     throw new Error(errorMsg);
   }
 }
@@ -94,7 +94,7 @@ export async function getProductById(id: number | string) {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch product';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to fetch product';
     throw new Error(errorMsg);
   }
 }
@@ -150,7 +150,7 @@ export async function updateProduct(
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to update product';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to update product';
     throw new Error(errorMsg);
   }
 }
@@ -166,7 +166,7 @@ export async function deleteProduct(id: number | string) {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete product';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to delete product';
     throw new Error(errorMsg);
   }
 }

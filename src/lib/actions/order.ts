@@ -77,7 +77,7 @@ export async function createOrder(
     if (error?.response) {
       return {
         success: false,
-        error: error.response.data?.message || "Order creation failed"
+        error: error.response.data?.error || (error.response.data?.error || error.response.data?.message) || "Order creation failed"
       };
     }
 

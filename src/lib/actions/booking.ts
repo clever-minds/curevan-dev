@@ -43,7 +43,7 @@ const token = await getToken();
   } catch (error: any) {
     console.error("Error creating booking via API:", error?.response || error?.message);
     if (error?.response) {
-      return { success: false, error: error.response.data?.message || 'API call failed' };
+      return { success: false, error: (error.response.data?.error || error.response.data?.message) || 'API call failed' };
     }
     return { success: false, error: 'Something went wrong' };
   }

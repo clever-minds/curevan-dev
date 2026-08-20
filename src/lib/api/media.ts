@@ -15,7 +15,7 @@ export async function listMedia(token: string) {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || "Failed to fetch media";
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || "Failed to fetch media";
     throw new Error(errorMsg);
   }
 }
@@ -51,7 +51,7 @@ export async function uploadMedia(
 
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || "Failed to upload media";
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || "Failed to upload media";
     throw new Error(errorMsg);
   }
 }
@@ -72,7 +72,7 @@ export async function deleteMedia(id: number | string, token: string) {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || "Failed to delete media";
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || "Failed to delete media";
     throw new Error(errorMsg);
   }
 }

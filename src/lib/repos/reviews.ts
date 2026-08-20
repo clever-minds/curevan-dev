@@ -33,7 +33,7 @@ export const addReview = async (reviewData: {
     console.error("Error adding review:", error);
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to add review",
+      message: (error.response?.data?.error || error.response?.data?.message) || "Failed to add review",
     };
   }
 };
@@ -49,7 +49,7 @@ export const updateReview = async (
     console.error("Error updating review:", error);
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to update review",
+      message: (error.response?.data?.error || error.response?.data?.message) || "Failed to update review",
     };
   }
 };
@@ -62,7 +62,7 @@ export const deleteReview = async (id: number): Promise<ApiResponse<void>> => {
     console.error("Error deleting review:", error);
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to delete review",
+      message: (error.response?.data?.error || error.response?.data?.message) || "Failed to delete review",
     };
   }
 };

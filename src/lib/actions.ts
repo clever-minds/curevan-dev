@@ -332,7 +332,7 @@ export async function updateJournalStatus(
     console.error('Failed to update journal status:', error?.response || error?.message);
     return {
       success: false,
-      message: error.response?.data?.message || 'Failed to update journal status.'
+      message: (error.response?.data?.error || error.response?.data?.message) || 'Failed to update journal status.'
     };
   }
 }
@@ -361,7 +361,7 @@ export async function deleteJournal(
     console.error('Failed to delete journal:', error?.response || error?.message);
     return {
       success: false,
-      message: error.response?.data?.message || 'Failed to delete journal.'
+      message: (error.response?.data?.error || error.response?.data?.message) || 'Failed to delete journal.'
     };
   }
 }

@@ -12,7 +12,7 @@ export async function listCoupons() {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch coupons';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to fetch coupons';
     throw new Error(errorMsg);
   }
 }
@@ -35,7 +35,7 @@ export async function getCouponById(id: number | string) {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch coupon';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to fetch coupon';
     throw new Error(errorMsg);
   }
 }
@@ -71,7 +71,7 @@ export async function createCoupon(payload: {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to add coupon';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to add coupon';
     throw new Error(errorMsg);
   }
 }
@@ -108,7 +108,7 @@ export async function updateCoupon(
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to update coupon';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to update coupon';
     throw new Error(errorMsg);
   }
 }
@@ -124,7 +124,7 @@ export async function deleteCoupon(id: number | string) {
     }
     return data;
   } catch (error: any) {
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete coupon';
+    const errorMsg = (error.response?.data?.error || error.response?.data?.message) || error.message || 'Failed to delete coupon';
     throw new Error(errorMsg);
   }
 }

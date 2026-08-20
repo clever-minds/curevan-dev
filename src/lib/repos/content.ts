@@ -397,7 +397,7 @@ export async function approveProfileChangeRequest(
     console.error(`PROFILE CHANGE APPROVE ERROR [${requestId}]:`, error?.response?.data || error?.message);
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to approve profile change request."
+      message: (error.response?.data?.error || error.response?.data?.message) || "Failed to approve profile change request."
     };
   }
 }
@@ -431,7 +431,7 @@ export async function rejectProfileChangeRequest(
     console.error(`PROFILE CHANGE REJECT ERROR [${requestId}]:`, error?.response?.data || error?.message);
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to reject profile change request."
+      message: (error.response?.data?.error || error.response?.data?.message) || "Failed to reject profile change request."
     };
   }
 }
