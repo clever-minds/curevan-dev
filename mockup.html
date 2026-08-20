@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curevan Shop Filter Sidebar Mockup</title>
+<style>
+  :root{
+    --primary:#5C4DFF;
+    --secondary:#00B6B1;
+    --text:#1E1E1E;
+    --muted:#6B7280;
+    --border:#E5E7EB;
+    --panel:#FFFFFF;
+    --page:#F7F8FC;
+    --soft:#F2F1FF;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    color:var(--text);
+    background:var(--page);
+  }
+  .topbar{
+    background:linear-gradient(90deg,var(--primary),var(--secondary));
+    color:white;
+    padding:14px 24px;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+  .topbar small{font-weight:400;opacity:.9;margin-left:10px}
+  .page{
+    display:grid;
+    grid-template-columns:310px minmax(0,1fr);
+    min-height:calc(100vh - 48px);
+  }
+  aside{
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    padding:22px;
+    overflow:auto;
+  }
+  main{padding:28px}
+  h2{margin:0 0 18px;font-size:21px}
+  h3{font-size:14px;margin:0 0 10px}
+  .section{
+    padding:16px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .search{
+    width:100%;
+    height:40px;
+    border:1px solid #D1D5DB;
+    border-radius:8px;
+    padding:0 12px;
+    outline:none;
+  }
+  .search:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(92,77,255,.10)}
+  .option{
+    display:flex;
+    gap:9px;
+    align-items:flex-start;
+    margin:9px 0;
+    font-size:13px;
+    line-height:1.25;
+    cursor:pointer;
+  }
+  .option input{margin-top:1px;accent-color:var(--primary)}
+  .dept{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    border:0;
+    background:transparent;
+    padding:8px 6px;
+    text-align:left;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .dept:hover{background:#F7F7FA}
+  .dept.active{
+    color:var(--primary);
+    background:var(--soft);
+    font-weight:700;
+  }
+  .arrow{width:14px;color:#9CA3AF}
+  .range-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .price-input{
+    width:100%;
+    height:36px;
+    border:1px solid #D1D5DB;
+    border-radius:7px;
+    padding:0 9px;
+  }
+  .apply{
+    margin-top:8px;
+    width:100%;
+    height:35px;
+    border:1px solid var(--primary);
+    background:white;
+    color:var(--primary);
+    border-radius:7px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .swatches{display:flex;gap:8px;flex-wrap:wrap}
+  .swatch{
+    width:25px;height:25px;border-radius:50%;
+    border:2px solid white;
+    box-shadow:0 0 0 1px #C7CBD1;
+    cursor:pointer;
+  }
+  .swatch.active{box-shadow:0 0 0 2px var(--primary)}
+  .black{background:#111827}.blue{background:#2563EB}.grey{background:#9CA3AF}
+  .white{background:#fff}.green{background:#059669}.beige{background:#D6C6A5}
+  .clear{
+    width:100%;
+    padding:10px;
+    margin-top:18px;
+    border:1px solid #D1D5DB;
+    background:white;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+  }
+  .intro{
+    background:white;
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:20px;
+    margin-bottom:22px;
+  }
+  .intro h1{font-size:25px;margin:0 0 7px}
+  .intro p{margin:0;color:var(--muted);line-height:1.5}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;
+    background:var(--soft);color:#4338CA;
+    padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700
+  }
+  .content-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:16px;
+  }
+  .card{
+    background:white;border:1px solid var(--border);border-radius:12px;
+    padding:16px;min-height:175px;
+  }
+  .thumb{
+    height:78px;border-radius:9px;background:linear-gradient(135deg,#EEEFFD,#E7FAF8);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;margin-bottom:13px;
+  }
+  .card h4{margin:0 0 7px;font-size:15px}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .price{font-size:18px;font-weight:800}
+  .note{
+    margin-top:22px;background:#FFF;border-left:4px solid var(--secondary);
+    padding:14px 16px;font-size:13px;line-height:1.5;
+  }
+  .count{color:#9CA3AF;font-size:12px;margin-left:auto}
+  .muted{color:var(--muted);font-size:12px}
+  @media(max-width:900px){
+    .page{grid-template-columns:1fr}
+    aside{border-right:0;border-bottom:1px solid var(--border)}
+    .content-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">Curevan <small>Shop Filter Sidebar – Sample for IT Team</small></div>
+
+  <div class="page">
+    <aside>
+      <h2>Filters</h2>
+
+      <div class="section" style="padding-top:0">
+        <h3>Search</h3>
+        <input class="search" id="search" type="search" placeholder="Search products...">
+      </div>
+
+      <div class="section">
+        <h3>Department</h3>
+        <button class="dept active" data-dept="all"><span class="arrow">›</span>All Products</button>
+        <button class="dept" data-dept="rehab"><span class="arrow">›</span>Rehabilitation &amp; Physiotherapy</button>
+        <button class="dept" data-dept="monitoring"><span class="arrow">›</span>Patient Monitoring &amp; Diagnostics</button>
+        <button class="dept" data-dept="firstaid"><span class="arrow">›</span>First Aid &amp; Wound Care</button>
+        <button class="dept" data-dept="respiratory"><span class="arrow">›</span>Respiratory Care</button>
+        <button class="dept" data-dept="hospital"><span class="arrow">›</span>Hospital, Clinic &amp; Hygiene</button>
+        <button class="dept" data-dept="dental"><span class="arrow">›</span>Dental &amp; Oral Care</button>
+      </div>
+
+      <div class="section">
+        <h3>Product Type</h3>
+        <div id="productTypes"></div>
+        <div class="muted" id="typeHint">Select a department to narrow product types.</div>
+      </div>
+
+      <div class="section">
+        <h3>Brand</h3>
+        <label class="option"><input type="checkbox"> Tynor</label>
+        <label class="option"><input type="checkbox"> Flamingo</label>
+        <label class="option"><input type="checkbox"> Omron</label>
+        <label class="option"><input type="checkbox"> Dr Trust</label>
+        <label class="option"><input type="checkbox"> Curevan Care</label>
+      </div>
+
+      <div class="section">
+        <h3>Size &amp; Dimensions</h3>
+        <label class="option"><input type="checkbox"> Small</label>
+        <label class="option"><input type="checkbox"> Medium</label>
+        <label class="option"><input type="checkbox"> Large</label>
+        <label class="option"><input type="checkbox"> XL</label>
+        <label class="option"><input type="checkbox"> 2 × 2 in</label>
+        <label class="option"><input type="checkbox"> 2 × 4 in</label>
+      </div>
+
+      <div class="section">
+        <h3>Colour</h3>
+        <div class="swatches">
+          <button class="swatch black" title="Black"></button>
+          <button class="swatch blue" title="Blue"></button>
+          <button class="swatch grey" title="Grey"></button>
+          <button class="swatch white" title="White"></button>
+          <button class="swatch green" title="Green"></button>
+          <button class="swatch beige" title="Beige"></button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Price</h3>
+        <div class="range-row">
+          <input class="price-input" type="number" placeholder="Min ₹">
+          <input class="price-input" type="number" placeholder="Max ₹">
+        </div>
+        <button class="apply">Apply Price</button>
+      </div>
+
+      <div class="section">
+        <h3>Availability</h3>
+        <label class="option"><input type="checkbox"> In Stock</label>
+        <label class="option"><input type="checkbox"> Limited Stock</label>
+      </div>
+
+      <div class="section">
+        <h3>Customer Rating</h3>
+        <label class="option"><input type="radio" name="rating"> ★★★★☆ &amp; Up</label>
+        <label class="option"><input type="radio" name="rating"> ★★★☆☆ &amp; Up</label>
+      </div>
+
+      <button class="clear" onclick="clearFilters()">Clear All Filters</button>
+    </aside>
+
+    <main>
+      <div class="intro">
+        <h1>Medical &amp; Rehabilitation Products</h1>
+        <p>This mockup demonstrates a simple major-e-commerce-style filter hierarchy. Broad departments stay short; product types change according to the selected department.</p>
+        <div class="chips" id="activeChips">
+          <span class="chip">All Products</span>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="card" data-card-dept="rehab">
+          <div class="thumb">🦵</div>
+          <h4>Hinged Knee Support</h4>
+          <div class="meta">Rehabilitation &amp; Physiotherapy · Medium · Black</div>
+          <div class="price">₹1,099</div>
+        </div>
+        <div class="card" data-card-dept="rehab">
+          <div class="thumb">⚡</div>
+          <h4>Self-Adhesive Electrode Pad 2 × 2</h4>
+          <div class="meta">Electrotherapy &amp; Electrode Pads</div>
+          <div class="price">₹110</div>
+        </div>
+        <div class="card" data-card-dept="monitoring">
+          <div class="thumb">🌡️</div>
+          <h4>Non-contact Infrared Thermometer</h4>
+          <div class="meta">Patient Monitoring &amp; Diagnostics</div>
+          <div class="price">₹2,850</div>
+        </div>
+        <div class="card" data-card-dept="firstaid">
+          <div class="thumb">🩹</div>
+          <h4>Adhesive Bandage</h4>
+          <div class="meta">First Aid &amp; Wound Care</div>
+          <div class="price">₹199</div>
+        </div>
+        <div class="card" data-card-dept="hospital">
+          <div class="thumb">🥼</div>
+          <h4>Medical Lab Coat</h4>
+          <div class="meta">Hospital, Clinic &amp; Hygiene · Large · White</div>
+          <div class="price">₹220</div>
+        </div>
+        <div class="card" data-card-dept="rehab">
+          <div class="thumb">🏋️</div>
+          <h4>Resistance Band Set</h4>
+          <div class="meta">Exercise &amp; Balance Equipment</div>
+          <div class="price">₹499</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Recommended development behaviour:</strong> Do not show every possible filter for every product. Department is the parent filter. Once selected, show only relevant product types and attribute values that actually exist in available catalogue SKUs. Size and Colour must be stored as structured variant attributes so they can be filtered independently.
+      </div>
+    </main>
+  </div>
+
+<script>
+const types = {
+  all: [],
+  rehab: [
+    "Supports & Braces",
+    "Electrotherapy & Electrode Pads",
+    "Exercise & Balance Equipment",
+    "Hot & Cold Therapy",
+    "Mobility & Rehab Aids",
+    "Physiotherapy Kits & Bundles"
+  ],
+  monitoring: [
+    "Blood Pressure Monitors",
+    "Thermometers",
+    "Pulse Oximeters",
+    "Stethoscopes & Diagnostic Instruments",
+    "Weighing & Measurement"
+  ],
+  firstaid: [
+    "Adhesive Bandages",
+    "Dressings & Gauze",
+    "First Aid Kits",
+    "Medical Tapes & Wraps",
+    "Wound Care Supplies"
+  ],
+  respiratory: [
+    "Nebulizers",
+    "Oxygen Accessories",
+    "Peak Flow & Breathing Devices",
+    "Masks, Tubes & Accessories"
+  ],
+  hospital: [
+    "Hospital Furniture & Patient Care",
+    "PPE & Protective Wear",
+    "Lab Coats & Medical Apparel",
+    "Infection Control & Hygiene",
+    "Hospital Kits & Bundles",
+    "Clinical Tools & Reflex Hammers"
+  ],
+  dental: [
+    "Dental Diagnostic Instruments",
+    "Oral Care Supplies",
+    "Sterilization Supplies",
+    "Disposable Dental Supplies"
+  ]
+};
+
+const labels = {
+  all:"All Products",
+  rehab:"Rehabilitation & Physiotherapy",
+  monitoring:"Patient Monitoring & Diagnostics",
+  firstaid:"First Aid & Wound Care",
+  respiratory:"Respiratory Care",
+  hospital:"Hospital, Clinic & Hygiene",
+  dental:"Dental & Oral Care"
+};
+
+const typeBox = document.getElementById("productTypes");
+const hint = document.getElementById("typeHint");
+const chips = document.getElementById("activeChips");
+
+function renderTypes(dept){
+  typeBox.innerHTML = "";
+  if(dept === "all"){
+    hint.style.display = "block";
+    return;
+  }
+  hint.style.display = "none";
+  types[dept].forEach((t,i)=>{
+    const label = document.createElement("label");
+    label.className = "option";
+    label.innerHTML = `<input type="checkbox" value="${t}"> <span>${t}</span>`;
+    typeBox.appendChild(label);
+  });
+}
+
+document.querySelectorAll(".dept").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".dept").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active");
+    const dept = btn.dataset.dept;
+    renderTypes(dept);
+    chips.innerHTML = `<span class="chip">${labels[dept]}</span>`;
+    document.querySelectorAll("[data-card-dept]").forEach(card=>{
+      card.style.display = (dept==="all" || card.dataset.cardDept===dept) ? "" : "none";
+    });
+  });
+});
+
+document.querySelectorAll(".swatch").forEach(btn=>{
+  btn.addEventListener("click",()=>btn.classList.toggle("active"));
+});
+
+function clearFilters(){
+  document.querySelectorAll('input[type="checkbox"],input[type="radio"]').forEach(x=>x.checked=false);
+  document.querySelectorAll(".swatch").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".dept").forEach(x=>x.classList.remove("active"));
+  document.querySelector('.dept[data-dept="all"]').classList.add("active");
+  document.querySelectorAll('input[type="number"]').forEach(x=>x.value="");
+  document.getElementById("search").value="";
+  renderTypes("all");
+  chips.innerHTML='<span class="chip">All Products</span>';
+  document.querySelectorAll("[data-card-dept]").forEach(card=>card.style.display="");
+}
+renderTypes("all");
+</script>
+</body>
+</html>
