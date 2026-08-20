@@ -73,7 +73,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
         return (finalWords || 'Zero') + ' Only';
     };
 
-    const taxGroupings = invoice.items.reduce((acc: any, item) => {
+    const taxGroupings = invoice.items.reduce((acc: any, item: any) => {
         const rate = item.gstRate || 0;
         const isIgst = (item.igst || 0) > 0;
         const type = isIgst ? 'IGST' : 'CGST_SGST';
@@ -216,7 +216,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {invoice.items.map((item, index) => {
+                            {invoice.items.map((item: any, index: any) => {
                                 const taxableValue = item.taxableValue || (item.price * item.quantity);
                                 const cgstAmt = item.cgst || 0;
                                 const sgstAmt = item.sgst || 0;
@@ -260,7 +260,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                                             </TableCell>
                                             <TableCell className="text-right p-2 align-top font-black text-xs text-black"><Price amount={taxableValue} showDecimals /></TableCell>
                                         </TableRow>
-                                        
+
                                         {item.components && item.components.length > 0 && item.components.map((comp: any, compIdx: number) => {
                                             const compTaxable = comp.price * comp.qty;
                                             return (
@@ -359,7 +359,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                                     </React.Fragment>
                                 ))}
                                 <p>SHIPPING</p>
-                                {(invoice as any).discount > 0 && <p className="text-primary font-black">DISCOUNT { (invoice as any).couponCode ? `(${ (invoice as any).couponCode })` : '' }</p>}
+                                {(invoice as any).discount > 0 && <p className="text-primary font-black">DISCOUNT {(invoice as any).couponCode ? `(${(invoice as any).couponCode})` : ''}</p>}
                                 <div className="pt-4 mt-2 border-t border-gray-200">
                                     <p className="text-sm font-black text-black tracking-tighter">TOTAL</p>
                                     <p className="text-sm font-black text-black mt-2">BALANCE DUE</p>
