@@ -336,7 +336,7 @@ export async function getInvoiceById(invoiceId: string | number) {
       message: error?.message,
       response: error?.response?.data
     });
-    return null;
+    throw new Error(error?.response?.data?.message || 'Failed to fetch invoice');
   }
 }
 
