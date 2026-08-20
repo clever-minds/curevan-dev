@@ -116,24 +116,58 @@ export function FilterSidebar({
                     </div>
                 </div>
                 
-                <div className="space-y-2">
-                    <Label>Category</Label>
-                    <RadioGroup 
-                        value={localFilters.category} 
-                        onValueChange={(value) => handleLocalFilterChange('category', value)}
-                        className="space-y-1"
+                <div className="space-y-1 pb-4 border-b">
+                    <h3 className="font-semibold text-sm mb-3">Department</h3>
+                    <button 
+                        onClick={() => handleLocalFilterChange('category', 'all')}
+                        className={cn(
+                            "flex items-center gap-2 w-full px-3 py-2 text-left rounded-md cursor-pointer text-sm transition-colors",
+                            localFilters.category === 'all' 
+                                ? "text-primary bg-primary/10 font-bold" 
+                                : "hover:bg-muted/50 text-foreground"
+                        )}
                     >
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="all" id="cat-all" />
-                            <Label htmlFor="cat-all" className="font-normal">All</Label>
-                        </div>
+                        <span className="w-4 text-muted-foreground">›</span>
+                        All Products
+                    </button>
                     {categories.map(category => (
-                        <div key={category.id} className="flex items-center space-x-2">
-                            <RadioGroupItem value={String(category.id)} id={`cat-${category.id}`} />
-                            <Label htmlFor={`cat-${category.id}`} className="font-normal">{category.name}</Label>
-                        </div>
+                        <button 
+                            key={category.id}
+                            onClick={() => handleLocalFilterChange('category', String(category.id))}
+                            className={cn(
+                                "flex items-center gap-2 w-full px-3 py-2 text-left rounded-md cursor-pointer text-sm transition-colors",
+                                localFilters.category === String(category.id)
+                                    ? "text-primary bg-primary/10 font-bold" 
+                                    : "hover:bg-muted/50 text-foreground"
+                            )}
+                        >
+                            <span className="w-4 text-muted-foreground">›</span>
+                            {category.name}
+                        </button>
                     ))}
-                    </RadioGroup>
+                </div>
+
+                <div className="space-y-3 pb-4 border-b">
+                    <h3 className="font-semibold text-sm">Product Type</h3>
+                    {localFilters.category === 'all' ? (
+                        <p className="text-xs text-muted-foreground">Select a department to narrow product types.</p>
+                    ) : filterOptions?.categorySubCategories?.[localFilters.category]?.length > 0 ? (
+                        <div className="space-y-2">
+                            {filterOptions.categorySubCategories[localFilters.category].map((sub: string) => (
+                                <div key={sub} className="flex items-start space-x-2 my-1.5">
+                                    <Checkbox 
+                                        id={`sub-${sub}`} 
+                                        className="mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                        checked={localFilters.subCategories?.includes(sub)}
+                                        onCheckedChange={(checked) => handleArrayFilterChange('subCategories', sub, checked as boolean)}
+                                    />
+                                    <Label htmlFor={`sub-${sub}`} className="font-normal text-sm cursor-pointer leading-tight">{sub}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">No product types available for this department.</p>
+                    )}
                 </div>
                 
                 <div className="space-y-4">
@@ -195,43 +229,39 @@ export function FilterSidebar({
                         </AccordionItem>
                     )}
 
-                    {/* Sub-Category */}
-                    {filterOptions?.subCategories?.length > 0 && (
-                        <AccordionItem value="subCategory">
-                            <AccordionTrigger className="text-base font-semibold">Sub-Category</AccordionTrigger>
-                            <AccordionContent>
-                                <div className="space-y-2 pt-2">
-                                    {filterOptions.subCategories.map((sub: string) => (
-                                        <div key={sub} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={`sub-${sub}`} 
-                                                checked={localFilters.subCategories?.includes(sub)}
-                                                onCheckedChange={(checked) => handleArrayFilterChange('subCategories', sub, checked as boolean)}
-                                            />
-                                            <Label htmlFor={`sub-${sub}`} className="font-normal">{sub}</Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )}
+
 
                     {/* Colour */}
                     {filterOptions?.colors?.length > 0 && (
                         <AccordionItem value="color">
                             <AccordionTrigger className="text-base font-semibold">Colour</AccordionTrigger>
                             <AccordionContent>
-                                <div className="space-y-2 pt-2">
-                                    {filterOptions.colors.map((color: string) => (
-                                        <div key={color} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={`color-${color}`} 
-                                                checked={localFilters.colors?.includes(color)}
-                                                onCheckedChange={(checked) => handleArrayFilterChange('colors', color, checked as boolean)}
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {filterOptions.colors.map((color: string) => {
+                                        const colorLower = color.toLowerCase();
+                                        // Default mapping for common colors to avoid transparent backgrounds
+                                        let bg = colorLower;
+                                        if (colorLower === 'white') bg = '#ffffff';
+                                        if (colorLower === 'black') bg = '#111827';
+                                        if (colorLower === 'grey' || colorLower === 'gray') bg = '#9CA3AF';
+                                        if (colorLower === 'blue') bg = '#2563EB';
+                                        if (colorLower === 'green') bg = '#059669';
+                                        if (colorLower === 'beige') bg = '#D6C6A5';
+
+                                        const isActive = localFilters.colors?.includes(color);
+                                        return (
+                                            <button 
+                                                key={color} 
+                                                title={color}
+                                                className={cn(
+                                                    "w-7 h-7 rounded-full border-2 border-white shadow-[0_0_0_1px_#C7CBD1] transition-all",
+                                                    isActive ? "shadow-[0_0_0_2px_hsl(var(--primary))]" : "hover:shadow-[0_0_0_1px_hsl(var(--primary))]"
+                                                )}
+                                                style={{ background: bg }}
+                                                onClick={() => handleArrayFilterChange('colors', color, !isActive)}
                                             />
-                                            <Label htmlFor={`color-${color}`} className="font-normal">{color}</Label>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </AccordionContent>
                         </AccordionItem>

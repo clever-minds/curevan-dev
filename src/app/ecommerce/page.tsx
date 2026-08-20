@@ -86,6 +86,7 @@ function EcommerceContent() {
   const filterOptions = useMemo(() => {
     const brands = new Set<string>();
     const subCategories = new Set<string>();
+    const categorySubCategories: Record<string, Set<string>> = {};
     const colors = new Set<string>();
     const sizes = new Set<string>();
     const bodyParts = new Set<string>();
@@ -95,7 +96,12 @@ function EcommerceContent() {
 
     products.forEach(p => {
       if (p.brand) brands.add(p.brand);
-      if (p.subCategoryName) subCategories.add(p.subCategoryName);
+      if (p.subCategoryName) {
+          subCategories.add(p.subCategoryName);
+          const catKey = p.categoryId?.toString() || 'unknown';
+          if (!categorySubCategories[catKey]) categorySubCategories[catKey] = new Set<string>();
+          categorySubCategories[catKey].add(p.subCategoryName);
+      }
       
       p.additionalFeatures?.forEach(f => {
         const title = f.title.toLowerCase();
@@ -120,9 +126,15 @@ function EcommerceContent() {
       });
     });
 
+    const categorySubCategoriesFormatted: Record<string, string[]> = {};
+    Object.keys(categorySubCategories).forEach(key => {
+        categorySubCategoriesFormatted[key] = Array.from(categorySubCategories[key]);
+    });
+
     return {
       brands: Array.from(brands),
       subCategories: Array.from(subCategories),
+      categorySubCategories: categorySubCategoriesFormatted,
       colors: Array.from(colors),
       sizes: Array.from(sizes),
       bodyParts: Array.from(bodyParts),
@@ -233,6 +245,15 @@ function EcommerceContent() {
                     <AlertTitle>Have a therapist code?</AlertTitle>
                     <AlertDescription>You can apply it in your cart to get a discount on eligible products!</AlertDescription>
                  </Alert>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 mb-6">
+                <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-bold">
+                    {filters.category === 'all' 
+                        ? 'All Products' 
+                        : productCategories.find(c => String(c.id) === filters.category)?.name || 'Filtered'
+                    }
+                </span>
             </div>
             
             <Card className="lg:hidden mb-4">
