@@ -140,6 +140,7 @@ export async function fetchProductById(id: number | string): Promise<Product | n
     console.log(`api/product/frontend/${id}`, data);
     const p = data.data || data;
     if (!p) return null;
+    
     return mapProduct(p);
   } catch (error: any) {
     console.error(`PRODUCT BY ID FETCH ERROR (${id}):`, error?.message);
