@@ -224,42 +224,77 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                                 const gstRate = item.gstRate || 0;
 
                                 return (
-                                    <TableRow key={item.id} className="border-b last:border-0 border-gray-400 hover:bg-transparent h-16">
-                                        <TableCell className="border-r border-gray-400 text-center p-2 align-top text-gray-500 font-bold">{index + 1}</TableCell>
-                                        <TableCell className="border-r border-gray-400 p-2 align-top">
-                                            <p className="font-black text-xs text-black">{item.name}</p>
-                                            {item.variantAttributes && Object.keys(item.variantAttributes).length > 0 && (
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    {Object.entries(item.variantAttributes).map(([k, v]) => (
-                                                        <span key={k} className="text-[9px] text-gray-700 bg-gray-100 px-1 py-0.5 rounded">{k}: {v as string}</span>
-                                                    ))}
+                                    <React.Fragment key={item.id}>
+                                        <TableRow className="border-b border-gray-400 hover:bg-transparent h-16">
+                                            <TableCell className="border-r border-gray-400 text-center p-2 align-top text-gray-500 font-bold">{index + 1}</TableCell>
+                                            <TableCell className="border-r border-gray-400 p-2 align-top">
+                                                <p className="font-black text-xs text-black">{item.name}</p>
+                                                {item.variantAttributes && Object.keys(item.variantAttributes).length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {Object.entries(item.variantAttributes).map(([k, v]) => (
+                                                            <span key={k} className="text-[9px] text-gray-700 bg-gray-100 px-1 py-0.5 rounded">{k}: {v as string}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <p className="text-[9px] text-gray-500 mt-2 font-mono uppercase tracking-tight">HSN: {item.hsnCode}</p>
+                                            </TableCell>
+                                            <TableCell className="border-r border-gray-400 text-center p-2 align-top font-bold text-xs">{item.quantity}<br /><span className="text-[8px] font-black uppercase text-gray-400 tracking-tighter">Nos</span></TableCell>
+                                            <TableCell className="border-r border-gray-400 text-right p-2 align-top font-bold"><Price amount={(item.price || 0)} showDecimals /></TableCell>
+                                            <TableCell className="border-r border-gray-400 p-0 align-top h-16" colSpan={2}>
+                                                <div className="flex w-full h-full">
+                                                    <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-600 font-bold flex items-center justify-center">{(igstAmt > 0) ? '0' : (gstRate / 2)}%</span>
+                                                    <span className="flex-1 p-2 text-right font-bold flex items-center justify-end"><Price amount={cgstAmt} showDecimals /></span>
                                                 </div>
-                                            )}
-                                            <BundleComponentsList productId={item.id} />
-                                            <p className="text-[9px] text-gray-500 mt-2 font-mono uppercase tracking-tight">HSN: {item.hsnCode}</p>
-                                        </TableCell>
-                                        <TableCell className="border-r border-gray-400 text-center p-2 align-top font-bold text-xs">{item.quantity}<br /><span className="text-[8px] font-black uppercase text-gray-400 tracking-tighter">Nos</span></TableCell>
-                                        <TableCell className="border-r border-gray-400 text-right p-2 align-top font-bold"><Price amount={(item.price || 0)} showDecimals /></TableCell>
-                                        <TableCell className="border-r border-gray-400 p-0 align-top h-16" colSpan={2}>
-                                            <div className="flex w-full h-full">
-                                                <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-600 font-bold flex items-center justify-center">{(igstAmt > 0) ? '0' : (gstRate / 2)}%</span>
-                                                <span className="flex-1 p-2 text-right font-bold flex items-center justify-end"><Price amount={cgstAmt} showDecimals /></span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="border-r border-gray-400 p-0 align-top h-16" colSpan={2}>
-                                            <div className="flex w-full h-full">
-                                                <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-600 font-bold flex items-center justify-center">{(igstAmt > 0) ? '0' : (gstRate / 2)}%</span>
-                                                <span className="flex-1 p-2 text-right font-bold flex items-center justify-end"><Price amount={sgstAmt} showDecimals /></span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="border-r border-gray-400 p-0 align-top h-16" colSpan={2}>
-                                            <div className="flex w-full h-full">
-                                                <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-600 font-bold flex items-center justify-center">{(igstAmt > 0) ? gstRate : '0'}%</span>
-                                                <span className="flex-1 p-2 text-right font-bold flex items-center justify-end"><Price amount={igstAmt} showDecimals /></span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right p-2 align-top font-black text-xs text-black"><Price amount={taxableValue} showDecimals /></TableCell>
-                                    </TableRow>
+                                            </TableCell>
+                                            <TableCell className="border-r border-gray-400 p-0 align-top h-16" colSpan={2}>
+                                                <div className="flex w-full h-full">
+                                                    <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-600 font-bold flex items-center justify-center">{(igstAmt > 0) ? '0' : (gstRate / 2)}%</span>
+                                                    <span className="flex-1 p-2 text-right font-bold flex items-center justify-end"><Price amount={sgstAmt} showDecimals /></span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="border-r border-gray-400 p-0 align-top h-16" colSpan={2}>
+                                                <div className="flex w-full h-full">
+                                                    <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-600 font-bold flex items-center justify-center">{(igstAmt > 0) ? gstRate : '0'}%</span>
+                                                    <span className="flex-1 p-2 text-right font-bold flex items-center justify-end"><Price amount={igstAmt} showDecimals /></span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right p-2 align-top font-black text-xs text-black"><Price amount={taxableValue} showDecimals /></TableCell>
+                                        </TableRow>
+                                        
+                                        {item.components && item.components.length > 0 && item.components.map((comp: any, compIdx: number) => {
+                                            const compTaxable = comp.price * comp.qty;
+                                            return (
+                                                <TableRow key={`comp-${item.id}-${compIdx}`} className="border-b border-gray-400 bg-gray-50/30 hover:bg-transparent h-12">
+                                                    <TableCell className="border-r border-gray-400 text-center p-2 align-top text-gray-400 font-medium text-[9px]">↳</TableCell>
+                                                    <TableCell className="border-r border-gray-400 p-2 align-top pl-6">
+                                                        <p className="font-semibold text-[10px] text-gray-700">Included: {comp.name}</p>
+                                                        {comp.sku && <p className="text-[8px] text-gray-500 font-mono">SKU: {comp.sku}</p>}
+                                                    </TableCell>
+                                                    <TableCell className="border-r border-gray-400 text-center p-2 align-top font-semibold text-[10px] text-gray-700">{comp.qty * item.quantity}</TableCell>
+                                                    <TableCell className="border-r border-gray-400 text-right p-2 align-top font-semibold text-gray-700"><Price amount={comp.price} showDecimals /></TableCell>
+                                                    <TableCell className="border-r border-gray-400 p-0 align-top h-12" colSpan={2}>
+                                                        <div className="flex w-full h-full">
+                                                            <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-400 font-medium text-[9px] flex items-center justify-center">{(comp.igst > 0) ? '0' : (comp.gst_slab / 2)}%</span>
+                                                            <span className="flex-1 p-2 text-right font-medium text-[10px] text-gray-600 flex items-center justify-end"><Price amount={comp.cgst} showDecimals /></span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="border-r border-gray-400 p-0 align-top h-12" colSpan={2}>
+                                                        <div className="flex w-full h-full">
+                                                            <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-400 font-medium text-[9px] flex items-center justify-center">{(comp.igst > 0) ? '0' : (comp.gst_slab / 2)}%</span>
+                                                            <span className="flex-1 p-2 text-right font-medium text-[10px] text-gray-600 flex items-center justify-end"><Price amount={comp.sgst} showDecimals /></span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="border-r border-gray-400 p-0 align-top h-12" colSpan={2}>
+                                                        <div className="flex w-full h-full">
+                                                            <span className="flex-1 border-r border-gray-400 p-2 text-center text-gray-400 font-medium text-[9px] flex items-center justify-center">{(comp.igst > 0) ? comp.gst_slab : '0'}%</span>
+                                                            <span className="flex-1 p-2 text-right font-medium text-[10px] text-gray-600 flex items-center justify-end"><Price amount={comp.igst} showDecimals /></span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right p-2 align-top font-semibold text-[10px] text-gray-600"><Price amount={compTaxable} showDecimals /></TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </React.Fragment>
                                 );
                             })}
                         </TableBody>
