@@ -167,7 +167,7 @@ export default function Header() {
             <div className="flex items-center gap-x-8 sm:gap-x-12 text-[11px] sm:text-xs font-bold tracking-widest uppercase">
               <a href="mailto:care@curevan.com" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>care@curevan.com</span>
+                <span className="lowercase">care@curevan.com</span>
               </a>
               <a href="tel:+919514446292" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
                 <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
