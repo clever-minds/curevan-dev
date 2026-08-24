@@ -73,6 +73,7 @@ const PostCard = ({ post }: { post: KnowledgeBase }) => (
                  <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className={cn(post.status === 'published' && 'bg-green-100 text-green-800')}>{post.status}</Badge>
             </div>
             <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                <p>Published: {post.publishedAt ? getSafeDate(post.publishedAt)?.toLocaleDateString() : '-'}</p>
                 <p>Updated: {getSafeDate(post.updatedAt)?.toLocaleDateString()}</p>
                 <p>Views: {post.stats?.totalViews?.toLocaleString() || 0}</p>
             </div>
@@ -175,6 +176,7 @@ export default function MyJournalPage() {
                                 <TableRow>
                                     <TableHead>Title</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead>Published</TableHead>
                                     <TableHead>Last Updated</TableHead>
                                     <TableHead>Views</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
@@ -185,6 +187,7 @@ export default function MyJournalPage() {
                                     <TableRow key={post.id}>
                                         <TableCell className="font-medium">{post.title}</TableCell>
                                         <TableCell><Badge variant={post.status === 'published' ? 'default' : 'secondary'} className={cn(post.status === 'published' && 'bg-green-100 text-green-800')}>{post.status.replace('_', ' ')}</Badge></TableCell>
+                                        <TableCell>{post.publishedAt ? getSafeDate(post.publishedAt)?.toLocaleDateString() : '-'}</TableCell>
                                         <TableCell>{getSafeDate(post.updatedAt)?.toLocaleDateString()}</TableCell>
                                         <TableCell>{post.stats?.totalViews?.toLocaleString() || 0}</TableCell>
                                         <TableCell className="text-right"><PostActions post={post} /></TableCell>
