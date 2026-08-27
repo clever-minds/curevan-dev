@@ -41,7 +41,7 @@ const footerLinks = {
 };
 
 const XLogo = () => (
-  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
     <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.931L18.901 1.153zm-1.61 19.932h2.5l-10.8-12.076H7.13l10.16 12.076z" />
   </svg>
 );
@@ -69,15 +69,15 @@ export default function Footer() {
 
   return (
     <footer className={cn("bg-footer-gradient text-white relative overflow-hidden transition-all duration-300", isDashboard && "lg:ml-[280px]")}>
-      <div className="container mx-auto px-4 md:px-6 pt-6 pb-6 lg:pb-4 relative z-10">
-        <div className="grid gap-6 lg:grid-cols-12">
+      <div className="container mx-auto px-4 md:px-6 pt-4 pb-4 lg:pb-3 relative z-10">
+        <div className="grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-5 space-y-4">
             <LogoLight />
-            <p className="text-white/80 max-w-sm">
+            <p className="text-white/80 max-w-sm text-sm">
               Curevan offers professional therapy services and quality wellness products delivered right to your door. Cure. Anywhere.
             </p>
             <div className="flex flex-col gap-2">
-              <p className="font-semibold">Subscribe to our newsletter</p>
+              <p className="font-semibold text-sm">Subscribe to our newsletter</p>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubscribe)} className="space-y-4">
                   <div className="flex flex-row w-full max-w-sm items-center gap-3 sm:gap-2">
@@ -87,26 +87,26 @@ export default function Footer() {
                       render={({ field }) => (
                         <FormItem className="flex-1">
                           <FormControl>
-                            <Input type="email" placeholder="Email" className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/30 focus:ring-white/50 h-10" {...field} />
+                            <Input type="email" placeholder="Email" className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/30 focus:ring-white/50 h-9" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" variant="secondary" className="bg-white/90 text-primary hover:bg-white h-10 whitespace-nowrap">Subscribe</Button>
+                    <Button type="submit" variant="secondary" className="bg-white/90 text-primary hover:bg-white h-9 whitespace-nowrap">Subscribe</Button>
                   </div>
                   <FormMessage className="text-destructive text-xs">{form.formState.errors.email?.message}</FormMessage>
                 </form>
               </Form>
             </div>
           </div>
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {Object.entries(footerLinks).map(([title, links]) => (
               <div key={title}>
-                <h3 className="font-bold mb-3">{title}</h3>
-                <ul className="space-y-1.5">
+                <h3 className="font-bold mb-2 text-sm">{title}</h3>
+                <ul className="space-y-1">
                   {links.map((link) => (
                     <li key={link.href}>
-                      <Link href={link.href} className="text-white/80 hover:text-white transition-colors text-sm">
+                      <Link href={link.href} className="text-white/80 hover:text-white transition-colors text-xs">
                         {link.label}
                       </Link>
                     </li>
@@ -117,17 +117,17 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-white/20">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-white/70 text-center md:text-left">
+        <div className="mt-4 pt-3 border-t border-white/20">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+            <div className="text-xs text-white/70 text-center md:text-left">
               <p>Copyright © {new Date().getFullYear()} Himaya Care Pvt. Ltd. All Rights Reserved.</p>
             </div>
             <div className="flex gap-4">
-              <Link href="#" aria-label="Follow us on Facebook" className="text-white/80 hover:text-white"><Facebook className="w-5 h-5" /></Link>
+              <Link href="#" aria-label="Follow us on Facebook" className="text-white/80 hover:text-white"><Facebook className="w-4 h-4" /></Link>
               <Link href="#" aria-label="Follow us on X" className="text-white/80 hover:text-white"><XLogo /></Link>
-              <Link href="#" aria-label="Follow us on Instagram" className="text-white/80 hover:text-white"><Instagram className="w-5 h-5" /></Link>
-              <Link href="#" aria-label="Follow us on LinkedIn" className="text-white/80 hover:text-white"><Linkedin className="w-5 h-5" /></Link>
-              <Link href="#" aria-label="Subscribe to our YouTube channel" className="text-white/80 hover:text-white"><Youtube className="w-5 h-5" /></Link>
+              <Link href="#" aria-label="Follow us on Instagram" className="text-white/80 hover:text-white"><Instagram className="w-4 h-4" /></Link>
+              <Link href="#" aria-label="Follow us on LinkedIn" className="text-white/80 hover:text-white"><Linkedin className="w-4 h-4" /></Link>
+              <Link href="#" aria-label="Subscribe to our YouTube channel" className="text-white/80 hover:text-white"><Youtube className="w-4 h-4" /></Link>
             </div>
           </div>
         </div>
