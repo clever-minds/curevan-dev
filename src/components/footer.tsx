@@ -69,8 +69,8 @@ export default function Footer() {
 
   return (
     <footer className={cn("bg-footer-gradient text-white relative overflow-hidden transition-all duration-300", isDashboard && "lg:ml-[280px]")}>
-      <div className="container mx-auto px-4 md:px-6 pt-12 pb-24 lg:pb-12 relative z-10">
-        <div className="grid gap-12 lg:grid-cols-12">
+      <div className="container mx-auto px-4 md:px-6 pt-8 pb-12 lg:pb-8 relative z-10">
+        <div className="grid gap-8 lg:grid-cols-12">
           <div className="lg:col-span-5 space-y-4">
             <LogoLight />
             <p className="text-white/80 max-w-sm">
@@ -117,7 +117,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/20">
+        <div className="mt-8 pt-6 border-t border-white/20">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-sm text-white/70 text-center md:text-left">
               <p>Copyright © {new Date().getFullYear()} Himaya Care Pvt. Ltd. All Rights Reserved.</p>
