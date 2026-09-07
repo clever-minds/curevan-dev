@@ -57,11 +57,11 @@ function EcommerceContent() {
             fetchPublicProductCategories(),
             getCoupons(),
         ]);
-        setProducts(productsData);
-        setProductCategories(categoriesData);
-        setCoupons(couponsData);
+        setProducts(productsData || []);
+        setProductCategories(categoriesData || []);
+        setCoupons(couponsData || []);
 
-        if (productsData.length > 0) {
+        if (productsData?.length > 0) {
             const prices = productsData.map(p => p.price);
             const min = Math.floor(Math.min(...prices));
             const max = Math.ceil(Math.max(...prices));

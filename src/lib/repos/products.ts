@@ -127,7 +127,7 @@ export async function fetchPublicProductCategories(): Promise<ProductCategory[]>
   try {
     const { data } = await serverApi.get("/api/category/get-all");
     console.log("api/category/get-all", data);
-    return data.data;
+    return data.data || data || [];
   } catch (error: any) {
     console.error("Product Categories FETCH ERROR:", error?.message);
     return [];
