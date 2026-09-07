@@ -5,7 +5,7 @@ import { getToken } from "@/lib/auth";
 const mapProduct = (p: any): Product => ({
   ...p,
   id: Number(p.id),
-  name: p.title || p.name,
+  name: p.title || p.name || '',
   description: p.short_description || p.description,
   longDescription: p.long_description || p.longDescription,
   price: Number(p.sellingPrice || p.selling_price || p.price || 0),
@@ -47,7 +47,7 @@ const mapProduct = (p: any): Product => ({
   stock: Number(p.onHand || p.stock || 0),
   reorderPoint: p.reorder_point || p.reorderPoint || 0,
   additionalFeatures: (p.additional_features || p.additionalFeatures || []).map((f: any) => ({
-    title: f.title,
+    title: f.title || '',
     value: f.value,
     isHighlighted: f.is_highlighted || f.isHighlighted || false
   })),

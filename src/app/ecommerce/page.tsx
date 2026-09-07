@@ -104,7 +104,7 @@ function EcommerceContent() {
       }
       
       p.additionalFeatures?.forEach(f => {
-        const title = f.title.toLowerCase();
+        const title = f.title?.toLowerCase() || '';
         if (title.includes('colour') || title.includes('color')) colors.add(f.value);
         if (title.includes('size')) sizes.add(f.value);
         if (title.includes('body part')) bodyParts.add(f.value);
@@ -169,8 +169,8 @@ function EcommerceContent() {
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesCategory = filters.category === 'all' || product.categoryId.toString().toLowerCase().replace(/ /g, '-') === filters.category;
+      const matchesSearch = (product.name || '').toLowerCase().includes((filters.search || '').toLowerCase());
+      const matchesCategory = filters.category === 'all' || product.categoryId?.toString().toLowerCase().replace(/ /g, '-') === filters.category;
       const matchesPrice = product.price >= filters.price[0] && product.price <= filters.price[1];
       const matchesRating = filters.rating === 0 || product.rating >= filters.rating;
       const matchesBrand = filters.brands.length === 0 || (product.brand && filters.brands.includes(product.brand));
@@ -181,7 +181,7 @@ function EcommerceContent() {
 
       const hasFeature = (titleMatch: string, selectedValues: string[]) => {
         if (selectedValues.length === 0) return true;
-        const feature = product.additionalFeatures?.find(f => f.title.toLowerCase().includes(titleMatch));
+        const feature = product.additionalFeatures?.find(f => (f.title || '').toLowerCase().includes(titleMatch));
         if (feature && selectedValues.includes(feature.value)) return true;
 
         const hasVariantFeature = (product as any).variants?.some((v: any) => {
