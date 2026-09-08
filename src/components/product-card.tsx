@@ -77,11 +77,13 @@ export default function ProductCard({ product }: { product: Product }) {
           <CardTitle className="text-lg font-bold font-headline mb-1 line-clamp-1">{product.name}</CardTitle>
         </Link>
         <CardDescription className="text-sm line-clamp-2">{product.description}</CardDescription>
-        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
-          <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-          <span className="font-semibold text-foreground">4.5</span>
-          <span>(150 reviews)</span>
-        </div>
+        {product.rating > 0 && (
+          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+            <span className="font-semibold text-foreground">{product.rating}</span>
+            <span>({(product as any).reviewCount || 0} reviews)</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
