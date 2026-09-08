@@ -104,31 +104,66 @@ export default function AdminProductsPage() {
       "Short Description", "Long Description"
     ];
 
-    const data = productInventory.map(p => [
-      p.id,
-      p.name,
-      p.sku,
-      p.categoryId,
-      p.brand || '',
-      p.price,
-      p.mrp || p.price,
-      p.onHand,
-      p.reserved,
-      p.available,
-      p.reorderPoint,
-      p.isActive ? 'Yes' : 'No',
-      p.isCouponExcluded ? 'Yes' : 'No',
-      p.hsnCode || '',
-      p.manufacturer || '',
-      p.countryOfOrigin || '',
-      p.packer || '',
-      p.importer || '',
-      p.batchNumber || '',
-      p.mfgDate || '',
-      p.expiryDate || '',
-      p.description,
-      p.longDescription || ''
-    ]);
+    const data = productInventory.flatMap(p => {
+      const baseRow = [
+        p.id,
+        p.name,
+        p.sku,
+        p.categoryId,
+        p.brand || '',
+        p.price,
+        p.mrp || p.price,
+        p.onHand,
+        p.reserved,
+        p.available,
+        p.reorderPoint,
+        p.isActive ? 'Yes' : 'No',
+        p.isCouponExcluded ? 'Yes' : 'No',
+        p.hsnCode || '',
+        p.manufacturer || '',
+        p.countryOfOrigin || '',
+        p.packer || '',
+        p.importer || '',
+        p.batchNumber || '',
+        p.mfgDate || '',
+        p.expiryDate || '',
+        p.description,
+        p.longDescription || ''
+      ];
+
+      if (p.hasVariants && p.variants && p.variants.length > 0) {
+        return p.variants.map((v: any) => {
+          const variantName = v.attributes ? `${p.name} - ${Object.values(v.attributes).join(' ')}` : p.name;
+          return [
+            p.id,
+            variantName,
+            v.sku || p.sku,
+            p.categoryId,
+            p.brand || '',
+            v.sellingPrice || v.selling_price || p.price,
+            v.mrp || p.mrp || p.price,
+            v.stock !== undefined ? v.stock : p.onHand,
+            p.reserved,
+            v.stock !== undefined ? v.stock : p.available,
+            v.reorderPoint !== undefined ? v.reorderPoint : p.reorderPoint,
+            p.isActive ? 'Yes' : 'No',
+            p.isCouponExcluded ? 'Yes' : 'No',
+            p.hsnCode || '',
+            p.manufacturer || '',
+            p.countryOfOrigin || '',
+            p.packer || '',
+            p.importer || '',
+            p.batchNumber || '',
+            p.mfgDate || '',
+            p.expiryDate || '',
+            p.description,
+            p.longDescription || ''
+          ];
+        });
+      }
+
+      return [baseRow];
+    });
 
     downloadCsv(headers, data, 'curevan-product-master.csv');
   };
