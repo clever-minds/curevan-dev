@@ -96,7 +96,7 @@ export default function AdminProductsPage() {
 
   const handleExport = () => {
     const headers = [
-      "ID", "Product Type", "Name", "SKU", "Category ID", "Brand", "Price", "MRP",
+      "ID", "Name", "SKU", "Category ID", "Brand", "Price", "MRP",
       "On Hand Stock", "Reserved Stock", "Available Stock", "Reorder Point",
       "Active", "Coupon Excluded",
       "HSN Code", "Manufacturer", "Country of Origin", "Packer", "Importer",
@@ -107,7 +107,6 @@ export default function AdminProductsPage() {
     const data = productInventory.flatMap(p => {
       const baseRow = [
         p.id,
-        p.productType || '',
         p.name,
         p.sku,
         p.categoryId,
@@ -137,7 +136,6 @@ export default function AdminProductsPage() {
           const variantName = v.attributes ? `${p.name} - ${Object.values(v.attributes).join(' ')}` : p.name;
           return [
             p.id,
-            p.productType || '',
             variantName,
             v.sku || p.sku,
             p.categoryId,
