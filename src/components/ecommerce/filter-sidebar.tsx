@@ -148,6 +148,27 @@ export function FilterSidebar({
                 </div>
 
                 <div className="space-y-3 pb-4 border-b">
+                    <h3 className="font-semibold text-sm">Product Type</h3>
+                    {filterOptions?.productTypes?.length > 0 ? (
+                        <div className="space-y-2">
+                            {filterOptions.productTypes.map((pt: string) => (
+                                <div key={pt} className="flex items-center space-x-2 my-1.5">
+                                    <Checkbox 
+                                        id={`pt-${pt}`} 
+                                        className="mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                        checked={localFilters.productTypes?.includes(pt)}
+                                        onCheckedChange={(checked) => handleArrayFilterChange('productTypes', pt, checked as boolean)}
+                                    />
+                                    <Label htmlFor={`pt-${pt}`} className="font-normal text-sm cursor-pointer leading-tight">{pt}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">No product types available.</p>
+                    )}
+                </div>
+
+                <div className="space-y-3 pb-4 border-b">
                     <h3 className="font-semibold text-sm">Sub Category</h3>
                     {localFilters.category === 'all' ? (
                         <p className="text-xs text-muted-foreground">Select a department to narrow sub categories.</p>
@@ -208,27 +229,6 @@ export function FilterSidebar({
                 </div>
 
                 <Accordion type="multiple" className="w-full">
-                    {/* Product Type */}
-                    {filterOptions?.productTypes?.length > 0 && (
-                        <AccordionItem value="productType">
-                            <AccordionTrigger className="text-base font-semibold">Product Type</AccordionTrigger>
-                            <AccordionContent>
-                                <div className="space-y-2 pt-2">
-                                    {filterOptions.productTypes.map((type: string) => (
-                                        <div key={type} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={`ptype-${type}`} 
-                                                checked={localFilters.productTypes?.includes(type)}
-                                                onCheckedChange={(checked) => handleArrayFilterChange('productTypes', type, checked as boolean)}
-                                            />
-                                            <Label htmlFor={`ptype-${type}`} className="font-normal">{type}</Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )}
-
                     {/* Brand */}
                     {filterOptions?.brands?.length > 0 && (
                         <AccordionItem value="brand">
@@ -430,10 +430,10 @@ export function FilterSidebar({
                         const clearedFilters = { 
                             search: '', 
                             category: 'all', 
-                            productTypes: [],
                             price: [minPrice, maxPrice], 
                             rating: 0,
                             brands: [],
+                            productTypes: [],
                             subCategories: [],
                             colors: [],
                             sizes: [],
