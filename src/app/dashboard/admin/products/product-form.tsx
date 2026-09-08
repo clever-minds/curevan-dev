@@ -28,7 +28,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { AIRichText } from '@/components/ai/ai-rich-text';
 import { listProductCategories } from '@/lib/repos/products';
-import { getTherapyCategoriesWithIds, listSubCategories } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { createProducts } from '@/lib/api/products';
 import { updateProduct } from '@/lib/api/products';
 
@@ -49,7 +49,7 @@ const productFormSchema = z.object({
   shortDescription: z.string().min(10, 'Short description must be at least 10 characters.'),
   longDescription: z.string().nullable().optional(),
   brand: z.string().nullable().optional(),
-  sku: z.string().min(1, 'SKU is required.'),
+  sku: z.string().optional(),
   category: z.string().min(1, 'Please select a category.'),
   subCategory: z.string().nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
@@ -126,6 +126,13 @@ images: z
             path: ["sellingPrice"]
         });
     }
+    if (!data.hasVariants && (!data.sku || data.sku.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "SKU is required when variants are not enabled.",
+            path: ["sku"]
+        });
+    }
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -192,7 +199,6 @@ export function ProductForm({
    const { toast } = useToast();
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [serviceTypes, setServiceTypes] = useState<{id: number, name: string}[]>([]);
-  const [subCategories, setSubCategories] = useState<{id: number, name: string}[]>([]);
   const router = useRouter();
    useEffect(() => {
     const fetchCategories = async () => {
@@ -279,21 +285,7 @@ export function ProductForm({
 }, [initialData, form]);
 
   const productType = form.watch('productType');
-  const watchedCategory = form.watch('category');
   const [allProducts, setAllProducts] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (watchedCategory) {
-      listSubCategories(watchedCategory).then(data => {
-        setSubCategories(data || []);
-      }).catch(err => {
-        console.error("Failed to fetch subcategories", err);
-        setSubCategories([]);
-      });
-    } else {
-      setSubCategories([]);
-    }
-  }, [watchedCategory]);
 
   useEffect(() => {
     if (productType === 'Bundle') {
@@ -413,15 +405,10 @@ export function ProductForm({
   //       });
   //   }
   // }
-    async function onSubmit(data: ProductFormValues) {
+  async function onSubmit(data: ProductFormValues) {
     console.log("imageIds",data);
 
     const imageIds = data.images.map((img: { id: number }) => img.id);
-    
-    // Generate a fallback SKU for the parent product if it has variants 
-    // to prevent DB NOT NULL constraint violation on the parent row
-    const finalSku = data.hasVariants ? (data.sku || `PARENT-${Date.now()}`) : data.sku;
-
     try {
         let result;
 
@@ -433,7 +420,7 @@ export function ProductForm({
             shortDescription: data.shortDescription,
             longDescription: data.longDescription ?? undefined,
             brand: data.brand ?? undefined,
-            sku: finalSku,
+            sku: data.sku,
             category: Number(data.category),
             mrp: data.mrp,
             sellingPrice: data.sellingPrice,
@@ -524,10 +511,10 @@ export function ProductForm({
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={(val) => { field.onChange(val); form.setValue('subCategory', ''); }} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
-                
-                <FormField control={form.control} name="subCategory" render={({ field }) => (<FormItem><FormLabel>Sub Category</FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""} disabled={!watchedCategory || subCategories.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Select a sub category" /></SelectTrigger></FormControl><SelectContent>{subCategories.map(sub => <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                {!form.watch("hasVariants") && (
+                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                )}
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 
                 <FormField control={form.control} name="isRecommended" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 mt-1 shadow-sm h-[72px]">
