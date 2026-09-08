@@ -31,6 +31,7 @@ function EcommerceContent() {
   const [filters, setFilters] = useState({
     search: '',
     category: 'all',
+    productTypes: [] as string[],
     price: [0, 10000],
     rating: 0,
     brands: [] as string[],
@@ -85,6 +86,7 @@ function EcommerceContent() {
 
   const filterOptions = useMemo(() => {
     const brands = new Set<string>();
+    const productTypes = new Set<string>();
     const subCategories = new Set<string>();
     const categorySubCategories: Record<string, Set<string>> = {};
     const colors = new Set<string>();
@@ -96,6 +98,7 @@ function EcommerceContent() {
 
     products.forEach(p => {
       if (p.brand) brands.add(p.brand);
+      if (p.productType) productTypes.add(p.productType);
       if (p.subCategoryName) {
           subCategories.add(p.subCategoryName);
           const catKey = p.categoryId?.toString() || 'unknown';
@@ -133,6 +136,7 @@ function EcommerceContent() {
 
     return {
       brands: Array.from(brands),
+      productTypes: Array.from(productTypes),
       subCategories: Array.from(subCategories),
       categorySubCategories: categorySubCategoriesFormatted,
       colors: Array.from(colors),
@@ -171,6 +175,7 @@ function EcommerceContent() {
     return products.filter(product => {
       const matchesSearch = (product.name || '').toLowerCase().includes((filters.search || '').toLowerCase());
       const matchesCategory = filters.category === 'all' || product.categoryId?.toString().toLowerCase().replace(/ /g, '-') === filters.category;
+      const matchesProductType = filters.productTypes.length === 0 || (product.productType && filters.productTypes.includes(product.productType));
       const matchesPrice = product.price >= filters.price[0] && product.price <= filters.price[1];
       const matchesRating = filters.rating === 0 || product.rating >= filters.rating;
       const matchesBrand = filters.brands.length === 0 || (product.brand && filters.brands.includes(product.brand));
@@ -199,7 +204,7 @@ function EcommerceContent() {
       const matchesSuitableUser = hasFeature('suitable user', filters.suitableUsers);
       const matchesUseType = hasFeature('use type', filters.useTypes);
 
-      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesBrand && matchesSubCategory && matchesStock && matchesColor && matchesSize && matchesBodyPart && matchesIntendedUse && matchesSuitableUser && matchesUseType;
+      return matchesSearch && matchesCategory && matchesProductType && matchesPrice && matchesRating && matchesBrand && matchesSubCategory && matchesStock && matchesColor && matchesSize && matchesBodyPart && matchesIntendedUse && matchesSuitableUser && matchesUseType;
     });
   }, [filters, products]);
 
