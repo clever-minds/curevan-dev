@@ -94,11 +94,17 @@ export default function EditProductPage() {
               batchNumber: product.batch_number || product.batchNumber,
               mfgDate: (product.manufacturing_date || product.mfgDate) ? new Date(product.manufacturing_date || product.mfgDate) : undefined,
               expiryDate: (product.expiry_date || product.expiryDate) ? new Date(product.expiry_date || product.expiryDate) : undefined,
-              additionalFeatures: (product.additional_features || product.additionalFeatures)?.map((f: any) => ({
-                title: f.title,
-                value: f.value,
-                isHighlighted: f.is_highlighted || f.isHighlighted,
-              })) || [],
+              additionalFeatures: (product.additional_features || product.additionalFeatures)?.map((f: any) => {
+                let feature = f;
+                if (typeof f === 'string') {
+                  try { feature = JSON.parse(f); } catch (e) {}
+                }
+                return {
+                  title: feature.title,
+                  value: feature.value,
+                  isHighlighted: feature.is_highlighted || feature.isHighlighted,
+                };
+              }) || [],
               isRecommended: product.is_recommended || product.isRecommended,
               serviceTypeId: product.service_type_id || product.serviceTypeId,
               hasVariants: (product.variants && product.variants.length > 0) ? true : false,

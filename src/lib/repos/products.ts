@@ -46,11 +46,17 @@ const mapProduct = (p: any): Product => ({
   expiryDate: p.expiry_date || p.expiryDate,
   stock: Number(p.onHand || p.stock || 0),
   reorderPoint: p.reorder_point || p.reorderPoint || 0,
-  additionalFeatures: (p.additional_features || p.additionalFeatures || []).map((f: any) => ({
-    title: f.title || '',
-    value: f.value,
-    isHighlighted: f.is_highlighted || f.isHighlighted || false
-  })),
+  additionalFeatures: (p.additional_features || p.additionalFeatures || []).map((f: any) => {
+    let feature = f;
+    if (typeof f === 'string') {
+      try { feature = JSON.parse(f); } catch (e) {}
+    }
+    return {
+      title: feature.title || '',
+      value: feature.value,
+      isHighlighted: feature.is_highlighted || feature.isHighlighted || false
+    };
+  }),
   variants: p.variants || [],
   hasVariants: p.has_variants || p.hasVariants || (p.variants && p.variants.length > 0) || false,
   bundleItems: (p.bundle_items || p.bundleItems || []).map((b: any) => ({
