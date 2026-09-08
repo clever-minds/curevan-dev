@@ -417,11 +417,6 @@ export function ProductForm({
     console.log("imageIds",data);
 
     const imageIds = data.images.map((img: { id: number }) => img.id);
-    
-    // Generate a fallback SKU for the parent product if it has variants 
-    // to prevent DB NOT NULL constraint violation on the parent row
-    const finalSku = data.hasVariants ? (data.sku || `PARENT-${Date.now()}`) : data.sku;
-
     try {
         let result;
 
@@ -433,7 +428,7 @@ export function ProductForm({
             shortDescription: data.shortDescription,
             longDescription: data.longDescription ?? undefined,
             brand: data.brand ?? undefined,
-            sku: finalSku,
+            sku: data.sku,
             category: Number(data.category),
             mrp: data.mrp,
             sellingPrice: data.sellingPrice,
