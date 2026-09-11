@@ -596,7 +596,7 @@ export default function ProductDetailsPage() {
                   {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
                 </span>
                 <div className="h-4 w-[1px] bg-border" />
-                <span className="text-muted-foreground font-medium">SKU: <span className="text-foreground">{product.sku}</span></span>
+                <span className="text-muted-foreground font-medium">SKU: <span className="text-foreground">{selectedVariant?.sku || product.sku}</span></span>
               </div>
             </div>
 
@@ -623,7 +623,7 @@ export default function ProductDetailsPage() {
                   {/* System Specs */}
                   {[
                     { label: 'Brand', value: product.brand },
-                    { label: 'SKU', value: product.sku },
+                    { label: 'SKU', value: selectedVariant?.sku || product.sku },
                     { label: 'Dimensions', value: product.dimensions?.lengthCm ? `${product.dimensions.lengthCm}x${product.dimensions.widthCm}x${product.dimensions.heightCm} cm` : null },
                     { label: 'Origin', value: product.countryOfOrigin },
                   ].filter(s => s.value).map((spec, i) => (

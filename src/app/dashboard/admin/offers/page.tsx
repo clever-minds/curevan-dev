@@ -6,15 +6,17 @@ import { Plus, Tag, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { OffersTable } from '@/components/admin/OffersTable';
-import { listOffers } from '@/lib/repos/offers';
+import { listOffers, deleteOffer, updateOffer } from '@/lib/repos/offers';
 import type { Offer } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminOffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   const fetchOffersData = async () => {
     setLoading(true);
@@ -24,6 +26,32 @@ export default function AdminOffersPage() {
     } catch (error) {
       console.error("Failed to fetch offers", error);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Are you sure you want to delete this offer?")) {
+      setLoading(true);
+      const res = await deleteOffer(id);
+      if (res.success) {
+        toast({ title: "Offer deleted" });
+        await fetchOffersData();
+      } else {
+        toast({ variant: "destructive", title: "Failed to delete offer", description: res.message });
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleStatusUpdate = async (id: number, active: boolean) => {
+    setLoading(true);
+    const res = await updateOffer(id, { isActive: active });
+    if (res.success) {
+      toast({ title: active ? "Offer activated" : "Offer deactivated" });
+      await fetchOffersData();
+    } else {
+      toast({ variant: "destructive", title: "Failed to update status", description: res.message });
       setLoading(false);
     }
   };
@@ -82,10 +110,8 @@ export default function AdminOffersPage() {
       ) : (
         <OffersTable 
           offers={offers} 
-          onDelete={async (id) => {
-            // Implement delete logic here or call a repo function
-            console.log("Delete offer", id);
-          }}
+          onDelete={handleDelete}
+          onStatusUpdate={handleStatusUpdate}
         />
       )}
     </div>
