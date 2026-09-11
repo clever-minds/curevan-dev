@@ -46,7 +46,12 @@ export default function AdminOffersPage() {
 
   const handleStatusUpdate = async (id: number, active: boolean) => {
     setLoading(true);
-    const res = await updateOffer(id, { isActive: active });
+    const offer = offers.find(o => o.id === id);
+    if (!offer) {
+      setLoading(false);
+      return;
+    }
+    const res = await updateOffer(id, { ...offer, isActive: active });
     if (res.success) {
       toast({ title: active ? "Offer activated" : "Offer deactivated" });
       await fetchOffersData();
