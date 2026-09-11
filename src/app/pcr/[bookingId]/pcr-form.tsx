@@ -254,8 +254,10 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   const status = form.watch('status');
   const isFinal = status === 'locked' || status === 'submitted';
   const isAdmin = user?.role === 'admin';
+  const isPatient = user?.role === 'patient';
   const canUnlock = user?.roles?.includes('admin.therapy') || user?.roles?.includes('admin.super');
   const canFinalize = user?.roles?.includes('admin.therapy') || user?.roles?.includes('admin.super');
+  const isReadOnly = isFinal || isPatient;
 
   if (isLoading) {
     return (
@@ -287,18 +289,27 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               </AlertDescription>
             </Alert>
           )}
+          {isPatient && !isFinal && (
+            <Alert variant="default" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Read Only View</AlertTitle>
+              <AlertDescription>
+                You are viewing this report in read-only mode. Only your physiotherapist can edit the Patient Care Report.
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                {/* Save Draft: available when not final */}
-                {!isFinal && (
+                {/* Save Draft: available when not read only */}
+                {!isReadOnly && (
                   <Button type="button" onClick={handleSaveDraft} variant="outline" disabled={isFinalizing}>
                     <Save className="mr-2 h-4 w-4" />Save Draft
                   </Button>
                 )}
 
-                {/* Submit for Therapist only when not final */}
-                {!isAdmin && !isFinal && (
+                {/* Submit for Therapist only when not read only */}
+                {!isAdmin && !isReadOnly && (
                   <Button type="button" onClick={handleSubmit} disabled={isFinalizing}>
                     {isFinalizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
                     Submit Report
@@ -337,10 +348,10 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               <p className="text-sm text-muted-foreground">This information is pre-filled from the booking and cannot be changed.</p>
               <div className="grid sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="patientFullName" render={({ field }) => (
-                  <FormItem><FormLabel>Patient Full Name</FormLabel><FormControl><Input {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Patient Full Name</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="dob" render={({ field }) => (
-                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
             </div>
@@ -352,10 +363,10 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               <h3 className="text-lg font-medium font-headline">Incident Information</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="incidentDate" render={({ field }) => (
-                  <FormItem><FormLabel>Incident Date</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Incident Date</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="incidentLocation" render={({ field }) => (
-                  <FormItem><FormLabel>Incident Location</FormLabel><FormControl><Input placeholder="123 Main St" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Incident Location</FormLabel><FormControl><Input placeholder="123 Main St" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField
                   control={form.control}
@@ -363,7 +374,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Therapy Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={isFinal}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={isReadOnly}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select therapy type" /></SelectTrigger></FormControl>
                         <SelectContent>
                           {therapyCategories.map(category => (<SelectItem key={category} value={category}>{category}</SelectItem>))}
@@ -390,7 +401,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                       onChange={field.onChange}
                       placeholder="e.g., Lower back pain"
                       context={{ entityType: "pcr", field: "chiefComplaint" }}
-                      disabled={isFinal}
+                      disabled={isReadOnly}
                     />
                   </FormControl>
                   <FormMessage />
@@ -406,7 +417,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                         onChange={field.onChange}
                         placeholder="Patient states... Observation..."
                         context={{ entityType: "pcr", field: "assessment" }}
-                        disabled={isFinal}
+                        disabled={isReadOnly}
                       />
                     </FormControl>
                   </div>
@@ -414,13 +425,13 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                 </FormItem>
               )} />
               <FormField control={form.control} name="diagnosis" render={({ field }) => (
-                <FormItem><FormLabel>Diagnosis (Optional)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Therapist's professional diagnosis" context={{ entityType: 'pcr', field: 'diagnosis' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Diagnosis (Optional)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Therapist's professional diagnosis" context={{ entityType: 'pcr', field: 'diagnosis' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <FormField control={form.control} name="vitalSigns.bp" render={({ field }) => (<FormItem><FormLabel>BP</FormLabel><FormControl><Input placeholder="120/80" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="vitalSigns.hr" render={({ field }) => (<FormItem><FormLabel>Heart Rate</FormLabel><FormControl><Input placeholder="80" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="vitalSigns.rr" render={({ field }) => (<FormItem><FormLabel>Resp. Rate</FormLabel><FormControl><Input placeholder="16" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="vitalSigns.temp" render={({ field }) => (<FormItem><FormLabel>Temp</FormLabel><FormControl><Input placeholder="98.6°F" {...field} disabled={isFinal} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.bp" render={({ field }) => (<FormItem><FormLabel>BP</FormLabel><FormControl><Input placeholder="120/80" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.hr" render={({ field }) => (<FormItem><FormLabel>Heart Rate</FormLabel><FormControl><Input placeholder="80" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.rr" render={({ field }) => (<FormItem><FormLabel>Resp. Rate</FormLabel><FormControl><Input placeholder="16" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="vitalSigns.temp" render={({ field }) => (<FormItem><FormLabel>Temp</FormLabel><FormControl><Input placeholder="98.6°F" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
               </div>
             </div>
 
@@ -430,13 +441,13 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Treatment & Plan</h3>
               <FormField control={form.control} name="treatmentProvided" render={({ field }) => (
-                <FormItem><FormLabel>Treatment Provided</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Detailed record of the treatment or therapy administered..." context={{ entityType: 'pcr', field: 'treatmentProvided' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Treatment Provided</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Detailed record of the treatment or therapy administered..." context={{ entityType: 'pcr', field: 'treatmentProvided' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="planOfCare" render={({ field }) => (
-                <FormItem><FormLabel>Plan of Care</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Recommended next steps, exercises, or future treatment plan..." context={{ entityType: 'pcr', field: 'planOfCare' }} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Plan of Care</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Recommended next steps, exercises, or future treatment plan..." context={{ entityType: 'pcr', field: 'planOfCare' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="nextTreatmentDate" render={({ field }) => (
-                <FormItem><FormLabel>Next Treatment Date (Optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Next Treatment Date (Optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
 
@@ -455,7 +466,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                       <MediaPicker
                         value={field.value as MediaItem[]}
                         onChange={(media: MediaItem[]) => field.onChange(media)}
-                        disabled={isFinal}
+                        disabled={isReadOnly}
                       />
                     </FormControl>
                     <FormMessage />
@@ -463,11 +474,11 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                 )}
               />
               <FormField control={form.control} name="therapistName" render={({ field }) => (
-                <FormItem><FormLabel>Therapist Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} disabled={isFinal} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Therapist Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="signatureConfirmation" render={({ field }) => (
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
-                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isFinal} /></FormControl>
+                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isReadOnly} /></FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Digital Signature</FormLabel>
                     <FormDescription>

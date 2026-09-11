@@ -393,40 +393,39 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
   async function onSubmit(data: TherapistOnboardingValues) {
     startTransition(async () => {
       try {
-        // Extract IDs from objects FIRST
-        const profileImageID = data.profileImageId?.id;
-        const kycIdProofId = data.kycIdProof?.id;
-        const kycLicenseId = data.kycLicense?.id;
-        const kycBankProofId = data.kycBankProof?.id;
-
-
-        // Build clean payload with only IDs (no object versions)
         const payload = {
           ...data,
-          profileImageId: profileImageID,
-          kycIdProof: kycIdProofId,
-          kycLicense: kycLicenseId,
-          kycBankProof: kycBankProofId,
           specialty: data.specialty.map(Number),
         };
 
-        console.log('=== FINAL PAYLOAD ===');
-        console.log(JSON.stringify(payload, null, 2));
-        console.log('profileImageId:', payload.profileImageId);
-        console.log('kycIdProof:', payload.kycIdProof);
-        console.log('kycLicense:', payload.kycLicense);
-        console.log('kycBankProof:', payload.kycBankProof);
-        console.log('=== END ===');
+        const formData = new FormData();
+        formData.append('data', JSON.stringify(payload));
+
+        if (data.image instanceof File) {
+          formData.append('image', data.image);
+        }
+        if (data.kycIdProof instanceof FileList && data.kycIdProof.length > 0) {
+          formData.append('kycIdProof', data.kycIdProof[0]);
+        }
+        if (data.kycLicense instanceof FileList && data.kycLicense.length > 0) {
+          formData.append('kycLicense', data.kycLicense[0]);
+        }
+        if (data.kycBankProof instanceof FileList && data.kycBankProof.length > 0) {
+          formData.append('kycBankProof', data.kycBankProof[0]);
+        }
+
+        console.log('=== SENDING FORMDATA ===');
 
         let result;
 
         if (isEditing) {
-          result = await requestProfileUpdate(payload);
+          result = await requestProfileUpdate(formData);
         } else {
-          result = await createTherapistAction(payload);
+          result = await createTherapistAction(formData);
           // If signup successful, also submit a change request for approval
           if (result.success && result.uid) {
-            await requestProfileUpdate(payload, result.uid);
+            formData.append('uid', result.uid);
+            await requestProfileUpdate(formData);
           }
         }
 
@@ -640,12 +639,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormItem>
                           <FormLabel>ID Proof Document</FormLabel>
                           <FormControl>
-                            <MediaPicker
-                              value={value ? [value] : []}
-                              onChange={(media) => onChange(media[0] || null)}
-                              multiple={false}
-                              {...fieldProps}
-                            />
+                            <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} />
                           </FormControl>
                           <FormDescription>Aadhar, PAN Card, etc.</FormDescription>
                           <FormMessage />
@@ -661,11 +655,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormItem>
                           <FormLabel>License Document</FormLabel>
                           <FormControl>
-                            <MediaPicker
-                              value={field.value ? [field.value] : []}
-                              onChange={(media) => field.onChange(media[0] || null)}
-                              multiple={false}
-                            />
+                            <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                           </FormControl>
                           <FormDescription>Professional license</FormDescription>
                           <FormMessage />
@@ -729,11 +719,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                       <FormItem>
                         <FormLabel>Bank Proof Document</FormLabel>
                         <FormControl>
-                          <MediaPicker
-                            value={field.value ? [field.value] : []}
-                            onChange={(media) => field.onChange(media[0] || null)}
-                            multiple={false}
-                          />
+                          <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                         </FormControl>
                         <FormDescription>Canceled cheque, statement</FormDescription>
                         <FormMessage />

@@ -44,30 +44,39 @@ const createTherapistSchema = z.object({
  * Creates therapist via Node.js backend API
  */
 export async function createTherapistAction(
-  data: unknown
+  formData: FormData
 ): Promise<{ success: boolean; error?: string; userId?: string; uid?: string }> {
   try {
-    // ✅ Use separate schema instead of .omit()
-    const validatedData = createTherapistSchema.parse(data);
+    const dataString = formData.get('data') as string;
+    if (!dataString) throw new Error('Missing JSON payload');
+    
+    const parsedData = JSON.parse(dataString);
+    const validatedData = createTherapistSchema.parse(parsedData);
     console.log('Create therapist validated data:', validatedData);
+
+    const payloadFormData = new FormData();
+    payloadFormData.append('role', 'therapist');
+    payloadFormData.append('data', JSON.stringify({
+      ...validatedData,
+      experience: validatedData.experience_years,
+      registration_no: (validatedData as any).registrationNo,
+      bank_account_number: (validatedData as any).bankAccountNumber,
+      bank_ifsc_code: (validatedData as any).bankIfscCode,
+      availability: validatedData.availability,
+    }));
+
+    // Forward the files
+    if (formData.get('image')) payloadFormData.append('image', formData.get('image')!);
+    if (formData.get('kycIdProof')) payloadFormData.append('kycIdProof', formData.get('kycIdProof')!);
+    if (formData.get('kycLicense')) payloadFormData.append('kycLicense', formData.get('kycLicense')!);
+    if (formData.get('kycBankProof')) payloadFormData.append('kycBankProof', formData.get('kycBankProof')!);
 
     const response = await fetch(`${API_BASE}/api/therapists/register`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${await getToken()}`,
       },
-      body: JSON.stringify({
-        role: 'therapist',
-        data: {
-          ...validatedData,
-          experience: validatedData.experience_years,
-          registration_no: (validatedData as any).registrationNo,
-          bank_account_number: (validatedData as any).bankAccountNumber,
-          bank_ifsc_code: (validatedData as any).bankIfscCode,
-          availability: validatedData.availability,
-        }
-      }),
+      body: payloadFormData,
       cache: 'no-store',
     });
     const result = await response.json();
@@ -98,11 +107,16 @@ export async function createTherapistAction(
  * Sends profile update request to Node.js backend
  */
 export async function requestProfileUpdate(
-  data: OnboardingData,
+  formData: FormData,
   explicitUserId?: string
 ): Promise<{ success: boolean; error?: string; requestId?: string }> {
   try {
-    let userId = explicitUserId;
+    const dataString = formData.get('data') as string;
+    if (!dataString) throw new Error('Missing JSON payload');
+    
+    const parsedData = JSON.parse(dataString);
+    let userId = explicitUserId || formData.get('uid') as string;
+    
     if (!userId) {
       const current = await getCurrentUser();
       if (!current || current.roles?.[0] !== 'therapist') {
@@ -112,31 +126,37 @@ export async function requestProfileUpdate(
     }
 
     // Update ke liye original schema safe hai
-    const validatedData = therapistOnboardingSchema.parse(data);
+    const validatedData = therapistOnboardingSchema.parse(parsedData);
     console.log("validatedData", validatedData)
+
+    const payloadFormData = new FormData();
+    payloadFormData.append('userId', userId);
+    payloadFormData.append('section', 'Therapist Profile');
+    payloadFormData.append('role', 'therapist');
+    payloadFormData.append('data', JSON.stringify({
+      ...validatedData,
+      experience: validatedData.experience_years,
+      registration_no: (validatedData as any).registrationNo,
+      bank_account_number: (validatedData as any).bankAccountNumber,
+      bank_ifsc_code: (validatedData as any).bankIfscCode,
+      availability: validatedData.availability,
+    }));
+
+    // Forward the files
+    if (formData.get('image')) payloadFormData.append('image', formData.get('image')!);
+    if (formData.get('kycIdProof')) payloadFormData.append('kycIdProof', formData.get('kycIdProof')!);
+    if (formData.get('kycLicense')) payloadFormData.append('kycLicense', formData.get('kycLicense')!);
+    if (formData.get('kycBankProof')) payloadFormData.append('kycBankProof', formData.get('kycBankProof')!);
+
     const response = await fetch(
-      // `${API_BASE}/api/therapists/profile/${current.id}`
       `${API_BASE}/api/auth/change-profile-request`,
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${await getToken()}`,
         },
         credentials: 'include',
-        body: JSON.stringify({
-          userId,
-          section: 'Therapist Profile',
-          role: 'therapist',
-          data: {
-            ...validatedData,
-            experience: validatedData.experience_years,
-            registration_no: (validatedData as any).registrationNo,
-            bank_account_number: (validatedData as any).bankAccountNumber,
-            bank_ifsc_code: (validatedData as any).bankIfscCode,
-            availability: validatedData.availability,
-          }
-        }),
+        body: payloadFormData,
         cache: 'no-store',
       }
     );
