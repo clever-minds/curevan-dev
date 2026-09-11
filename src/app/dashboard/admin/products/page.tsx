@@ -96,7 +96,7 @@ export default function AdminProductsPage() {
 
   const handleExport = () => {
     const headers = [
-      "ID", "Name", "SKU", "Category ID", "Brand", "Price", "MRP",
+      "ID", "Name", "SKU", "Category ID", "Category Name", "Brand", "Price", "MRP",
       "On Hand Stock", "Reserved Stock", "Available Stock", "Reorder Point",
       "Active", "Coupon Excluded",
       "HSN Code", "Manufacturer", "Country of Origin", "Packer", "Importer",
@@ -110,6 +110,7 @@ export default function AdminProductsPage() {
         p.name,
         p.sku,
         p.categoryId,
+        p.categoryname || '',
         p.brand || '',
         p.price,
         p.mrp || p.price,
@@ -139,6 +140,7 @@ export default function AdminProductsPage() {
             variantName,
             v.sku || p.sku,
             p.categoryId,
+            p.categoryname || '',
             p.brand || '',
             v.sellingPrice || v.selling_price || p.price,
             v.mrp || p.mrp || p.price,

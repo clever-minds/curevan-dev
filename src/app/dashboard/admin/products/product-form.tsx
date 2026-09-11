@@ -325,16 +325,21 @@ export function ProductForm({
 
       watchedBundleItems.forEach((item: any) => {
         const qty = Number(item.quantity) || 1;
-        const sp = Number(item.sellingPrice) || 0;
+        const sp = Number(item.sellingPrice) || 0; // Assuming this is base price (exclusive of GST)
         const disc = Number(item.discount) || 0;
         const gst = Number(item.gstSlab) || 0;
         
-        const discountedPrice = Math.max(0, sp - disc);
-        const gstAmount = discountedPrice * (gst / 100);
-        const rowFinalAmount = (discountedPrice + gstAmount) * qty;
+        // MRP is Base Price + GST
+        const rowMrp = sp * (1 + (gst / 100));
+        
+        // Apply discount on base price (exclusive of GST)
+        const discountedBasePrice = Math.max(0, sp - disc);
+        
+        // Final Selling Price adds GST on the discounted base price
+        const rowFinalAmount = discountedBasePrice * (1 + (gst / 100));
 
-        totalMrp += sp * qty; 
-        totalSellingPrice += rowFinalAmount;
+        totalMrp += rowMrp * qty; 
+        totalSellingPrice += rowFinalAmount * qty;
         
         if (gst > maxGst) {
           maxGst = gst;
