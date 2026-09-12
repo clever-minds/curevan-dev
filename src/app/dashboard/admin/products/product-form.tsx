@@ -332,8 +332,9 @@ export function ProductForm({
         // MRP is Base Price + GST
         const rowMrp = sp * (1 + (gst / 100));
         
-        // Apply discount on base price (exclusive of GST)
-        const discountedBasePrice = Math.max(0, sp - disc);
+        // Apply discount on base price as a percentage
+        const discountAmount = sp * (disc / 100);
+        const discountedBasePrice = Math.max(0, sp - discountAmount);
         
         // Final Selling Price adds GST on the discounted base price
         const rowFinalAmount = discountedBasePrice * (1 + (gst / 100));
@@ -745,7 +746,7 @@ export function ProductForm({
                                         <th className="p-2 text-left font-medium">Variant SKU (Optional)</th>
                                         <th className="p-2 text-left font-medium">Quantity <span className="text-red-500">*</span></th>
                                         <th className="p-2 text-left font-medium">Selling Price</th>
-                                        <th className="p-2 text-left font-medium">Discount</th>
+                                        <th className="p-2 text-left font-medium">Discount (%)</th>
                                         <th className="p-2 text-left font-medium">GST (%)</th>
                                         <th className="p-2 text-left font-medium">Final Amount</th>
                                         <th className="p-2 text-center font-medium">Actions</th>
@@ -814,7 +815,7 @@ export function ProductForm({
                                                 <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" max="100" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
                                                 <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
@@ -825,7 +826,8 @@ export function ProductForm({
                                                     const sp = Number(form.watch(`bundleItems.${index}.sellingPrice` as any) || 0);
                                                     const disc = Number(form.watch(`bundleItems.${index}.discount` as any) || 0);
                                                     const gst = Number(form.watch(`bundleItems.${index}.gstSlab` as any) || 0);
-                                                    const discountedPrice = Math.max(0, sp - disc);
+                                                    const discountAmount = sp * (disc / 100);
+                                                    const discountedPrice = Math.max(0, sp - discountAmount);
                                                     const gstAmount = discountedPrice * (gst / 100);
                                                     return '₹' + ((discountedPrice + gstAmount) * qty).toFixed(2);
                                                 })()}
