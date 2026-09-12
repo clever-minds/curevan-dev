@@ -92,7 +92,7 @@ export const therapistOnboardingSchema = z.object({
   }),
   qualification: z.string().min(1, 'Qualifications are required.'),
   registrationNo: z.string().min(1, 'Registration number is required.'),
-  specialty: z.array(z.union([z.string(), z.number()]))
+  specialty: z.array(z.string())
     .min(1, "Select at least one specialty"),
   kycIdProof: z.any().optional(),
   kycLicense: z.any().optional(),
@@ -101,7 +101,7 @@ export const therapistOnboardingSchema = z.object({
   // Availability & Pricing
   experience_years: z.coerce.number().min(0, 'Experience must be a positive number.'),
   hourlyRate: z.coerce.number().min(1, "Rate is required"),
-  membershipPlan: z.enum(['standard', 'premium']),
+  membershipPlan: z.enum(['basic', 'standard', 'premium']),
   availability: z.object({
     mon: availabilitySchema, tue: availabilitySchema, wed: availabilitySchema,
     thu: availabilitySchema, fri: availabilitySchema, sat: availabilitySchema,
@@ -510,9 +510,11 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                             <FormControl>
                               {isEditing ? (
                                 <MediaPicker
-                                  onSelect={(mediaId) => {
+                                  multiple={false}
+                                  onChange={(media: any[]) => {
+                                    const mediaId = media[0]?.id;
                                     field.onChange(mediaId);
-                                    setImagePreview(String(mediaId));
+                                    setImagePreview(media[0]?.url || String(mediaId));
                                   }}
                                 />
                               ) : (
@@ -654,7 +656,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                           <FormLabel>ID Proof Document</FormLabel>
                           <FormControl>
                             {isEditing ? (
-                              <MediaPicker onSelect={(mediaId) => onChange(mediaId)} />
+                              <MediaPicker multiple={false} onChange={(media: any[]) => onChange(media[0]?.id)} />
                             ) : (
                               <>
                                 <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} />
@@ -677,7 +679,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                           <FormLabel>License Document</FormLabel>
                           <FormControl>
                             {isEditing ? (
-                              <MediaPicker onSelect={(mediaId) => field.onChange(mediaId)} />
+                              <MediaPicker multiple={false} onChange={(media: any[]) => field.onChange(media[0]?.id)} />
                             ) : (
                               <>
                                 <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
@@ -748,7 +750,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormLabel>Bank Proof Document</FormLabel>
                         <FormControl>
                           {isEditing ? (
-                            <MediaPicker onSelect={(mediaId) => field.onChange(mediaId)} />
+                            <MediaPicker multiple={false} onChange={(media: any[]) => field.onChange(media[0]?.id)} />
                           ) : (
                             <>
                               <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
