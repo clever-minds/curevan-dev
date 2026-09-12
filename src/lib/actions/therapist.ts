@@ -107,16 +107,11 @@ export async function createTherapistAction(
  * Sends profile update request to Node.js backend
  */
 export async function requestProfileUpdate(
-  formData: FormData,
+  data: OnboardingData,
   explicitUserId?: string
 ): Promise<{ success: boolean; error?: string; requestId?: string }> {
   try {
-    const dataString = formData.get('data') as string;
-    if (!dataString) throw new Error('Missing JSON payload');
-    
-    const parsedData = JSON.parse(dataString);
-    let userId = explicitUserId || formData.get('uid') as string;
-    
+    let userId = explicitUserId;
     if (!userId) {
       const current = await getCurrentUser();
       if (!current || current.roles?.[0] !== 'therapist') {
@@ -126,37 +121,37 @@ export async function requestProfileUpdate(
     }
 
     // Update ke liye original schema safe hai
-    const validatedData = therapistOnboardingSchema.parse(parsedData);
+    const validatedData = therapistOnboardingSchema.parse(data);
     console.log("validatedData", validatedData)
-
-    const payloadFormData = new FormData();
-    payloadFormData.append('userId', userId);
-    payloadFormData.append('section', 'Therapist Profile');
-    payloadFormData.append('role', 'therapist');
-    payloadFormData.append('data', JSON.stringify({
-      ...validatedData,
-      experience: validatedData.experience_years,
-      registration_no: (validatedData as any).registrationNo,
-      bank_account_number: (validatedData as any).bankAccountNumber,
-      bank_ifsc_code: (validatedData as any).bankIfscCode,
-      availability: validatedData.availability,
-    }));
-
-    // Forward the files
-    if (formData.get('image')) payloadFormData.append('image', formData.get('image')!);
-    if (formData.get('kycIdProof')) payloadFormData.append('kycIdProof', formData.get('kycIdProof')!);
-    if (formData.get('kycLicense')) payloadFormData.append('kycLicense', formData.get('kycLicense')!);
-    if (formData.get('kycBankProof')) payloadFormData.append('kycBankProof', formData.get('kycBankProof')!);
+    
+    const payload = {
+      userId,
+      section: 'Therapist Profile',
+      role: 'therapist',
+      data: {
+        ...validatedData,
+        experience: validatedData.experience_years,
+        registration_no: (validatedData as any).registrationNo,
+        bank_account_number: (validatedData as any).bankAccountNumber,
+        bank_ifsc_code: (validatedData as any).bankIfscCode,
+        availability: validatedData.availability,
+        profileImageId: (validatedData as any).image,
+        kycIdProof: (validatedData as any).kycIdProof,
+        kycLicense: (validatedData as any).kycLicense,
+        kycBankProof: (validatedData as any).kycBankProof,
+      }
+    };
 
     const response = await fetch(
       `${API_BASE}/api/auth/change-profile-request`,
       {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${await getToken()}`,
         },
         credentials: 'include',
-        body: payloadFormData,
+        body: JSON.stringify(payload),
         cache: 'no-store',
       }
     );

@@ -113,9 +113,10 @@ export const therapistOnboardingSchema = z.object({
   bankAccountNumber: z.string().min(1, 'Bank account number is required.'),
   bankIfscCode: z.string().min(1, 'IFSC code is required.'),
   kycBankProof: z.any().optional(),
+  isEditing: z.boolean().optional(),
 }).refine(data => {
   // Make password required only for new signups
-  if (!data.email) { // A way to check if it's a new signup
+  if (!data.isEditing) { 
     return !!data.password && data.password === data.confirmPassword;
   }
   // For edits, if a new password is provided, it must match confirmation
@@ -238,6 +239,8 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
     defaultValues: {
       email: '',
       password: '',
+      confirmPassword: '',
+      isEditing: isEditing,
       mobile: '',
       fullName: '',
       bio: '',
@@ -419,13 +422,13 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         let result;
 
         if (isEditing) {
-          result = await requestProfileUpdate(formData);
+          result = await requestProfileUpdate(data);
         } else {
           result = await createTherapistAction(formData);
           // If signup successful, also submit a change request for approval
           if (result.success && result.uid) {
-            formData.append('uid', result.uid);
-            await requestProfileUpdate(formData);
+            // we don't need to resubmit files for change request here, just the payload
+            await requestProfileUpdate(data, result.uid);
           }
         }
 
@@ -493,21 +496,32 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
               <CardContent className="space-y-4">
                 <FormFieldWrapper fieldName="fullName"><FormField name="fullName" control={form.control} render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
                 <div className="space-y-4">
-                  <FormFieldWrapper fieldName="profileImageId">
+                  <FormFieldWrapper fieldName="image">
                     <FormField
-                      name="profileImageId"
+                      name="image"
                       control={form.control}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>License Document</FormLabel>
-                          <FormControl>
-                            <MediaPicker
-                              value={field.value ? [field.value] : []}
-                              onChange={(media) => field.onChange(media[0] || null)}
-                              multiple={false}
-                            />
-                          </FormControl>
-                          <FormDescription>Professional license</FormDescription>
+                          <FormLabel>Profile Picture</FormLabel>
+                          <div className="flex items-center gap-4">
+                            {imagePreview && (
+                              <Image src={imagePreview} alt="Profile Preview" width={80} height={80} className="rounded-full object-cover" />
+                            )}
+                            <FormControl>
+                              {isEditing ? (
+                                <MediaPicker
+                                  onSelect={(mediaId) => {
+                                    field.onChange(mediaId);
+                                    setImagePreview(String(mediaId));
+                                  }}
+                                />
+                              ) : (
+                                <Input type="file" accept="image/*" onChange={handleImageChange} />
+                              )}
+                            </FormControl>
+                          </div>
+                          {!isEditing && form.getValues('image') instanceof File && <p className="text-sm text-green-600">Selected: {(form.getValues('image') as File).name}</p>}
+                          <FormDescription>Your public facing profile picture</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -639,7 +653,14 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormItem>
                           <FormLabel>ID Proof Document</FormLabel>
                           <FormControl>
-                            <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} />
+                            {isEditing ? (
+                              <MediaPicker onSelect={(mediaId) => onChange(mediaId)} />
+                            ) : (
+                              <>
+                                <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} />
+                                {value && value.length > 0 && <p className="text-sm text-green-600 mt-2 font-medium">Selected: {value[0].name}</p>}
+                              </>
+                            )}
                           </FormControl>
                           <FormDescription>Aadhar, PAN Card, etc.</FormDescription>
                           <FormMessage />
@@ -655,7 +676,14 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormItem>
                           <FormLabel>License Document</FormLabel>
                           <FormControl>
-                            <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                            {isEditing ? (
+                              <MediaPicker onSelect={(mediaId) => field.onChange(mediaId)} />
+                            ) : (
+                              <>
+                                <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                                {field.value && field.value.length > 0 && <p className="text-sm text-green-600 mt-2 font-medium">Selected: {field.value[0].name}</p>}
+                              </>
+                            )}
                           </FormControl>
                           <FormDescription>Professional license</FormDescription>
                           <FormMessage />
@@ -719,7 +747,14 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                       <FormItem>
                         <FormLabel>Bank Proof Document</FormLabel>
                         <FormControl>
-                          <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                          {isEditing ? (
+                            <MediaPicker onSelect={(mediaId) => field.onChange(mediaId)} />
+                          ) : (
+                            <>
+                              <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                              {field.value && field.value.length > 0 && <p className="text-sm text-green-600 mt-2 font-medium">Selected: {field.value[0].name}</p>}
+                            </>
+                          )}
                         </FormControl>
                         <FormDescription>Canceled cheque, statement</FormDescription>
                         <FormMessage />
@@ -732,7 +767,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         </Tabs>
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" size="lg" disabled={isPending || !form.formState.isValid}>
+          <Button type="submit" size="lg" disabled={isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isEditing ? <Save className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
             {isEditing ? 'Submit Changes for Review' : 'Submit for Verification'}
           </Button>
