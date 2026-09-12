@@ -812,13 +812,13 @@ export function ProductForm({
                                                 <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (<FormControl><Input type="number" min="1" {...field} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" max="100" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" max="100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 font-medium">
                                                 {(() => {
