@@ -358,6 +358,9 @@ export async function listProfileChangeRequests(): Promise<ProfileChangeRequest[
 
       return {
         ...item,
+        userId: item.userId || (item as any).user_id,
+        entityId: item.entityId || (item as any).entity_id,
+        reviewerId: item.reviewerId || (item as any).reviewer_id,
         changes: Array.isArray(changes) ? changes : [],
         createdAt: item.createdAt || (item as any).created_at,
         reviewedAt: item.reviewedAt || (item as any).reviewed_at,

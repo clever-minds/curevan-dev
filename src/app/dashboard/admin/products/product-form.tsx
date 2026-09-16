@@ -721,7 +721,7 @@ export function ProductForm({
                              </tbody>
                          </table>
                      </div>
-                     <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ sku: "", mrp: 0, sellingPrice: 0, stock: 0, attributes: {} })}>
+                     <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ sku: "", mrp: form.getValues('mrp') || 0, sellingPrice: form.getValues('sellingPrice') || 0, stock: form.getValues('stock') || 0, attributes: {} })}>
                          <Plus className="h-4 w-4 mr-2" /> Add Variant
                      </Button>
                  </div>
