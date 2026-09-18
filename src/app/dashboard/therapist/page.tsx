@@ -497,7 +497,6 @@ export default function TherapistDashboard() {
             </DashboardSection>
 
         </div>
-      </div>
       
       <OtpDialog 
         appointment={verifyingAppointment}
