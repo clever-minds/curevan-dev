@@ -210,12 +210,18 @@ export default function TherapistDashboard() {
                  <Link href="/dashboard/therapist/availability">Manage Availability</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/leaves">Manage Leaves</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/edit">Edit Profile & Documents</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/support">Contact Support</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/reviews">My Ratings & Reviews</Link>
                </Button>
-            </div>
+             </div>
 
             {activeSession && (
                 <ActiveSessionCard 
@@ -491,6 +497,7 @@ export default function TherapistDashboard() {
             </DashboardSection>
 
         </div>
+      </div>
       
       <OtpDialog 
         appointment={verifyingAppointment}

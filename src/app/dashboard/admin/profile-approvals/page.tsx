@@ -137,6 +137,7 @@ export default function AdminProfileApprovalsPage({ roleFilter }: { roleFilter?:
   const fetchRequests = async () => {
     setLoading(true);
     let data = await listProfileChangeRequests();
+    
     if (roleFilter) {
       data = data.filter(r => r.role === roleFilter);
     }
