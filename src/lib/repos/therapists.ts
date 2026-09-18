@@ -310,3 +310,39 @@ export async function saveAvailability(availabilityData: any): Promise<boolean> 
     return false;
   }
 }
+
+export async function addTherapistLeave(therapistId: number, start_date: string, end_date: string, reason: string = ''): Promise<boolean> {
+  try {
+    const res = await serverApi.post('/api/therapists/leaves', { start_date, end_date, reason }, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    return res.status === 200;
+  } catch (error) {
+    console.error('ADD LEAVE ERROR:', error);
+    return false;
+  }
+}
+
+export async function removeTherapistLeave(id: number): Promise<boolean> {
+  try {
+    const res = await serverApi.delete(`/api/therapists/leaves/${id}`, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    return res.status === 200;
+  } catch (error) {
+    console.error('REMOVE LEAVE ERROR:', error);
+    return false;
+  }
+}
+
+export async function getTherapistLeaves(therapistId: number): Promise<{ id: number, start_date: string, end_date: string, reason: string }[]> {
+  try {
+    const res = await serverApi.get(`/api/therapists/leaves`, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    return res.data?.data || [];
+  } catch (error) {
+    console.error('GET LEAVES ERROR:', error);
+    return [];
+  }
+}
