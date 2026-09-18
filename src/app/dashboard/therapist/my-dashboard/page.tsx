@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, updateAppointmentStatus } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
 
@@ -144,6 +144,13 @@ export default function TherapistDashboard() {
     setActiveSession(null);
   };
 
+  const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
+      const success = await updateAppointmentStatus(appointmentId, newStatus);
+      if (success && activeSession && activeSession.id === appointmentId) {
+          setActiveSession({ ...activeSession, status: newStatus });
+      }
+  };
+
   const handleShareCode = () => {
     const shareUrl = `https://curevan.com/ecommerce?ref=${therapist?.referralCode}`;
     navigator.clipboard.writeText(shareUrl);
@@ -194,7 +201,12 @@ export default function TherapistDashboard() {
              </div>
 
             {activeSession && (
-                <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} />
+                <ActiveSessionCard 
+                    session={activeSession} 
+                    onEndSession={handleEndSession} 
+                    onStatusUpdate={handleStatusUpdate}
+                    onVerifyRequest={(session) => setVerifyingAppointment(session)}
+                />
             )}
 
             {/* KPIs */}
@@ -279,7 +291,7 @@ export default function TherapistDashboard() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {earningsHistory.map((item) => (
+                        {earningsHistory.map((item: any) => (
                             <TableRow key={item.source}>
                                 <TableCell>{new Date(item.sessionDate).toLocaleDateString()}</TableCell>
                                 <TableCell><Badge variant={item.type === 'service' ? 'default' : 'secondary'}>{item.type}</Badge></TableCell>
@@ -311,7 +323,7 @@ export default function TherapistDashboard() {
                     <CardContent>
                         {excludedItems.length > 0 ? (
                             <div className="space-y-3">
-                            {excludedItems.map(item => (
+                            {excludedItems.map((item: any) => (
                                 <div key={item.source} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
                                     <div className="flex items-center gap-3">
                                         <Hourglass className="text-yellow-600"/>
