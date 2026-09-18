@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { getTherapistLeaves, addTherapistLeave, removeTherapistLeave } from "@/lib/repos/therapists";
-import { useAuth } from "@/context/AuthContext";
-import { toast } from "react-hot-toast";
+import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TherapistLeavesPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [leaves, setLeaves] = useState<{ id: number; start_date: string; end_date: string; reason: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
@@ -35,25 +36,25 @@ export default function TherapistLeavesPage() {
 
     // check if start date is in past
     if (start < today) {
-        toast.error("Cannot add leave for past dates");
+        toast({ title: "Cannot add leave for past dates", variant: "destructive" });
         return;
     }
     
     if (end < start) {
-        toast.error("End date must be after or equal to start date");
+        toast({ title: "End date must be after or equal to start date", variant: "destructive" });
         return;
     }
 
     setLoading(true);
     const success = await addTherapistLeave(user.id, startDate, endDate, reason);
     if (success) {
-      toast.success("Leave added successfully");
+      toast({ title: "Leave added successfully" });
       setStartDate("");
       setEndDate("");
       setReason("");
       fetchLeaves();
     } else {
-      toast.error("Failed to add leave");
+      toast({ title: "Failed to add leave", variant: "destructive" });
       setLoading(false);
     }
   };
@@ -63,10 +64,10 @@ export default function TherapistLeavesPage() {
     if (confirm("Are you sure you want to remove this leave?")) {
       const success = await removeTherapistLeave(id);
       if (success) {
-        toast.success("Leave removed successfully");
+        toast({ title: "Leave removed successfully" });
         fetchLeaves();
       } else {
-        toast.error("Failed to remove leave");
+        toast({ title: "Failed to remove leave", variant: "destructive" });
       }
     }
   };
