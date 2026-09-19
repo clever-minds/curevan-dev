@@ -127,15 +127,15 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
         if (!user) return;
         try {
             setLoading(true);
-            const success = await acceptBookingRequest(appointment.id, { therapistId: user.id, therapistName: user.name, therapistPhone: user.phone });
-            if (success) {
+            const res = await acceptBookingRequest(appointment.id, { therapistId: user.id, therapistName: user.name, therapistPhone: user.phone });
+            if (res && typeof res === 'object' && res.success) {
                 toast({ title: 'Accepted', description: 'Booking request accepted.' });
                 window.location.reload();
             } else {
-                toast({ title: 'Error', description: 'Failed to accept booking request.', variant: 'destructive' });
+                toast({ title: 'Error', description: res?.error || 'Failed to accept booking request.', variant: 'destructive' });
             }
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to accept booking request.', variant: 'destructive' });
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to accept booking request.', variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -144,15 +144,15 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
     const handleRejectRequest = async () => {
         try {
             setLoading(true);
-            const success = await rejectBookingRequest(appointment.id);
-            if (success) {
+            const res = await rejectBookingRequest(appointment.id);
+            if (res && typeof res === 'object' && res.success) {
                 toast({ title: 'Rejected', description: 'Booking request rejected.' });
                 window.location.reload();
             } else {
-                toast({ title: 'Error', description: 'Failed to reject booking request.', variant: 'destructive' });
+                toast({ title: 'Error', description: res?.error || 'Failed to reject booking request.', variant: 'destructive' });
             }
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to reject booking request.', variant: 'destructive' });
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to reject booking request.', variant: 'destructive' });
         } finally {
             setLoading(false);
         }

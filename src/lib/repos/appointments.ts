@@ -191,7 +191,7 @@ export async function getAvailableRequests(therapistId: number): Promise<Appoint
 /**
  * Accept a booking request
  */
-export async function acceptBookingRequest(appointmentId: number, therapistData: any): Promise<boolean> {
+export async function acceptBookingRequest(appointmentId: number, therapistData: any): Promise<{success: boolean, error?: string}> {
   try {
     const token = await getToken();
     if (!token) throw new Error('Token missing, please login again');
@@ -202,10 +202,10 @@ export async function acceptBookingRequest(appointmentId: number, therapistData:
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    return response?.success === true;
-  } catch (err) {
+    return { success: response?.success === true, error: response?.error };
+  } catch (err: any) {
     console.error('Error accepting booking request:', err);
-    return false;
+    return { success: false, error: err.response?.data?.error || err.message };
   }
 }
 
@@ -253,7 +253,7 @@ export async function submitReview(appointmentId: number, rating: number, review
 /**
  * Reject a booking request
  */
-export async function rejectBookingRequest(appointmentId: number): Promise<boolean> {
+export async function rejectBookingRequest(appointmentId: number): Promise<{success: boolean, error?: string}> {
   try {
     const token = await getToken();
     if (!token) throw new Error('Token missing, please login again');
@@ -263,9 +263,9 @@ export async function rejectBookingRequest(appointmentId: number): Promise<boole
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    return response?.success === true;
-  } catch (err) {
+    return { success: response?.success === true, error: response?.error };
+  } catch (err: any) {
     console.error('Error rejecting booking request:', err);
-    return false;
+    return { success: false, error: err.response?.data?.error || err.message };
   }
 }
