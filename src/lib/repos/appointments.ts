@@ -250,3 +250,22 @@ export async function submitReview(appointmentId: number, rating: number, review
     return false;
   }
 }
+/**
+ * Reject a booking request
+ */
+export async function rejectBookingRequest(appointmentId: number): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+
+    const { data: response } = await serverApi.post<ApiResponse<any>>(
+      `/api/appointments/reject/${appointmentId}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response?.success === true;
+  } catch (err) {
+    console.error('Error rejecting booking request:', err);
+    return false;
+  }
+}

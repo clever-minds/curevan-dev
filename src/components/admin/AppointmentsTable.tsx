@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
-import { listAppointments, listAppointmentsForUser ,cancelAppointments} from '@/lib/repos/appointments';
+import { listAppointments, listAppointmentsForUser, cancelAppointments, acceptBookingRequest, rejectBookingRequest } from '@/lib/repos/appointments';
 import { format, parseISO } from 'date-fns';
 import { ReviewDialog } from '@/components/patient/ReviewDialog';
 import useRazorpay from '@/hooks/use-razorpay';
@@ -122,6 +122,34 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
             },
         });
     };
+
+    const handleAcceptRequest = async () => {
+        if (!user) return;
+        try {
+            setLoading(true);
+            await acceptBookingRequest(appointment.id, { therapistId: user.id, therapistName: user.name, therapistPhone: user.phone });
+            toast({ title: 'Accepted', description: 'Booking request accepted.' });
+            window.location.reload();
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to accept booking request.', variant: 'destructive' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRejectRequest = async () => {
+        try {
+            setLoading(true);
+            await rejectBookingRequest(appointment.id);
+            toast({ title: 'Rejected', description: 'Booking request rejected.' });
+            window.location.reload();
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to reject booking request.', variant: 'destructive' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
 const handleCancelAppointment = async () => {
     if (!confirm("Are you sure you want to cancel this appointment?")) return;
 
@@ -157,7 +185,19 @@ const handleCancelAppointment = async () => {
         {isPatient && appointment.status === 'Completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
-        {isPatient && appointment.status === 'Payment Pending' && (
+        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending') && (
+            <>
+                <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</DropdownMenuItem>
+            </>
+        )}
+        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending') && (
+             <>
+                <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
+                <Button variant="destructive" className="w-full justify-start" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</Button>
+             </>
+          )}
+             {isPatient && appointment.status === 'Payment Pending' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</DropdownMenuItem>
