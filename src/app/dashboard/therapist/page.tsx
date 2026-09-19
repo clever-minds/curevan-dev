@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { fetchEarningsData, EarningsData } from "@/services/earnings-service";
-import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus, cancelAppointments } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
 
@@ -321,8 +321,17 @@ export default function TherapistDashboard() {
                                         disabled={!!activeSession}
                                     >
                                         <PlayCircle className="mr-2 h-4 w-4"/>
-                                        Start Journey
+                                        Start
                                     </Button>
+                                    <Button variant="outline" size="sm" className="text-destructive border-destructive" onClick={async () => {
+                                        const success = await cancelAppointments(appointment.id);
+                                        if (success) {
+                                            toast({ title: "Appointment Cancelled" });
+                                            setAppointments(prev => prev.filter(a => a.id !== appointment.id));
+                                        } else {
+                                            toast({ title: "Failed to cancel", variant: "destructive" });
+                                        }
+                                    }}>Cancel</Button>
                                     <Button variant="ghost" size="sm" asChild>
                                         <Link href={`/pcr/${appointment.id}`}>PCR</Link>
                                     </Button>
@@ -355,9 +364,18 @@ export default function TherapistDashboard() {
                                 <TableCell>{appointment.patientName}</TableCell>
                                 <TableCell>{appointment.therapyType}</TableCell>
                                 <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right flex justify-end gap-2">
+                                    <Button variant="outline" size="sm" className="text-destructive border-destructive" onClick={async () => {
+                                        const success = await cancelAppointments(appointment.id);
+                                        if (success) {
+                                            toast({ title: "Appointment Cancelled" });
+                                            setAppointments(prev => prev.filter(a => a.id !== appointment.id));
+                                        } else {
+                                            toast({ title: "Failed to cancel", variant: "destructive" });
+                                        }
+                                    }}>Cancel</Button>
                                     <Button variant="ghost" size="sm" asChild>
-                                        <Link href={`/pcr/${appointment.id}`}>View Details</Link>
+                                        <Link href={`/pcr/${appointment.id}`}>Details</Link>
                                     </Button>
                                 </TableCell>
                             </TableRow>

@@ -26,6 +26,9 @@ import { Skeleton } from '../ui/skeleton';
 import { listAppointments, listAppointmentsForUser ,cancelAppointments} from '@/lib/repos/appointments';
 import { format, parseISO } from 'date-fns';
 import { ReviewDialog } from '@/components/patient/ReviewDialog';
+import useRazorpay from '@/hooks/use-razorpay';
+import serverApi from '@/lib/repos/axios.server';
+import { getToken } from '@/lib/auth';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -72,6 +75,7 @@ const getPaymentBadgeVariant = (status: Appointment['paymentStatus']) => {
 }
 
 const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { appointment: Appointment, scope: AppointmentsTableProps['scope'], context: AppointmentsTableProps['context'], asSheetItems?: boolean }) => {
+  const { isLoaded, openPayment } = useRazorpay();
   const { toast } = useToast();
   const isAdmin = scope === 'admin' || scope === 'therapyAdmin';
   const isTherapist = scope === 'therapist';
@@ -86,7 +90,39 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
           description: "Your request to unlock this PCR has been sent to the admin team for review.",
       });
   }
-   const handleCancelAppointment = async () => {
+   
+    const handlePayNow = () => {
+        openPayment({
+            amount: (appointment.totalAmount || appointment.serviceAmount || 0) * 100,
+            currency: 'INR',
+            receipt: `receipt_booking_${appointment.id}_${Date.now()}`,
+            productName: `Session with ${appointment.therapist}`,
+            productDescription: `A ${appointment.therapyType} session on ${formatDateSafe(appointment.date)} at ${appointment.time}.`,
+            prefill: { name: appointment.patientName || 'Patient' },
+            onSuccess: async (paymentResponse) => {
+                try {
+                    setLoading(true);
+                    const token = await getToken();
+                    const { data: res } = await serverApi.post(
+                        `/api/appointments/${appointment.id}/pay`,
+                        { paymentId: paymentResponse.razorpay_payment_id, gateway: 'razorpay' },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    if (res?.success) {
+                        toast({ title: 'Payment Successful', description: 'Your appointment is now confirmed.' });
+                        window.location.reload();
+                    } else {
+                        toast({ title: 'Error', description: 'Failed to confirm payment on server.', variant: 'destructive' });
+                    }
+                } catch (e) {
+                    toast({ title: 'Error', description: 'Failed to confirm payment.', variant: 'destructive' });
+                } finally {
+                    setLoading(false);
+                }
+            },
+        });
+    };
+const handleCancelAppointment = async () => {
     if (!confirm("Are you sure you want to cancel this appointment?")) return;
 
         try {
@@ -121,7 +157,10 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
         {isPatient && appointment.status === 'Completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
-        <DropdownMenuItem className="text-destructive focus:text-destructive"><Ban className="mr-2" /> Cancel</DropdownMenuItem>
+        {isPatient && appointment.status === 'Payment Pending' && (
+          <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
+        )}
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</DropdownMenuItem>
     </>
   );
 
@@ -139,7 +178,10 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/pcr/${appointment.id}`}><FileText className="mr-2" /> Open PCR</Link></Button>
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
-             <Button variant="destructive" className="w-full justify-start"><Ban className="mr-2" /> Cancel</Button>
+             {isPatient && appointment.status === 'Payment Pending' && (
+             <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
+          )}
+             <Button variant="destructive" className="w-full justify-start" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</Button>
           </div>
         </SheetContent>
       </Sheet>

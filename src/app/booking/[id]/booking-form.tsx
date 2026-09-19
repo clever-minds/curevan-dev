@@ -654,46 +654,36 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
 
     function proceedWithPayment(processedReports: any) {
     console.log("booking new data", data);
-    openPayment({
-      amount: serviceAmount * 100,
-      currency: 'INR',
-      receipt: `receipt_booking_${therapist.id}_${Date.now()}`,
-      productName: `Session with ${therapist.name}`,
-      productDescription: `A ${data.serviceType} session on ${data.scheduledDate.toLocaleDateString()} at ${data.scheduledTime}.`,
-      prefill: { name: user!.name, email: user!.email },
-      onSuccess: (paymentResponse) => {
-        startTransition(async () => {
-          const selectedCategory = therapyCategories.find(c => c.name === data.serviceType);
-          const serviceTypeId = selectedCategory ? selectedCategory.id : null;
+    startTransition(async () => {
+        const selectedCategory = therapyCategories.find(c => c.name === data.serviceType);
+        const serviceTypeId = selectedCategory ? selectedCategory.id : null;
 
-          const result = await createBookingAndInvoice({
-            patientId: user!.id,
-            patientName: data.patientFullName || user!.name || 'N/A',
-            dateofBirth: data.dob,
-            therapistId: therapist.id,
-            therapist: therapist.name,
-            serviceTypeId: serviceTypeId,
-            therapyType: data.serviceType,
-            serviceAmount,
-            totalAmount: serviceAmount,
-            date: format(data.scheduledDate, 'yyyy-MM-dd') as unknown as Date,
-            time: data.scheduledTime,
-            mode: data.sessionMode,
-            notes: data.notes,
-            reports: processedReports,
-            addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,  // ← yahan
-            status: 'Pending',
-            verificationStatus: 'Not Verified',
-          }, { paymentId: paymentResponse.razorpay_payment_id, gateway: 'razorpay' });
+        const result = await createBookingAndInvoice({
+        patientId: user!.id,
+        patientName: data.patientFullName || user!.name || 'N/A',
+        dateofBirth: data.dob,
+        therapistId: therapist.id,
+        therapist: therapist.name,
+        serviceTypeId: serviceTypeId,
+        therapyType: data.serviceType,
+        serviceAmount,
+        totalAmount: serviceAmount,
+        date: format(data.scheduledDate, 'yyyy-MM-dd') as unknown as Date,
+        time: data.scheduledTime,
+        mode: data.sessionMode,
+        notes: data.notes,
+        reports: processedReports,
+        addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,
+        status: 'Pending Approval', // Initially pending approval by therapist
+        verificationStatus: 'Not Verified',
+        }, { paymentId: 'pending', gateway: 'none' }); // No payment yet
 
-          if (result.success) {
-            toast({ title: 'Booking Confirmed!', description: 'Your appointment has been successfully booked.' });
-            router.push('/dashboard/bookings');
-          } else {
-            toast({ variant: 'destructive', title: 'Booking Failed', description: result.error || 'There was an issue saving your booking.' });
-          }
-        });
-      },
+        if (result.success) {
+        toast({ title: 'Booking Requested!', description: 'Your appointment request has been sent to the therapist.' });
+        router.push('/dashboard/bookings');
+        } else {
+        toast({ variant: 'destructive', title: 'Booking Failed', description: result.error || 'There was an issue saving your booking.' });
+        }
     });
     }
   }
@@ -969,7 +959,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
             >
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-              Proceed to Payment
+              Request Appointment
             </Button>
           )}
 
