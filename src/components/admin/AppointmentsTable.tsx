@@ -197,9 +197,7 @@ const handleCancelAppointment = async () => {
         {isTherapist && (appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
             <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
         )}
-        {isTherapist && (appointment.status === 'Pending') && (
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</DropdownMenuItem>
-        )}
+
 
              {isPatient && appointment.paymentStatus === 'Pending' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
@@ -225,9 +223,7 @@ const handleCancelAppointment = async () => {
              {isTherapist && (appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
                  <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
              )}
-             {isTherapist && (appointment.status === 'Pending') && (
-                 <Button variant="destructive" className="w-full justify-start" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</Button>
-             )}
+
              {isPatient && appointment.paymentStatus === 'Pending' && (
              <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
           )}
