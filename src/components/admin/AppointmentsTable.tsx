@@ -77,6 +77,7 @@ const getPaymentBadgeVariant = (status: Appointment['paymentStatus']) => {
 const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { appointment: Appointment, scope: AppointmentsTableProps['scope'], context: AppointmentsTableProps['context'], asSheetItems?: boolean }) => {
   const { isLoaded, openPayment } = useRazorpay();
   const { toast } = useToast();
+  const { user } = useAuth();
   const isAdmin = scope === 'admin' || scope === 'therapyAdmin';
   const isTherapist = scope === 'therapist';
   const isPatient = scope === 'patient';
@@ -193,14 +194,14 @@ const handleCancelAppointment = async () => {
         {isPatient && appointment.status === 'Completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
-        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+        {isTherapist && (appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
             <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
         )}
-        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending') && (
+        {isTherapist && (appointment.status === 'Pending') && (
             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</DropdownMenuItem>
         )}
 
-             {isPatient && appointment.status === 'Payment Pending' && (
+             {isPatient && appointment.paymentStatus === 'Pending' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</DropdownMenuItem>
@@ -221,13 +222,13 @@ const handleCancelAppointment = async () => {
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/pcr/${appointment.id}`}><FileText className="mr-2" /> Open PCR</Link></Button>
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
-             {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+             {isTherapist && (appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
                  <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
              )}
-             {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending') && (
+             {isTherapist && (appointment.status === 'Pending') && (
                  <Button variant="destructive" className="w-full justify-start" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</Button>
              )}
-             {isPatient && appointment.status === 'Payment Pending' && (
+             {isPatient && appointment.paymentStatus === 'Pending' && (
              <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
           )}
              <Button variant="destructive" className="w-full justify-start" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</Button>
@@ -247,8 +248,15 @@ const handleCancelAppointment = async () => {
   );
 };
 
-const formatDateSafe = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
+const formatDateSafe = (dateInput: string | Date) => {
+  if (!dateInput) return 'N/A';
+  
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return 'N/A';
+    return format(dateInput, 'MMM dd, yyyy');
+  }
+  
+  const dateStr = String(dateInput);
   
   // If it's a simple YYYY-MM-DD string, handle it manually to avoid ANY UTC interpretation
   if (dateStr.length >= 10 && dateStr.includes('-')) {
