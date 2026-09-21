@@ -269,3 +269,20 @@ export async function rejectBookingRequest(appointmentId: number): Promise<{succ
     return { success: false, error: err.response?.data?.error || err.message };
   }
 }
+
+
+export async function rescheduleAppointment(appointmentId: number, date: string, time: string): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing');
+    const { data: response } = await serverApi.put<ApiResponse<any>>(
+      `/api/appointments/reschedule/${appointmentId}`,
+      { date, time },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response?.success === true;
+  } catch (err: any) {
+    console.error('Error rescheduling appointment:', err);
+    throw new Error(err?.response?.data?.error || 'Failed to reschedule appointment');
+  }
+}

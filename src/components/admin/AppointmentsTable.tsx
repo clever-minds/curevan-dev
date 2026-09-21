@@ -25,6 +25,7 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
 import { listAppointments, listAppointmentsForUser, cancelAppointments, acceptBookingRequest, rejectBookingRequest } from '@/lib/repos/appointments';
 import { format, parseISO } from 'date-fns';
+import { RescheduleDialog } from '@/components/patient/RescheduleDialog';
 import { ReviewDialog } from '@/components/patient/ReviewDialog';
 import useRazorpay from '@/hooks/use-razorpay';
 import serverApi from '@/lib/repos/axios.server';
