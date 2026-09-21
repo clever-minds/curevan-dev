@@ -193,11 +193,11 @@ const handleCancelAppointment = async () => {
         {isPatient && appointment.status === 'Completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
+        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+            <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
+        )}
         {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending') && (
-            <>
-                <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</DropdownMenuItem>
-            </>
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</DropdownMenuItem>
         )}
 
              {isPatient && appointment.status === 'Payment Pending' && (
@@ -221,12 +221,12 @@ const handleCancelAppointment = async () => {
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/pcr/${appointment.id}`}><FileText className="mr-2" /> Open PCR</Link></Button>
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
+             {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+                 <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
+             )}
              {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending') && (
-             <>
-                <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
-                <Button variant="destructive" className="w-full justify-start" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</Button>
-             </>
-          )}
+                 <Button variant="destructive" className="w-full justify-start" onClick={handleRejectRequest}><Ban className="mr-2" /> Reject</Button>
+             )}
              {isPatient && appointment.status === 'Payment Pending' && (
              <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
           )}
