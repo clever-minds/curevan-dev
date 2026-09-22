@@ -166,7 +166,7 @@ export interface Appointment {
   date: Date;
   time: string;
   mode: 'home' | 'online' | 'clinic';
-  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show' | 'Searching' | 'Searching Therapist' | 'Assigned' | 'Accepted' | 'Navigating' | 'On The Way' | 'Arrived' | 'In Progress' | 'Session Started';
+  status: 'Pending' | 'Payment Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show' | 'Searching' | 'Searching Therapist' | 'Assigned' | 'Accept' | 'Accepted' | 'Navigating' | 'On The Way' | 'Arrived' | 'In Progress' | 'Session Started';
   cancellationReason?: string | null;
   notes?: string;
   reports?: any;
