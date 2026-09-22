@@ -69,8 +69,8 @@ export function RescheduleDialog({ appointmentId }: RescheduleDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="date">
               Date
             </Label>
             <Input
@@ -79,11 +79,11 @@ export function RescheduleDialog({ appointmentId }: RescheduleDialogProps) {
               value={date}
               min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setDate(e.target.value)}
-              className="col-span-3"
+              className="w-full"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="time" className="text-right">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="time">
               Time
             </Label>
             <Input
@@ -91,7 +91,7 @@ export function RescheduleDialog({ appointmentId }: RescheduleDialogProps) {
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="col-span-3"
+              className="w-full"
             />
           </div>
         </div>
