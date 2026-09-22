@@ -200,7 +200,7 @@ const handleCancelAppointment = async () => {
         )}
 
 
-             {isPatient && appointment.paymentStatus === 'Pending' && (
+             {appointment.status === 'Payment Pending' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
         {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
@@ -228,9 +228,9 @@ const handleCancelAppointment = async () => {
                  <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
              )}
 
-             {isPatient && appointment.paymentStatus === 'Pending' && (
-             <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
-          )}
+             {appointment.status === 'Payment Pending' && (
+               <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
+            )}
              {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
                  <RescheduleDialog appointmentId={appointment.id} />
              )}
