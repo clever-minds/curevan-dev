@@ -179,7 +179,7 @@ export function Invoice({ invoice }: { invoice: InvoiceData }) {
                 {/* Subject Line */}
                 <div className="p-3 border-b border-gray-400 bg-white">
                     <p className="font-bold mb-1 text-gray-900">Subject :</p>
-                    <p className="text-gray-900 font-medium italic underline underline-offset-2">Tax Invoice for your recent order {invoice.invoiceNumber}. Includes {invoice.items.length} items.</p>
+                    <p className="text-gray-900 font-medium italic underline underline-offset-2">Tax Invoice for your recent {invoice.invoiceType === 'booking' ? 'appointment' : 'order'} {invoice.invoiceNumber}. Includes {invoice.items.length} items.</p>
                 </div>
 
                 {/* Main Table */}

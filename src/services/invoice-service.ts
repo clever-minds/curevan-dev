@@ -138,6 +138,7 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
 
     return {
       ...item,
+      invoiceType: 'order',
       id: item.id || item.sku,
       name: item.name || 'Product',
       hsnCode: item.hsnCode || '3004',
@@ -169,6 +170,7 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
 
   return {
     ...invoice,
+    invoiceType: 'order',
     supplier: supplierDetails,
     customer: {
       name: order.customer_name || order.customerName || "Customer",
@@ -203,6 +205,7 @@ function generateServiceInvoiceData(appointment: Appointment, invoice: InvoiceTy
 
   return {
     ...invoice,
+    invoiceType: 'booking',
     supplier: supplierDetails,
     customer: { 
       name: appointment.patientName, 
