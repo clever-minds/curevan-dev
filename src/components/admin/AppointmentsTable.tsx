@@ -203,6 +203,9 @@ const handleCancelAppointment = async () => {
              {isPatient && appointment.paymentStatus === 'Pending' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
+        {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
+          <RescheduleDialog appointmentId={appointment.id} />
+        )}
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</DropdownMenuItem>
     </>
   );
@@ -228,6 +231,9 @@ const handleCancelAppointment = async () => {
              {isPatient && appointment.paymentStatus === 'Pending' && (
              <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
           )}
+             {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
+                 <RescheduleDialog appointmentId={appointment.id} />
+             )}
              <Button variant="destructive" className="w-full justify-start" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</Button>
           </div>
         </SheetContent>
