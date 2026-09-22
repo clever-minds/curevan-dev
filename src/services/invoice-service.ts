@@ -272,7 +272,8 @@ export async function getInvoiceById(invoiceId: string | number) {
     if (!token) {
       throw new Error('Token missing, please login again');
     }
-    const response = await serverApi.get(`/api/orders/invoice/${invoiceId}`, {
+    const parsedId = String(invoiceId).startsWith('INV-') ? String(invoiceId).replace('INV-', '') : invoiceId;
+    const response = await serverApi.get(`/api/orders/invoice/${parsedId}`, {
       withCredentials: true,
       headers: {
         Authorization: `Bearer ${token}`,
