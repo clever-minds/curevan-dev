@@ -65,7 +65,7 @@ export function RescheduleDialog({ appointmentId }: RescheduleDialogProps) {
         <DialogHeader>
           <DialogTitle>Reschedule Appointment</DialogTitle>
           <DialogDescription>
-            Select a new date and time for your appointment. If a therapist was already assigned, they will be removed and your request will be broadcasted to available therapists.
+            Select a new date and time for your appointment.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
