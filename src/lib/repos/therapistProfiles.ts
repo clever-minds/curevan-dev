@@ -24,6 +24,16 @@ export async function getTherapistProfileById(id: number): Promise<Therapist | n
     if (!data?.data) return null;
 
     const item = data.data;
+    let documents = item.documents;
+    if (typeof documents === 'string') {
+      try {
+        documents = JSON.parse(documents);
+      } catch (e) {
+        console.error('Failed to parse documents:', e);
+        documents = [];
+      }
+    }
+
     let availability = item.availability;
     if (typeof availability === 'string') {
       try {
@@ -53,6 +63,7 @@ export async function getTherapistProfileById(id: number): Promise<Therapist | n
       qualifications: item.qualification || '',
       serviceTypes: item.serviceTypes || [],
       membershipPlan: item.membershipPlan || 'standard',
+      documents: documents || [],
       isProfilePublic: item.isProfilePublic,
       profileViewCount: item.profileViewCount,
       clinicId: item.clinicId,
