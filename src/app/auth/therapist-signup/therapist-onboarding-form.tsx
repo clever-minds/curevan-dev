@@ -113,10 +113,11 @@ export const therapistOnboardingSchema = z.object({
   bankAccountNumber: z.string().min(1, 'Bank account number is required.'),
   bankIfscCode: z.string().min(1, 'IFSC code is required.'),
   kycBankProof: z.any().optional(),
-  isEditing: z.boolean().optional(),
+  isEditing: z.any().optional(),
 }).refine(data => {
   // Make password required only for new signups
-  if (!data.isEditing) { 
+  const isEditing = data.isEditing === true || data.isEditing === 'true';
+  if (!isEditing) { 
     return !!data.password && data.password === data.confirmPassword;
   }
   // For edits, if a new password is provided, it must match confirmation
@@ -477,6 +478,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         const errorFields = Object.keys(errors).join(', ');
         alert("Please check the following fields for errors: " + errorFields);
       })} className="space-y-4">
+        <input type="hidden" {...form.register('isEditing')} />
         <Tabs defaultValue="account">
           <TabsList className="flex flex-wrap h-auto justify-start">
             <TabsTrigger value="account">Account</TabsTrigger>
