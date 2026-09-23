@@ -305,6 +305,9 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         console.log("Checking therapist", therapist?.availability);
         if (therapist) {
           form.reset({
+            isEditing: isEditing,
+            password: '',
+            confirmPassword: '',
             email: user.email || '',
             mobile: user.phone || 'N/A',
             fullName: therapist.name,

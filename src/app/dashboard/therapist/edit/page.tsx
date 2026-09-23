@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import serverApi from "@/lib/repos/axios.server";
 import { getToken } from "@/lib/auth";
+import MediaPicker from "@/components/MediaPicker";
 
 export default function TherapistEditProfile() {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ export default function TherapistEditProfile() {
           setFullProfile(profile);
           setFormData({
             bio: profile.bio || '',
-            qualification: profile.qualifications || profile.qualification || '',
+            qualification: profile.qualifications || '',
             experienceYears: profile.experience_years || 0,
             documents: profile.documents || []
           });
@@ -89,7 +90,9 @@ export default function TherapistEditProfile() {
         
         bio: formData.bio,
         qualification: formData.qualification,
+        qualifications: formData.qualification,
         experienceYears: Number(formData.experienceYears),
+        experience: Number(formData.experienceYears),
         
         hourlyRate: fullProfile?.hourly_rate,
         membershipPlan: fullProfile?.membership_plan,
@@ -174,27 +177,12 @@ export default function TherapistEditProfile() {
             <CardDescription>Upload URLs for your medical licenses and ID proofs.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex space-x-2">
-              <Input 
-                placeholder="Enter Document URL..." 
-                value={newDocumentUrl}
-                onChange={(e) => setNewDocumentUrl(e.target.value)}
+            <div className="mt-4">
+              <MediaPicker 
+                multiple={true}
+                value={formData.documents.map(d => ({ id: d, url: d, type: 'image' })) as any[]}
+                onChange={(media) => setFormData(prev => ({ ...prev, documents: media.map(m => m.url) }))}
               />
-              <Button type="button" onClick={handleAddDocument}>Add</Button>
-            </div>
-            
-            <div className="space-y-2 mt-4">
-              {formData.documents.map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
-                  <a href={doc} target="_blank" rel="noreferrer" className="text-sm text-blue-600 truncate max-w-[250px] hover:underline">
-                    {doc}
-                  </a>
-                  <Button variant="destructive" size="sm" onClick={() => handleRemoveDocument(index)}>Remove</Button>
-                </div>
-              ))}
-              {formData.documents.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded yet.</p>
-              )}
             </div>
           </CardContent>
         </Card>
