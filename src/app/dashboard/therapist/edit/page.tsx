@@ -18,6 +18,7 @@ export default function TherapistEditProfile() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fullProfile, setFullProfile] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     bio: '',
@@ -34,9 +35,10 @@ export default function TherapistEditProfile() {
       try {
         const profile = await getTherapistById(user.id);
         if (profile) {
+          setFullProfile(profile);
           setFormData({
             bio: profile.bio || '',
-            qualification: profile.qualifications || '',
+            qualification: profile.qualifications || profile.qualification || '',
             experienceYears: profile.experience_years || 0,
             documents: profile.documents || []
           });
@@ -73,9 +75,30 @@ export default function TherapistEditProfile() {
     try {
       const token = await getToken();
       await serverApi.put(`/api/therapists/profile/${user?.id}`, {
+        email: fullProfile?.email,
+        fullName: fullProfile?.name,
+        mobile: fullProfile?.phone,
+        line1: fullProfile?.address_line1,
+        line2: fullProfile?.address_line2,
+        city: fullProfile?.city,
+        state: fullProfile?.state,
+        pin: fullProfile?.pin,
+        fullAddress: fullProfile?.fullAddress || fullProfile?.full_address,
+        lat: fullProfile?.lat || fullProfile?.latitude,
+        lng: fullProfile?.lng || fullProfile?.longitude,
+        
         bio: formData.bio,
         qualification: formData.qualification,
         experienceYears: Number(formData.experienceYears),
+        
+        hourlyRate: fullProfile?.hourly_rate,
+        membershipPlan: fullProfile?.membership_plan,
+        panNumber: fullProfile?.pan_number,
+        registrationNo: fullProfile?.registration_no,
+        bankAccountNumber: fullProfile?.bank_account_number,
+        bankIfscCode: fullProfile?.bank_ifsc_code,
+        serviceRadiusKm: fullProfile?.service_radius_km,
+        specialty: fullProfile?.specialty,
         documents: formData.documents
       }, {
         headers: { Authorization: `Bearer ${token}` }
