@@ -113,10 +113,10 @@ export const therapistOnboardingSchema = z.object({
   bankAccountNumber: z.string().min(1, 'Bank account number is required.'),
   bankIfscCode: z.string().min(1, 'IFSC code is required.'),
   kycBankProof: z.any().optional(),
-  isEditing: z.any().optional(),
+  isEditing: z.string().optional(),
 }).refine(data => {
   // Make password required only for new signups
-  const isEditing = data.isEditing === true || data.isEditing === 'true';
+  const isEditing = data.isEditing === 'true';
   if (!isEditing) { 
     return !!data.password && data.password === data.confirmPassword;
   }
@@ -478,7 +478,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         const errorFields = Object.keys(errors).join(', ');
         alert("Please check the following fields for errors: " + errorFields);
       })} className="space-y-4">
-        <input type="hidden" {...form.register('isEditing')} />
+        <input type="hidden" value={isEditing ? 'true' : 'false'} {...form.register('isEditing')} />
         <Tabs defaultValue="account">
           <TabsList className="flex flex-wrap h-auto justify-start">
             <TabsTrigger value="account">Account</TabsTrigger>
@@ -516,6 +516,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                               {isEditing ? (
                                 <MediaPicker
                                   multiple={false}
+                                  value={field.value ? [{ id: field.value, url: imagePreview || String(field.value), type: 'image' }] : []}
                                   onChange={(media: any[]) => {
                                     const mediaId = media[0]?.id;
                                     field.onChange(mediaId);
@@ -661,7 +662,11 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                           <FormLabel>ID Proof Document</FormLabel>
                           <FormControl>
                             {isEditing ? (
-                              <MediaPicker multiple={false} onChange={(media: any[]) => onChange(media[0]?.id)} />
+                              <MediaPicker 
+                                multiple={false} 
+                                value={value ? [{ id: value, url: typeof value === 'string' && (value.startsWith('http') || value.startsWith('/')) ? value : '', type: 'document' }] : []}
+                                onChange={(media: any[]) => onChange(media[0]?.id)} 
+                              />
                             ) : (
                               <>
                                 <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} />
@@ -684,7 +689,11 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                           <FormLabel>License Document</FormLabel>
                           <FormControl>
                             {isEditing ? (
-                              <MediaPicker multiple={false} onChange={(media: any[]) => field.onChange(media[0]?.id)} />
+                              <MediaPicker 
+                                multiple={false} 
+                                value={field.value ? [{ id: field.value, url: typeof field.value === 'string' && (field.value.startsWith('http') || field.value.startsWith('/')) ? field.value : '', type: 'document' }] : []}
+                                onChange={(media: any[]) => field.onChange(media[0]?.id)} 
+                              />
                             ) : (
                               <>
                                 <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
@@ -755,7 +764,11 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                         <FormLabel>Bank Proof Document</FormLabel>
                         <FormControl>
                           {isEditing ? (
-                            <MediaPicker multiple={false} onChange={(media: any[]) => field.onChange(media[0]?.id)} />
+                            <MediaPicker 
+                              multiple={false} 
+                              value={field.value ? [{ id: field.value, url: typeof field.value === 'string' && (field.value.startsWith('http') || field.value.startsWith('/')) ? field.value : '', type: 'document' }] : []}
+                              onChange={(media: any[]) => field.onChange(media[0]?.id)} 
+                            />
                           ) : (
                             <>
                               <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
