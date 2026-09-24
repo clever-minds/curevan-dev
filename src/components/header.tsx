@@ -376,6 +376,19 @@ export default function Header() {
             
             {/* SOS button moved to after Book Now */}
             
+            {user && (
+                <Button variant="ghost" size="icon" asChild aria-label="Notifications" className="relative">
+                    <Link href="/dashboard/notifications">
+                        <Bell />
+                        {isClient && unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </Link>
+                </Button>
+            )}
+
             <CartSheet>
                 <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
                     <ShoppingCart />
