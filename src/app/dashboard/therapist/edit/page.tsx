@@ -75,7 +75,7 @@ export default function TherapistEditProfile() {
     setSaving(true);
     try {
       const token = await getToken();
-      await serverApi.put(`/api/therapists/profile/${user?.id}`, {
+      await serverApi.post(`/api/auth/change-profile-request`, {
         email: fullProfile?.email,
         fullName: fullProfile?.name,
         mobile: fullProfile?.phone,
@@ -102,11 +102,15 @@ export default function TherapistEditProfile() {
         bankIfscCode: fullProfile?.bank_ifsc_code,
         serviceRadiusKm: fullProfile?.service_radius_km,
         specialty: fullProfile?.specialty,
-        documents: formData.documents
+        documents: formData.documents,
+        
+        section: "Therapist Profile",
+        role: "therapist",
+        userId: user?.id
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast({ title: "Profile saved", description: "Your details have been updated." });
+      toast({ title: "Profile update requested", description: "Your changes have been submitted for admin approval." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
