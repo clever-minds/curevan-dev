@@ -115,7 +115,7 @@ const ApprovalDialog = ({
                      
                      allKeys.forEach(key => {
                          flattenedChanges.push({
-                             name: fieldName === 'data' ? key : \`\${fieldName} -> \${key}\`,
+                             name: fieldName === 'data' ? key : `${fieldName} -> ${key}`,
                              old: isObj(oldVal) ? oldVal[key] : null,
                              new: isObj(newVal) ? newVal[key] : null
                          });
