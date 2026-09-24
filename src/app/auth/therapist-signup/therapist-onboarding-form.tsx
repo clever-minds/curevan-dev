@@ -63,8 +63,9 @@ export const therapistOnboardingSchema = z.object({
     .regex(/[a-z]/, 'Must contain at least one lowercase letter.')
     .regex(/[0-9]/, 'Must contain at least one number.')
     .regex(/[^A-Za-z0-9]/, 'Must contain at least one special character.')
-    .optional(),
-  confirmPassword: z.string().optional(),
+    .optional()
+    .or(z.literal('')),
+  confirmPassword: z.string().optional().or(z.literal('')),
 
   // Public Profile
   fullName: z.string().min(1, 'Full name is required.'),
@@ -241,7 +242,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
       email: '',
       password: '',
       confirmPassword: '',
-      isEditing: isEditing,
+      isEditing: isEditing ? 'true' : 'false',
       mobile: '',
       fullName: '',
       bio: '',
@@ -306,7 +307,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
         console.log("Checking therapist", therapist?.availability);
         if (therapist) {
           form.reset({
-            isEditing: isEditing,
+            isEditing: isEditing ? 'true' : 'false',
             password: '',
             confirmPassword: '',
             email: user.email || '',
