@@ -83,37 +83,77 @@ const ApprovalDialog = ({
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : (fullRequest || request).changes?.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">No changes found.</div>
-          ) : (fullRequest || request).changes?.map((change, index) => (
-            <div key={index} className="grid grid-cols-3 gap-2 items-start text-sm">
-              <div className="font-semibold col-span-3 pb-1 border-b">{change.name || change.fieldPath}</div>
-              <div className="text-muted-foreground col-span-1">Old:</div>
-              <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through overflow-x-auto text-xs whitespace-pre-wrap break-words">
-                {(() => {
-                  const val = change.old;
-                  if (val == null) return '—';
-                  if (typeof val === 'object') return JSON.stringify(val, null, 2);
-                  if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
-                    try { return JSON.stringify(JSON.parse(val), null, 2); } catch (e) { return val; }
-                  }
-                  return String(val);
-                })()}
-              </div>
-              <div className="text-muted-foreground col-span-1">New:</div>
-              <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900 overflow-x-auto text-xs whitespace-pre-wrap break-words">
-                {(() => {
-                  const val = change.new;
-                  if (val == null) return '—';
-                  if (typeof val === 'object') return JSON.stringify(val, null, 2);
-                  if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
-                    try { return JSON.stringify(JSON.parse(val), null, 2); } catch (e) { return val; }
-                  }
-                  return String(val);
-                })()}
-              </div>
-            </div>
-          ))}
+          ) : (() => {
+             const rawChanges = (fullRequest || request).changes || [];
+             let flattenedChanges: any[] = [];
+             
+             rawChanges.forEach((change: any) => {
+                 const fieldName = change.name || change.fieldPath;
+                 let oldVal = change.old;
+                 let newVal = change.new;
+                 
+                 // Try to parse stringified JSON
+                 if (typeof oldVal === 'string' && (oldVal.startsWith('{') || oldVal.startsWith('['))) {
+                     try { oldVal = JSON.parse(oldVal); } catch(e){}
+                 }
+                 if (typeof newVal === 'string' && (newVal.startsWith('{') || newVal.startsWith('['))) {
+                     try { newVal = JSON.parse(newVal); } catch(e){}
+                 }
+                 
+                 // If it is a plain object, flatten it
+                 if (typeof newVal === 'object' && newVal !== null && !Array.isArray(newVal)) {
+                     Object.keys(newVal).forEach(key => {
+                         flattenedChanges.push({
+                             name: fieldName === 'data' ? key : \`\${fieldName} -> \${key}\`,
+                             old: oldVal && typeof oldVal === 'object' ? oldVal[key] : null,
+                             new: newVal[key]
+                         });
+                     });
+                 } else if (typeof oldVal === 'object' && oldVal !== null && !Array.isArray(oldVal)) {
+                     Object.keys(oldVal).forEach(key => {
+                         flattenedChanges.push({
+                             name: fieldName === 'data' ? key : \`\${fieldName} -> \${key}\`,
+                             old: oldVal[key],
+                             new: newVal && typeof newVal === 'object' ? newVal[key] : null
+                         });
+                     });
+                 } else {
+                     flattenedChanges.push({
+                         name: fieldName,
+                         old: oldVal,
+                         new: newVal
+                     });
+                 }
+             });
+             
+             if (flattenedChanges.length === 0) {
+                 return <div className="text-center py-4 text-muted-foreground">No changes found.</div>;
+             }
+             
+             return flattenedChanges.map((change, index) => (
+                 <div key={index} className="grid grid-cols-3 gap-2 items-start text-sm">
+                   <div className="font-semibold col-span-3 pb-1 border-b">{change.name}</div>
+                   <div className="text-muted-foreground col-span-1">Old:</div>
+                   <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through overflow-x-auto text-xs whitespace-pre-wrap break-words">
+                     {(() => {
+                       const val = change.old;
+                       if (val == null) return '—';
+                       if (typeof val === 'object') return JSON.stringify(val, null, 2);
+                       return String(val);
+                     })()}
+                   </div>
+                   <div className="text-muted-foreground col-span-1">New:</div>
+                   <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900 overflow-x-auto text-xs whitespace-pre-wrap break-words">
+                     {(() => {
+                       const val = change.new;
+                       if (val == null) return '—';
+                       if (typeof val === 'object') return JSON.stringify(val, null, 2);
+                       return String(val);
+                     })()}
+                   </div>
+                 </div>
+             ));
+          })()}
           <div className="pt-4">
             <label htmlFor="rejectionReason" className="text-sm font-medium">Reason for Rejection (Optional)</label>
             <Textarea
