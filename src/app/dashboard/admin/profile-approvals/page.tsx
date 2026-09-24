@@ -92,29 +92,32 @@ const ApprovalDialog = ({
                  let oldVal = change.old;
                  let newVal = change.new;
                  
-                 // Try to parse stringified JSON
-                 if (typeof oldVal === 'string' && (oldVal.startsWith('{') || oldVal.startsWith('['))) {
-                     try { oldVal = JSON.parse(oldVal); } catch(e){}
-                 }
-                 if (typeof newVal === 'string' && (newVal.startsWith('{') || newVal.startsWith('['))) {
-                     try { newVal = JSON.parse(newVal); } catch(e){}
-                 }
+                 const parseIfNeeded = (val: any) => {
+                     if (typeof val === 'string') {
+                         const trimmed = val.trim();
+                         if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                             try { return JSON.parse(trimmed); } catch(e) {}
+                         }
+                     }
+                     return val;
+                 };
                  
-                 // If it is a plain object, flatten it
-                 if (typeof newVal === 'object' && newVal !== null && !Array.isArray(newVal)) {
-                     Object.keys(newVal).forEach(key => {
+                 oldVal = parseIfNeeded(oldVal);
+                 newVal = parseIfNeeded(newVal);
+                 
+                 const isObj = (v: any) => typeof v === 'object' && v !== null && !Array.isArray(v);
+                 
+                 if (isObj(oldVal) || isObj(newVal)) {
+                     const allKeys = new Set([
+                         ...(isObj(oldVal) ? Object.keys(oldVal) : []),
+                         ...(isObj(newVal) ? Object.keys(newVal) : [])
+                     ]);
+                     
+                     allKeys.forEach(key => {
                          flattenedChanges.push({
                              name: fieldName === 'data' ? key : \`\${fieldName} -> \${key}\`,
-                             old: oldVal && typeof oldVal === 'object' ? oldVal[key] : null,
-                             new: newVal[key]
-                         });
-                     });
-                 } else if (typeof oldVal === 'object' && oldVal !== null && !Array.isArray(oldVal)) {
-                     Object.keys(oldVal).forEach(key => {
-                         flattenedChanges.push({
-                             name: fieldName === 'data' ? key : \`\${fieldName} -> \${key}\`,
-                             old: oldVal[key],
-                             new: newVal && typeof newVal === 'object' ? newVal[key] : null
+                             old: isObj(oldVal) ? oldVal[key] : null,
+                             new: isObj(newVal) ? newVal[key] : null
                          });
                      });
                  } else {
@@ -126,6 +129,9 @@ const ApprovalDialog = ({
                  }
              });
              
+             // Optional: recursively flatten if there are STILL nested objects inside flattenedChanges
+             // But usually 1 level is enough for the `data` field.
+
              if (flattenedChanges.length === 0) {
                  return <div className="text-center py-4 text-muted-foreground">No changes found.</div>;
              }
@@ -137,7 +143,7 @@ const ApprovalDialog = ({
                    <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through overflow-x-auto text-xs whitespace-pre-wrap break-words">
                      {(() => {
                        const val = change.old;
-                       if (val == null) return '—';
+                       if (val == null || val === '') return '—';
                        if (typeof val === 'object') return JSON.stringify(val, null, 2);
                        return String(val);
                      })()}
@@ -146,7 +152,7 @@ const ApprovalDialog = ({
                    <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900 overflow-x-auto text-xs whitespace-pre-wrap break-words">
                      {(() => {
                        const val = change.new;
-                       if (val == null) return '—';
+                       if (val == null || val === '') return '—';
                        if (typeof val === 'object') return JSON.stringify(val, null, 2);
                        return String(val);
                      })()}
