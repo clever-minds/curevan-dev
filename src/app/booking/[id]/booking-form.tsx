@@ -656,7 +656,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     console.log("booking new data", data);
     startTransition(async () => {
         const selectedCategory = therapyCategories.find(c => c.name === data.serviceType);
-        const serviceTypeId = selectedCategory ? selectedCategory.id : null;
+        const serviceTypeId = selectedCategory ? String(selectedCategory.id) : "";
 
         const result = await createBookingAndInvoice({
         patientId: user!.id,

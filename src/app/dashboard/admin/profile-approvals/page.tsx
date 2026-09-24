@@ -89,13 +89,28 @@ const ApprovalDialog = ({
             <div key={index} className="grid grid-cols-3 gap-2 items-start text-sm">
               <div className="font-semibold col-span-3 pb-1 border-b">{change.name || change.fieldPath}</div>
               <div className="text-muted-foreground col-span-1">Old:</div>
-              <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through">
-                {typeof change.old === 'object' ? JSON.stringify(change.old) : String(change.old ?? '—')}
-
+              <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through overflow-x-auto text-xs whitespace-pre-wrap break-words">
+                {(() => {
+                  const val = change.old;
+                  if (val == null) return '—';
+                  if (typeof val === 'object') return JSON.stringify(val, null, 2);
+                  if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { return JSON.stringify(JSON.parse(val), null, 2); } catch (e) { return val; }
+                  }
+                  return String(val);
+                })()}
               </div>
               <div className="text-muted-foreground col-span-1">New:</div>
-              <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900">
-                {typeof change.new === 'object' ? JSON.stringify(change.new) : String(change.new ?? '—')}
+              <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900 overflow-x-auto text-xs whitespace-pre-wrap break-words">
+                {(() => {
+                  const val = change.new;
+                  if (val == null) return '—';
+                  if (typeof val === 'object') return JSON.stringify(val, null, 2);
+                  if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { return JSON.stringify(JSON.parse(val), null, 2); } catch (e) { return val; }
+                  }
+                  return String(val);
+                })()}
               </div>
             </div>
           ))}
