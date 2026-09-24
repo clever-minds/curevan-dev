@@ -5,12 +5,13 @@ import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert, PhoneOutgoing } from 'lucide-react';
+import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert, PhoneOutgoing, Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn, getMediaUrl } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useCart } from '@/context/cart-context';
+import { listNotifications } from '@/lib/repos/notifications';
 import { CartSheet } from './ecommerce/cart-sheet';
 import Logo from './logo';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
@@ -56,9 +57,18 @@ export default function Header() {
   const [activeAlertCount, setActiveAlertCount] = useState(0);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const { toast } = useToast();
   const [isSosSending, setIsSosSending] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      listNotifications().then(notifications => {
+        setUnreadCount(notifications.filter(n => !(n as any).is_read && !(n as any).isRead).length);
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const handleSosTrigger = async () => {
     if (!user) return;
@@ -275,6 +285,19 @@ export default function Header() {
                         <PhoneOutgoing className="w-4 h-4 sm:mr-1.5" />
                         <span className="hidden sm:inline">{isSosSending ? '...' : 'SOS'}</span>
                     </Button>
+                  )}
+                  
+                  {user && (
+                      <Button variant="ghost" size="icon" asChild aria-label="Notifications" className="relative p-0 h-8 w-8 sm:h-10 sm:w-10">
+                          <Link href="/dashboard/notifications">
+                             <Bell className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                             {isClient && unreadCount > 0 && (
+                                 <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                                     {unreadCount}
+                                 </span>
+                             )}
+                          </Link>
+                      </Button>
                   )}
                   
                   <CartSheet>
