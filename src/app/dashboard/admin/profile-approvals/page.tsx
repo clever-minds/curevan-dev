@@ -29,6 +29,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { ProfileChangeRequest } from "@/lib/types";
 import { listProfileChangeRequests, approveProfileChangeRequest, rejectProfileChangeRequest, getProfileChangeRequest } from "@/lib/repos/content";
+import { getMediaUrl } from "@/lib/utils";
+import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +46,7 @@ const ApprovalDialog = ({
   const [fullRequest, setFullRequest] = useState<ProfileChangeRequest | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [categoryMap, setCategoryMap] = useState<Map<number, string>>(new Map());
 
   const handleReview = (action: 'approve' | 'reject') => {
     startTransition(async () => {
@@ -54,10 +57,24 @@ const ApprovalDialog = ({
   const fetchDetails = async () => {
     if (fullRequest) return;
     setIsLoadingDetails(true);
-    const data = await getProfileChangeRequest(String(request.id));
-    console.log("changes data", data);
-    if (data) setFullRequest(data);
-    setIsLoadingDetails(false);
+    try {
+        const [data, categories] = await Promise.all([
+            getProfileChangeRequest(String(request.id)),
+            getTherapyCategoriesWithIds()
+        ]);
+        console.log("changes data", data);
+        if (data) setFullRequest(data);
+        
+        const map = new Map<number, string>();
+        if (categories && Array.isArray(categories)) {
+            categories.forEach(cat => map.set(cat.id, cat.name));
+        }
+        setCategoryMap(map);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsLoadingDetails(false);
+    }
   }
 
   return (
@@ -136,26 +153,42 @@ const ApprovalDialog = ({
                  return <div className="text-center py-4 text-muted-foreground">No changes found.</div>;
              }
              
+             const formatValue = (val: any, changeName: string) => {
+               if (val == null || val === '') return '—';
+               
+               const lowerName = changeName.toLowerCase();
+               if (lowerName.includes('specialty')) {
+                   if (Array.isArray(val)) {
+                       return val.map((id: any) => categoryMap.get(Number(id)) || id).join(', ');
+                   }
+                   return categoryMap.get(Number(val)) || String(val);
+               }
+               
+               if (lowerName.includes('document') || lowerName.includes('image') || lowerName.includes('proof') || lowerName.includes('license')) {
+                   const renderMedia = (v: any) => {
+                       const url = getMediaUrl(v);
+                       return <a href={url} target="_blank" className="text-blue-600 underline" onClick={e => e.stopPropagation()}>{v}</a>;
+                   };
+                   if (Array.isArray(val)) {
+                       return <div className="flex flex-col gap-1">{val.map((v, i) => <div key={i}>{renderMedia(v)}</div>)}</div>;
+                   }
+                   return renderMedia(val);
+               }
+               
+               if (typeof val === 'object') return JSON.stringify(val, null, 2);
+               return String(val);
+             };
+
              return flattenedChanges.map((change, index) => (
                  <div key={index} className="grid grid-cols-3 gap-2 items-start text-sm">
                    <div className="font-semibold col-span-3 pb-1 border-b">{change.name}</div>
                    <div className="text-muted-foreground col-span-1">Old:</div>
                    <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through overflow-x-auto text-xs whitespace-pre-wrap break-words">
-                     {(() => {
-                       const val = change.old;
-                       if (val == null || val === '') return '—';
-                       if (typeof val === 'object') return JSON.stringify(val, null, 2);
-                       return String(val);
-                     })()}
+                     {formatValue(change.old, change.name)}
                    </div>
                    <div className="text-muted-foreground col-span-1">New:</div>
                    <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900 overflow-x-auto text-xs whitespace-pre-wrap break-words">
-                     {(() => {
-                       const val = change.new;
-                       if (val == null || val === '') return '—';
-                       if (typeof val === 'object') return JSON.stringify(val, null, 2);
-                       return String(val);
-                     })()}
+                     {formatValue(change.new, change.name)}
                    </div>
                  </div>
              ));
