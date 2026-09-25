@@ -172,7 +172,7 @@ const ApprovalDialog = ({
                    return categoryMap.get(Number(val)) || String(val);
                }
                
-               if (lowerName.includes('document') || lowerName.includes('image') || lowerName.includes('proof') || lowerName.includes('license')) {
+               if (lowerName.includes('document') || lowerName.includes('image') || lowerName.includes('proof') || lowerName.includes('license') || lowerName.includes('file') || lowerName.includes('media') || lowerName.includes('kyc') || lowerName.includes('doc')) {
                    const renderMedia = (v: any) => {
                        const url = getMediaUrl(v);
                        return <a href={url} target="_blank" className="text-blue-600 underline break-all" onClick={e => e.stopPropagation()}>{url}</a>;
