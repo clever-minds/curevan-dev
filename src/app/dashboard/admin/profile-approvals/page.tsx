@@ -157,9 +157,17 @@ const ApprovalDialog = ({
                if (val == null || val === '') return '—';
                
                const lowerName = changeName.toLowerCase();
-               if (lowerName.includes('specialty')) {
-                   if (Array.isArray(val)) {
-                       return val.map((id: any) => categoryMap.get(Number(id)) || id).join(', ');
+               if (lowerName.includes('specialty') || lowerName.includes('service') || lowerName.includes('categor')) {
+                   let arr = val;
+                   if (typeof val === 'string') {
+                       if (val.startsWith('[')) {
+                           try { arr = JSON.parse(val); } catch(e) {}
+                       } else if (val.includes(',')) {
+                           arr = val.split(',').map(s => s.trim());
+                       }
+                   }
+                   if (Array.isArray(arr)) {
+                       return arr.map((id: any) => categoryMap.get(Number(id)) || id).join(', ');
                    }
                    return categoryMap.get(Number(val)) || String(val);
                }
