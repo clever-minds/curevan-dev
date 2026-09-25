@@ -175,7 +175,7 @@ const ApprovalDialog = ({
                if (lowerName.includes('document') || lowerName.includes('image') || lowerName.includes('proof') || lowerName.includes('license')) {
                    const renderMedia = (v: any) => {
                        const url = getMediaUrl(v);
-                       return <a href={url} target="_blank" className="text-blue-600 underline" onClick={e => e.stopPropagation()}>{v}</a>;
+                       return <a href={url} target="_blank" className="text-blue-600 underline break-all" onClick={e => e.stopPropagation()}>{url}</a>;
                    };
                    if (Array.isArray(val)) {
                        return <div className="flex flex-col gap-1">{val.map((v, i) => <div key={i}>{renderMedia(v)}</div>)}</div>;
