@@ -13,7 +13,11 @@ const FALLBACK_IMAGE = "https://placehold.co/600x400?text=Curevan+Journal";
  * Robustly formats a media URL, prepending the base URL if necessary and providing a fallback.
  */
 export function getMediaUrl(url?: any, fallback = FALLBACK_IMAGE): string {
-    if (!url || typeof url !== 'string') return fallback;
+    if (!url) return fallback;
+    if (typeof url === 'number' || (typeof url === 'string' && /^\d+$/.test(url))) {
+        return `${MEDIA_BASE_URL}/api/media/url/${url}`;
+    }
+    if (typeof url !== 'string') return fallback;
     if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) {
         return url;
     }
@@ -118,3 +122,4 @@ export function embedFaqsInContent(content: string, faqs: { question: string; an
   const faqScript = `<script type="application/json" id="journal-faqs">${JSON.stringify(faqs)}</script>`;
   return `${cleanContent}\n${faqScript}`;
 }
+
