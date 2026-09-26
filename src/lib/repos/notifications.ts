@@ -38,3 +38,22 @@ export async function listNotifications(userId?: number): Promise<Notification[]
     return [];
   }
 }
+export async function getUnreadCount(userId?: number): Promise<number> {
+  if (!userId) return 0;
+  try {
+    const token = await getToken();
+    if (!token) return 0;
+
+    const { data: response } = await serverApi.get(\/api/notifications/unread-count/\\, {
+      headers: { Authorization: \Bearer \\ },
+    });
+
+    if (response?.status && response?.data) {
+      return response.data.count || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Failed to get unread count:', error);
+    return 0;
+  }
+}
