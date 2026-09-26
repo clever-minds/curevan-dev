@@ -153,7 +153,7 @@ export async function createPayoutItemForBooking(bookingId: number): Promise<{ s
 export async function generateMissingTherapistCodes(): Promise<Coupon[]> {
   const token = await getToken();
   try {
-    const { data } = await serverApi.post('/api/coupons/generate-missing', null, {
+    const { data } = await serverApi.post('/api/coupons/generate-missing', {}, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -294,7 +294,7 @@ export async function logAIFeedbackAction(feedbackData: Omit<AIFeedback, 'id' | 
 export async function markNotificationAsRead(notificationId: string) {
   const token = await getToken();
   try {
-    const { data } = await serverApi.post(`/api/notifications/read/${notificationId}`, null, {
+    const { data } = await serverApi.post(`/api/notifications/read/${notificationId}`, {}, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
