@@ -6,10 +6,9 @@ import { getCurrentUser, getToken } from "../auth";
  * Fetches notifications for the current user via backend API
  * Function name unchanged: listNotifications
  */
-export async function listNotifications(): Promise<Notification[]> {
-  const user = await getCurrentUser();
-  if (!user) {
-    console.warn("Attempted to list notifications without a logged-in user.");
+export async function listNotifications(userId?: number): Promise<Notification[]> {
+  if (!userId) {
+    console.warn("Attempted to list notifications without a user ID.");
     return [];
   }
 
@@ -19,9 +18,9 @@ export async function listNotifications(): Promise<Notification[]> {
       throw new Error('Token missing, please login again');
     }
 
-    console.log(`[FRONTEND_API_CALL] Requesting notifications for user.id: ${user.id}`);
+    console.log(`[FRONTEND_API_CALL] Requesting notifications for user.id: ${userId}`);
 
-    const { data: response } = await serverApi.get(`/api/notifications/list/${user.id}`, {
+    const { data: response } = await serverApi.get(`/api/notifications/list/${userId}`, {
       headers: { 
         Authorization: `Bearer ${token}`,
        },
