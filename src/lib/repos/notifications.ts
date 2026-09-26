@@ -18,7 +18,7 @@ export async function listNotifications(): Promise<Notification[]> {
      if (!token) {
         throw new Error('Token missing, please login again');
       }
-    const { data: response } = await serverApi.get(`/api/notifications/list/${user.uid}`, {
+    const { data: response } = await serverApi.get(`/api/notifications/list/${user.id}`, {
       headers: { 
         Authorization: `Bearer ${token}`,
        },
