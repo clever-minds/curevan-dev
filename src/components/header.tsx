@@ -11,7 +11,7 @@ import { cn, getMediaUrl } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useCart } from '@/context/cart-context';
-import { listNotifications } from '@/lib/repos/notifications';
+import { listNotifications, getUnreadCount } from '@/lib/repos/notifications';
 import { CartSheet } from './ecommerce/cart-sheet';
 import Logo from './logo';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
@@ -63,9 +63,9 @@ export default function Header() {
   const [isSosSending, setIsSosSending] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      listNotifications().then(notifications => {
-        setUnreadCount(notifications.filter(n => !(n as any).is_read && !(n as any).isRead).length);
+    if (user && user.id) {
+      getUnreadCount(user.id).then(count => {
+        setUnreadCount(count);
       }).catch(() => {});
     }
   }, [user]);
