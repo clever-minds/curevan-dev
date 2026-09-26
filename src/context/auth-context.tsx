@@ -100,6 +100,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const title = payload.notification?.title || "New Notification";
               const body = payload.notification?.body || "You have a new message.";
               
+              console.log("[FRONTEND_FCM_RECEIVED] Received foreground FCM notification payload:", payload);
+
               // Show Shadcn UI Toast
               toast({
                 title,

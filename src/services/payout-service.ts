@@ -220,5 +220,5 @@ async function sendPayoutNotification(therapistId: string, netAmount: number) {
         createdAt: new Date(),
         link: '/dashboard/earnings'
     };
-    console.log(`Sent notification to therapist ${therapistId}`);
+    console.log(`[FRONTEND_NOTIFICATION_MOCK] Sent notification to therapist ${therapistId}`, notification);
 }
