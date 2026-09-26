@@ -29,7 +29,7 @@ export async function uploadFile(formData: FormData): Promise<{ fileUrl?: string
     });
     return data;
   } catch (error: any) {
-    console.error('File upload failed via API:', error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return { error: 'Failed to upload file.' };
   }
 }
@@ -45,7 +45,7 @@ export async function handleGenerateNotes(formData: FormData): Promise<{ objecti
     });
     return data;
   } catch (error: any) {
-    console.error('Failed to generate notes via API:', error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return { error: 'Failed to generate notes.' };
   }
 }
@@ -160,7 +160,7 @@ export async function generateMissingTherapistCodes(): Promise<Coupon[]> {
     });
     return data ?? [];
   } catch (error: any) {
-    console.error('Error generating therapist codes via API:', error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return [];
   }
 }
@@ -283,7 +283,7 @@ export async function logAIFeedbackAction(feedbackData: Omit<AIFeedback, 'id' | 
     });
     return data;
   } catch (error: any) {
-    console.error('Error logging AI feedback via API:', error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return { success: false, error: 'Failed to log AI feedback.' };
   }
 }
@@ -301,7 +301,7 @@ export async function markNotificationAsRead(notificationId: string) {
     });
     return data;
   } catch (error: any) {
-    console.error(`Error marking notification ${notificationId} as read via API:`, error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return { success: false, error: 'Failed to mark notification as read.' };
   }
 }
@@ -329,7 +329,7 @@ export async function updateJournalStatus(
       message: data.message || `Journal entry updated to ${status}.`
     };
   } catch (error: any) {
-    console.error('Failed to update journal status:', error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return {
       success: false,
       message: (error.response?.data?.error || error.response?.data?.message) || 'Failed to update journal status.'
@@ -358,7 +358,7 @@ export async function deleteJournal(
       message: data.message || `Journal entry deleted successfully.`
     };
   } catch (error: any) {
-    console.error('Failed to delete journal:', error?.response || error?.message);
+    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return {
       success: false,
       message: (error.response?.data?.error || error.response?.data?.message) || 'Failed to delete journal.'
