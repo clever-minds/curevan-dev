@@ -14,10 +14,13 @@ export async function listNotifications(): Promise<Notification[]> {
   }
 
   try {
-    const token =await getToken();
-     if (!token) {
-        throw new Error('Token missing, please login again');
-      }
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Token missing, please login again');
+    }
+
+    console.log(`[FRONTEND_API_CALL] Requesting notifications for user.id: ${user.id}`);
+
     const { data: response } = await serverApi.get(`/api/notifications/list/${user.id}`, {
       headers: { 
         Authorization: `Bearer ${token}`,
