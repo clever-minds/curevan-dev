@@ -44,8 +44,8 @@ export async function getUnreadCount(userId?: number): Promise<number> {
     const token = await getToken();
     if (!token) return 0;
 
-    const { data: response } = await serverApi.get(\/api/notifications/unread-count/\\, {
-      headers: { Authorization: \Bearer \\ },
+    const { data: response } = await serverApi.get(`/api/notifications/unread-count/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (response?.status && response?.data) {
