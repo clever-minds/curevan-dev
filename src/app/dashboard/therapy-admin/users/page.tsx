@@ -191,10 +191,7 @@ const ApprovalsTab = () => {
 
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(() => {
-      fetchRequests();
-    }, 5000);
-    return () => clearInterval(interval);
+    
   }, []);
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
@@ -257,10 +254,7 @@ export default function TherapyAdminUsersPage() {
       setPendingRequestCount(data.filter(r => r.status === 'pending' && r.role === 'therapist').length);
     };
     fetchRequests();
-    const interval = setInterval(() => {
-      fetchRequests();
-    }, 5000);
-    return () => clearInterval(interval);
+    
   }, []);
 
   return (

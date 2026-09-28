@@ -251,11 +251,7 @@ export default function AdminProfileApprovalsPage({ roleFilter }: { roleFilter?:
     fetchRequests();
     
     // Auto-refresh every 15 seconds
-    const interval = setInterval(() => {
-      fetchRequests();
-    }, 5000);
     
-    return () => clearInterval(interval);
   }, []);
 
   const handleAction = async (requestId: string, action: 'approve' | 'reject', reason?: string) => {
