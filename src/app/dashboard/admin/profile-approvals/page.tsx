@@ -249,6 +249,13 @@ export default function AdminProfileApprovalsPage({ roleFilter }: { roleFilter?:
 
   useEffect(() => {
     fetchRequests();
+    
+    // Auto-refresh every 15 seconds
+    const interval = setInterval(() => {
+      fetchRequests();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleAction = async (requestId: string, action: 'approve' | 'reject', reason?: string) => {
@@ -303,7 +310,7 @@ export default function AdminProfileApprovalsPage({ roleFilter }: { roleFilter?:
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Id</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Section Changed</TableHead>
                 <TableHead>Date Submitted</TableHead>
@@ -315,7 +322,7 @@ export default function AdminProfileApprovalsPage({ roleFilter }: { roleFilter?:
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      {/* <span>{request.userId}</span> */}
+                      <span className="font-semibold">{request.userName || 'Unknown'}</span>
                       <span className="text-xs text-muted-foreground font-mono">ID: {request.id}</span>
                     </div>
                   </TableCell>

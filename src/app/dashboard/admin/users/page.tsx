@@ -196,6 +196,10 @@ const ApprovalsTab = () => {
 
   useEffect(() => {
     fetchRequests();
+    const interval = setInterval(() => {
+      fetchRequests();
+    }, 5000); // Poll every 5 seconds for fast push notification reflection
+    return () => clearInterval(interval);
   }, []);
 
   const handleExport = () => {
