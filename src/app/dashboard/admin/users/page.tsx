@@ -76,8 +76,29 @@ const ApprovalDialog = ({ request, onAction }: { request: ProfileChangeRequest, 
     }
   }
 
-  const formatValue = (val: any) => {
-    if (val === null || val === undefined) return '—';
+  const formatValue = (val: any): React.ReactNode => {
+    if (val === null || val === undefined || val === '') return '—';
+    
+    if (Array.isArray(val)) {
+      return (
+        <div className="flex flex-col gap-2">
+          {val.map((v, i) => (
+            <div key={i}>{formatValue(v)}</div>
+          ))}
+        </div>
+      );
+    }
+
+    if (typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'))) {
+      if (val.match(/\.(jpeg|jpg|gif|png|webp)$/i) || val.includes('alt=media')) {
+        return <img src={val} alt="Preview" className="max-w-full max-h-48 object-contain rounded border" />;
+      }
+      if (val.match(/\.(mp4|webm|ogg)$/i)) {
+        return <video src={val} controls className="max-w-full max-h-48 rounded border" />;
+      }
+      return <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">View File</a>;
+    }
+
     if (typeof val === 'object') {
       // Check if it's the availability object (with windows or flat days)
       const days = val.windows || val;
@@ -225,7 +246,7 @@ const ApprovalsTab = () => {
               {pendingRequests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium px-2 sm:px-4 first:pl-4">
-                    <Link href={`/dashboard/admin/users?search=${request.userId}`} className="hover:underline text-xs">{request.userId}</Link>
+                    <Link href={`/dashboard/admin/users?search=${request.userId}`} className="hover:underline text-xs">{request.userName || request.userId}</Link>
                   </TableCell>
                   <TableCell className="text-xs px-2 sm:px-4">{request.section}</TableCell>
                   <TableCell className="text-xs px-2 sm:px-4">{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '—'}</TableCell>

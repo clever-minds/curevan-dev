@@ -72,6 +72,46 @@ const ApprovalDialog = ({ request, onAction }: { request: ProfileChangeRequest, 
     }
   }
 
+  const formatValue = (val: any): React.ReactNode => {
+    if (val === null || val === undefined || val === '') return '—';
+    
+    if (Array.isArray(val)) {
+      return (
+        <div className="flex flex-col gap-2">
+          {val.map((v, i) => (
+            <div key={i}>{formatValue(v)}</div>
+          ))}
+        </div>
+      );
+    }
+
+    if (typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'))) {
+      if (val.match(/\.(jpeg|jpg|gif|png|webp)$/i) || val.includes('alt=media')) {
+        return <img src={val} alt="Preview" className="max-w-full max-h-48 object-contain rounded border" />;
+      }
+      if (val.match(/\.(mp4|webm|ogg)$/i)) {
+        return <video src={val} controls className="max-w-full max-h-48 rounded border" />;
+      }
+      return <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">View File</a>;
+    }
+
+    if (typeof val === 'object') {
+      // Check if it's the availability object (with windows or flat days)
+      const days = val.windows || val;
+      if (days.mon && typeof days.mon === 'object') {
+        return Object.entries(days)
+          .filter(([_, day]: [string, any]) => day.enabled)
+          .map(([name, day]: [string, any]) => {
+            const morning = day.morning ? `${day.morning.start}-${day.morning.end}` : '';
+            const evening = day.evening ? `${day.evening.start}-${day.evening.end}` : '';
+            return `${name.toUpperCase()}: ${morning}${morning && evening ? ', ' : ''}${evening}`;
+          }).join(' | ');
+      }
+      return JSON.stringify(val);
+    }
+    return String(val);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       setIsOpen(open);
@@ -102,11 +142,11 @@ const ApprovalDialog = ({ request, onAction }: { request: ProfileChangeRequest, 
               <div className="font-semibold col-span-3 pb-1 border-b">{change.name || change.fieldPath}</div>
               <div className="text-muted-foreground col-span-1">Old:</div>
               <div className="col-span-2 bg-red-50 p-2 rounded-md text-red-900 line-through">
-                {typeof change.old === 'object' ? JSON.stringify(change.old) : String(change.old ?? '—')}
+                {formatValue(change.old)}
               </div>
               <div className="text-muted-foreground col-span-1">New:</div>
               <div className="col-span-2 bg-green-50 p-2 rounded-md text-green-900">
-                {typeof change.new === 'object' ? JSON.stringify(change.new) : String(change.new ?? '—')}
+                {formatValue(change.new)}
               </div>
             </div>
           ))}
@@ -175,7 +215,7 @@ const ApprovalsTab = () => {
             {pendingRequests.map((request) => (
               <TableRow key={request.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/dashboard/therapy-admin/users?search=${request.userId}`} className="hover:underline">{request.userId}</Link>
+                  <Link href={`/dashboard/therapy-admin/users?search=${request.userId}`} className="hover:underline">{request.userName || request.userId}</Link>
                 </TableCell>
                 <TableCell>{request.section}</TableCell>
                 <TableCell>{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '—'}</TableCell>

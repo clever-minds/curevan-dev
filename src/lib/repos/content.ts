@@ -313,6 +313,10 @@ export async function getProfileChangeRequest(requestId: string): Promise<Profil
 
     return {
       ...item,
+      userId: item.userId || (item as any).user_id,
+      userName: (item as any).name || item.userName || "Unknown",
+      entityId: item.entityId || (item as any).entity_id,
+      reviewerId: item.reviewerId || (item as any).reviewer_id,
       changes: Array.isArray(changes) ? changes : [],
       createdAt: item.createdAt || (item as any).created_at,
       reviewedAt: item.reviewedAt || (item as any).reviewed_at,
@@ -359,6 +363,7 @@ export async function listProfileChangeRequests(): Promise<ProfileChangeRequest[
       return {
         ...item,
         userId: item.userId || (item as any).user_id,
+        userName: (item as any).name || item.userName || "Unknown",
         entityId: item.entityId || (item as any).entity_id,
         reviewerId: item.reviewerId || (item as any).reviewer_id,
         changes: Array.isArray(changes) ? changes : [],
