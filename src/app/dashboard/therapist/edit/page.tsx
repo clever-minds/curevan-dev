@@ -101,7 +101,7 @@ export default function TherapistEditProfile() {
         bankAccountNumber: fullProfile?.bank_account_number,
         bankIfscCode: fullProfile?.bank_ifsc_code,
         serviceRadiusKm: fullProfile?.service_radius_km,
-        specialty: fullProfile?.specialty,
+        specialty: fullProfile?.specialtyIds || fullProfile?.specialty,
         documents: formData.documents,
         
         section: "Therapist Profile",

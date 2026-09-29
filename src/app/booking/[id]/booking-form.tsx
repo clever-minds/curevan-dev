@@ -525,20 +525,34 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     [addresses, selectedAddressId]
   );
 
-  const timeSlots = useMemo(() => {
-    if (!selectedDate || !therapist.availability) return [];
-    const day = selectedDate.toLocaleString('en-US', { weekday: 'short' }).toLowerCase() as keyof Therapist['availability']['windows'];
-    const avail = therapist.availability.windows[day];
-    if (!avail) return [];
+  const getSlotsForDate = (date: Date) => {
+    if (!therapist.availability) return [];
+    const availabilityData = therapist.availability.windows || therapist.availability;
+    if (!availabilityData) return [];
+    
+    const day = date.toLocaleString('en-US', { weekday: 'short' }).toLowerCase() as keyof typeof availabilityData;
+    const avail = availabilityData[day];
+    
+    // If day is missing or explicitly disabled, return no slots
+    if (!avail || avail.enabled === false) return [];
+
     const slots: string[] = [];
-    const addSlots = (period: { start: string | null; end: string | null; enabled: boolean }) => {
-      if (!period.enabled || !period.start || !period.end) return;
-      for (let i = parseInt(period.start); i < parseInt(period.end); i++)
+    const addSlots = (period: any) => {
+      // Assume enabled if not explicitly false
+      if (!period || period.enabled === false || !period.start || !period.end) return;
+      for (let i = parseInt(period.start); i < parseInt(period.end); i++) {
         slots.push(`${i.toString().padStart(2, '0')}:00`);
+      }
     };
+
     addSlots(avail.morning);
     addSlots(avail.evening);
     return slots;
+  };
+
+  const timeSlots = useMemo(() => {
+    if (!selectedDate) return [];
+    return getSlotsForDate(selectedDate);
   }, [selectedDate, therapist.availability]);
 
   const isTimeSlotAvailable = (time: string): boolean => {
@@ -552,9 +566,12 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   };
 
   const isDateFullyBooked = (date: Date) => {
+    const slots = getSlotsForDate(date);
+    if (slots.length === 0) return true; // Disabled if no slots available
+    
     const dateStr = format(date, 'yyyy-MM-dd');
-    return timeSlots.length > 0 &&
-      therapistAppointments.filter(a => String(a.date).startsWith(dateStr) && a.status !== 'Cancelled').length >= timeSlots.length;
+    const bookedCount = therapistAppointments.filter(a => String(a.date).startsWith(dateStr) && a.status !== 'Cancelled').length;
+    return bookedCount >= slots.length;
   };
 
   // ── Address handlers ──────────────────────────────────────────────────────

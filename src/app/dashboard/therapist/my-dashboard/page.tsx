@@ -184,9 +184,6 @@ export default function TherapistDashboard() {
 
             <div className="flex flex-wrap gap-4">
                <Button asChild variant="outline" className="w-full sm:w-auto">
-                 <Link href="/dashboard/therapist/availability">Manage Availability</Link>
-               </Button>
-               <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/leaves">Manage Leaves</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
