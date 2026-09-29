@@ -58,7 +58,11 @@ export function TherapistProfileClient({ therapist, authoredPosts }: { therapist
                             </div>
                             <div className="flex-1">
                                 <h1 className="text-3xl font-bold font-headline">{therapist.name}</h1>
-                                <p className="text-lg text-primary font-semibold">{therapist.specialty}</p>
+                                <p className="text-lg text-primary font-semibold">
+                                    {Array.isArray(therapist.serviceTypes) && therapist.serviceTypes.length > 0
+                                        ? therapist.serviceTypes.join(', ')
+                                        : (Array.isArray(therapist.specialty) ? therapist.specialty.join(', ') : therapist.specialty)}
+                                </p>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-1">
                                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
