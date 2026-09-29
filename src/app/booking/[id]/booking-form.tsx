@@ -1055,6 +1055,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
