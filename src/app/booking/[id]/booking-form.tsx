@@ -653,26 +653,18 @@ const bookingFormSchema = z
     prescription: z.any().optional(),
     reports: z.any().optional(),
     notes: z.string().optional(),
-    consent_terms: z
-      .boolean()
-      .refine((val) => val === true, {
-        message: "You must agree to the Terms of Use.",
-      }),
-    consent_medical: z
-      .boolean()
-      .refine((val) => val === true, {
-        message: "You must agree to the Medical Consent Terms.",
-      }),
-    consent_privacy: z
-      .boolean()
-      .refine((val) => val === true, {
-        message: "You must agree to the Privacy Policy.",
-      }),
-    consent_refund: z
-      .boolean()
-      .refine((val) => val === true, {
-        message: "You must agree to the Refund, Cancellation & Return Policy.",
-      }),
+    consent_terms: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Terms of Use.",
+    }),
+    consent_medical: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Medical Consent Terms.",
+    }),
+    consent_privacy: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Privacy Policy.",
+    }),
+    consent_refund: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Refund, Cancellation & Return Policy.",
+    }),
   })
   .refine(
     (data) => {
@@ -780,26 +772,20 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       .toLowerCase() as keyof typeof availabilityData;
     const avail = availabilityData[day];
 
+    const isFalsy = (val: any) =>
+      val === false ||
+      val === "false" ||
+      val === 0 ||
+      val === "0" ||
+      val === null;
+
     // If day is missing or explicitly disabled, return no slots
-    if (
-      !avail ||
-      avail.enabled === false ||
-      avail.enabled === "false" ||
-      avail.enabled === 0
-    )
-      return [];
+    if (!avail || isFalsy(avail.enabled)) return [];
 
     const slots: string[] = [];
     const addSlots = (period: any) => {
       // Assume enabled if not explicitly false
-      if (
-        !period ||
-        period.enabled === false ||
-        period.enabled === "false" ||
-        period.enabled === 0 ||
-        !period.start ||
-        !period.end
-      )
+      if (!period || isFalsy(period.enabled) || !period.start || !period.end)
         return;
       for (let i = parseInt(period.start); i < parseInt(period.end); i++) {
         slots.push(`${i.toString().padStart(2, "0")}:00`);
