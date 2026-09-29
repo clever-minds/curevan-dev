@@ -137,7 +137,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     const faqs = post.faqs || [];
 
-    const author = await getTherapistById(post.authorId);
+    const author = await getTherapistById(Number(post.authorId));
     const youtubeVideoId = post.videoUrl ? new URL(post.videoUrl).searchParams.get('v') : null;
 
     const allPosts = await listPublicJournalEntries();

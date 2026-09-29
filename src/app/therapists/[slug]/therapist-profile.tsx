@@ -119,10 +119,10 @@ export function TherapistProfileClient({ therapist, authoredPosts }: { therapist
                     <CardHeader><CardTitle>Qualifications & Certifications</CardTitle></CardHeader>
                     <CardContent>
                         <ul className="space-y-3">
-                            {therapist.qualifications.map((q, i) => (
+                            {(typeof therapist.qualifications === 'string' ? therapist.qualifications.split(',') : (therapist.qualifications || [])).map((q: string, i: number) => (
                                 <li key={i} className="flex items-center gap-3">
                                     <GraduationCap className="w-5 h-5 text-primary"/>
-                                    <span className="font-medium">{q}</span>
+                                    <span className="font-medium">{q.trim()}</span>
                                 </li>
                             ))}
                         </ul>
