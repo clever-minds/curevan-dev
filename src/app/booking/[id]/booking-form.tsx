@@ -773,10 +773,20 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     }
   }, [therapist]);
 
+  const initialServiceType = useMemo(() => {
+    const urlService = searchParams?.get('service') || '';
+    let target = therapistServiceTypes[0];
+    if (urlService) {
+      const matched = therapistServiceTypes.find(s => s.toLowerCase() === urlService.toLowerCase());
+      if (matched) target = matched;
+    }
+    return target;
+  }, [searchParams, therapistServiceTypes]);
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
-      serviceType: therapistServiceTypes[0],
+      serviceType: initialServiceType,
       sessionMode: "home",
       isHomeVisit: true,
       prescription: null,
@@ -792,23 +802,13 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   });
 
   useEffect(() => {
-    if (therapistServiceTypes && therapistServiceTypes.length > 0) {
-      const urlService = searchParams?.get('service') || '';
-      
-      let targetService = therapistServiceTypes[0];
-      
-      // Match the URL service against available therapist services (case-insensitive)
-      if (urlService) {
-          const matched = therapistServiceTypes.find(s => s.toLowerCase() === urlService.toLowerCase());
-          if (matched) targetService = matched;
-      }
-      
+    if (initialServiceType) {
       const currentServiceType = form.getValues("serviceType");
-      if (!currentServiceType || !therapistServiceTypes.includes(currentServiceType) || currentServiceType !== targetService) {
-        form.setValue("serviceType", targetService, { shouldValidate: true });
+      if (currentServiceType !== initialServiceType) {
+        form.setValue("serviceType", initialServiceType, { shouldValidate: true });
       }
     }
-  }, [therapistServiceTypes, form, searchParams]);
+  }, [initialServiceType, form]);
 
   const sessionMode = form.watch("sessionMode");
   const selectedDate = form.watch("scheduledDate");
@@ -1112,7 +1112,6 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                 <FormLabel>Service Type</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
                   value={field.value}
                 >
                   <FormControl>
