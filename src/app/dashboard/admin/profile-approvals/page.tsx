@@ -163,7 +163,7 @@ const ApprovalDialog = ({
                        if (val.startsWith('[')) {
                            try { arr = JSON.parse(val); } catch(e) {}
                        } else if (val.includes(',')) {
-                           arr = val.split(',').map(s => s.trim());
+                           arr = val.split(',').map((s: string) => s.trim());
                        }
                    }
                    if (Array.isArray(arr)) {

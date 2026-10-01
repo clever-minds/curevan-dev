@@ -95,7 +95,7 @@ const dataExportItems = [
     )},
     { name: "Shipments", description: "All order shipment records.", exportFunc: async () => downloadCsv(
         ["id", "orderId", "awb", "carrier", "status", "createdAt", "eta"],
-        (await listShipments()).map(s => [s.id, s.orderId, s.awb, s.carrier, s.status, s.createdAt, s.eta]),
+        (await listShipments()).map((s: any) => [s.id, s.orderId, s.awb, s.carrier, s.status, s.createdAt, s.eta]),
         "shipments.csv"
     )},
      { name: "Returns (RMAs)", description: "All product return requests.", exportFunc: async () => downloadCsv(
