@@ -735,17 +735,41 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   };
 
   const therapistServiceTypes = useMemo(() => {
-    let types: string[] = [];
-    if (Array.isArray(therapist.serviceTypes) && therapist.serviceTypes.length > 0) {
-       types = therapist.serviceTypes;
-    } else if (Array.isArray(therapist.specialty) && therapist.specialty.length > 0) {
-       types = therapist.specialty;
-    } else if (typeof therapist.specialty === 'string' && therapist.specialty.trim() !== '') {
-       types = therapist.specialty.split(',').map(s => s.trim());
-    } else {
-       types = ["Physiotherapy"];
+    try {
+      let types: string[] = [];
+      let rawInputs: any[] = [];
+      
+      if (Array.isArray(therapist.serviceTypes)) {
+        rawInputs.push(...therapist.serviceTypes);
+      } else if (typeof therapist.serviceTypes === 'string') {
+        rawInputs.push(therapist.serviceTypes);
+      }
+
+      if (Array.isArray(therapist.specialty)) {
+        rawInputs.push(...therapist.specialty);
+      } else if (typeof therapist.specialty === 'string') {
+        rawInputs.push(therapist.specialty);
+      }
+
+      for (let item of rawInputs) {
+        if (typeof item === 'string') {
+          // Clean postgres curly braces
+          item = item.replace(/^\{|\}$/g, '');
+          const parts = item.split(',').map((s: string) => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
+          types.push(...parts);
+        }
+      }
+
+      let uniqueTypes = Array.from(new Set(types));
+      if (uniqueTypes.length === 0) {
+        uniqueTypes = ["Physiotherapy"];
+      }
+
+      return uniqueTypes;
+    } catch (e) {
+      console.error("Error parsing therapistServiceTypes", e);
+      return ["Physiotherapy"];
     }
-    return Array.from(new Set(types));
   }, [therapist]);
 
   const form = useForm<BookingFormValues>({
