@@ -734,10 +734,24 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     }
   };
 
+  const therapistServiceTypes = useMemo(() => {
+    let types: string[] = [];
+    if (Array.isArray(therapist.serviceTypes) && therapist.serviceTypes.length > 0) {
+       types = therapist.serviceTypes;
+    } else if (Array.isArray(therapist.specialty) && therapist.specialty.length > 0) {
+       types = therapist.specialty;
+    } else if (typeof therapist.specialty === 'string' && therapist.specialty.trim() !== '') {
+       types = therapist.specialty.split(',').map(s => s.trim());
+    } else {
+       types = ["Physiotherapy"];
+    }
+    return Array.from(new Set(types));
+  }, [therapist]);
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
-      serviceType: therapist.serviceTypes[0] || "Physiotherapy",
+      serviceType: therapistServiceTypes[0],
       sessionMode: "home",
       isHomeVisit: true,
       prescription: null,
@@ -1063,9 +1077,9 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {therapyCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        {cat.name}
+                    {therapistServiceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
                       </SelectItem>
                     ))}
                   </SelectContent>
