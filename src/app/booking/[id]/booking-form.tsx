@@ -46,7 +46,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useTransition } from "react";
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useRazorpay from "@/hooks/use-razorpay";
 import { isSameDay, isPast, set, format } from "date-fns";
 import { Price } from "@/components/money/price";
@@ -687,6 +687,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const { openPayment, isLoaded } = useRazorpay();
 
@@ -789,6 +790,25 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       addressId: "",
     },
   });
+
+  useEffect(() => {
+    if (therapistServiceTypes && therapistServiceTypes.length > 0) {
+      const urlService = searchParams?.get('service') || '';
+      
+      let targetService = therapistServiceTypes[0];
+      
+      // Match the URL service against available therapist services (case-insensitive)
+      if (urlService) {
+          const matched = therapistServiceTypes.find(s => s.toLowerCase() === urlService.toLowerCase());
+          if (matched) targetService = matched;
+      }
+      
+      const currentServiceType = form.getValues("serviceType");
+      if (!currentServiceType || !therapistServiceTypes.includes(currentServiceType) || currentServiceType !== targetService) {
+        form.setValue("serviceType", targetService, { shouldValidate: true });
+      }
+    }
+  }, [therapistServiceTypes, form, searchParams]);
 
   const sessionMode = form.watch("sessionMode");
   const selectedDate = form.watch("scheduledDate");

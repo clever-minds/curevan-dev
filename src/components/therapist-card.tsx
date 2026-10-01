@@ -9,17 +9,31 @@
         import { cn } from '@/lib/utils';
         import { Badge } from './ui/badge';
         import { imageUrl } from '@/lib/image';
+        import { usePathname, useSearchParams } from 'next/navigation';
 
         export default function TherapistCard({ therapist, isMapPopup = false }: { therapist: Therapist & { distance?: number }, isMapPopup?: boolean }) {
         const CardComponent = isMapPopup ? 'div' : Card;
         const isPremium = therapist.membershipPlan === 'premium';
+        
+        const pathname = usePathname();
+        const searchParams = useSearchParams();
+        
+        let selectedService = '';
+        if (pathname?.includes('/category/')) {
+            selectedService = decodeURIComponent(pathname.split('/').pop() || '');
+        } else if (searchParams) {
+            selectedService = searchParams.get('specialty') || '';
+        }
+
+        const href = `/therapists/${therapist.name.toLowerCase().replace(/ /g, '-')}${selectedService ? `?service=${encodeURIComponent(selectedService)}` : ''}`;
+
         return (
             <CardComponent className={cn(
                 'group flex flex-col overflow-hidden h-full hover:shadow-md transition-shadow',
                 !isMapPopup && 'relative border-b sm:border border-gray-200 bg-white sm:rounded-2xl',
                 isPremium && !isMapPopup ? 'border-primary/30 bg-primary/5' : ''
             )}>
-            <Link href={`/therapists/${therapist.name.toLowerCase().replace(/ /g, '-')}`} className="flex flex-col h-full cursor-pointer">
+            <Link href={href} className="flex flex-col h-full cursor-pointer">
             <CardContent className={cn('flex flex-col h-full', isMapPopup ? 'p-0' : 'p-6')}>
                 <div className="flex justify-between gap-6 h-full">
                     {/* Left: Details Area */}
