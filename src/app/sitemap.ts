@@ -59,12 +59,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
   const therapyCategories = await getTherapyCategories();
   // Dynamic routes for services
-  const serviceRoutes = therapyCategories.map((service) => ({
-    url: `${baseUrl}/services/${service.toLowerCase().replace(/ /g, '-')}`,
-    lastModified: new Date().toISOString(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
-  }));
+  const serviceRoutes = therapyCategories.map((service: any) => {
+    const serviceName = typeof service === 'string' ? service : (service?.name || '');
+    if (!serviceName) return null;
+    return {
+      url: `${baseUrl}/services/${serviceName.toLowerCase().replace(/ /g, '-')}`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    };
+  }).filter(Boolean);
 
 
   return [...staticRoutes, ...therapistRoutes, ...postRoutes, ...serviceRoutes];
