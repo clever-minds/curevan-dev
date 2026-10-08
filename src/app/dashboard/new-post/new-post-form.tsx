@@ -604,10 +604,6 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                         {role === 'admin' && (
                           <>
                             <FormItem className="flex items-center space-x-3 space-y-0">
-                              <FormControl><RadioGroupItem value="published" /></FormControl>
-                              <FormLabel className="font-normal">Published</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl><RadioGroupItem value="archived" /></FormControl>
                               <FormLabel className="font-normal">Archived</FormLabel>
                             </FormItem>

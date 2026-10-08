@@ -311,13 +311,17 @@ export async function markNotificationAsRead(notificationId: string) {
  */
 export async function updateJournalStatus(
   id: string | number,
-  status: "published" | "draft" | "pending_review" | "archived",
-  token?: string
+  status: "published" | "draft" | "pending_review" | "archived" | "scheduled",
+  token?: string,
+  publishedAt?: string
 ): Promise<{ success: boolean; message: string }> {
   try {
+    const payload: any = { status };
+    if (publishedAt) payload.publishedAt = publishedAt;
+    
     const { data } = await serverApi.patch(
       `/api/general/knowledge-base/${id}/status`,
-      { status },
+      payload,
       {
         withCredentials: true,
         headers: token ? { Authorization: `Bearer ${token}` } : {}

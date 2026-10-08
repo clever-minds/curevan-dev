@@ -365,7 +365,22 @@ export function AIRichText({
           />
         </div>
       ) : (
-        <EditorContent editor={editor} />
+        <>
+          {editor && (
+            <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-background border shadow-lg rounded-md overflow-hidden p-1 gap-1">
+              <Button type="button" size="sm" variant={editor.isActive('bold') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('italic') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('underline') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('strike') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('heading', { level: 2 }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('link') ? 'secondary' : 'ghost'} onClick={() => {
+                const url = window.prompt('URL');
+                if (url) editor.chain().focus().setLink({ href: url }).run();
+              }}><LinkIcon className="w-4 h-4" /></Button>
+            </BubbleMenu>
+          )}
+          <EditorContent editor={editor} />
+        </>
       )}
       
       <p className="px-3 pb-2 text-xs text-muted-foreground mt-2">AI assistance may contain errors. Review before saving.</p>
