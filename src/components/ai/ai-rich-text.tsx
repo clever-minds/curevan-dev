@@ -126,6 +126,11 @@ export function AIRichText({
   const [library, setLibrary] = useState<MediaItem[]>([]);
   const [upload, setUpload] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const fetchMedia = useCallback(async () => {
     try {
@@ -366,7 +371,7 @@ export function AIRichText({
         </div>
       ) : (
         <>
-          {editor && (
+          {isMounted && editor && (
             <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-background border shadow-lg rounded-md overflow-hidden p-1 gap-1">
               <Button type="button" size="sm" variant={editor.isActive('bold') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="w-4 h-4" /></Button>
               <Button type="button" size="sm" variant={editor.isActive('italic') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="w-4 h-4" /></Button>
