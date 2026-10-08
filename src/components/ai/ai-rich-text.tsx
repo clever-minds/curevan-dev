@@ -313,16 +313,19 @@ export function AIRichText({
           {/* Block Elements */}
           <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('blockquote') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBlockquote().run()} disabled={disabled}><Quote className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Blockquote</p></TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('codeBlock') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleCodeBlock().run()} disabled={disabled}><Code className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Code Block</p></TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('codeBlock') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleCodeBlock().run()} disabled={disabled}><Code2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Code Block</p></TooltipContent></Tooltip>
 
           {/* Alignment */}
           <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('left').run()} disabled={disabled}><AlignLeft className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Left</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'center' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('center').run()} disabled={disabled}><AlignCenter className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Center</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('right').run()} disabled={disabled}><AlignRight className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Right</p></TooltipContent></Tooltip>
+        </TooltipProvider>
+      </div>
 
+      <div className="flex flex-wrap items-center gap-1 border-b p-2">
+        <TooltipProvider>
           {/* Media */}
-          <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)} disabled={disabled}><ImageIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Image from Library</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)} disabled={disabled}><VideoIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Video (YouTube or Library)</p></TooltipContent></Tooltip>
 
