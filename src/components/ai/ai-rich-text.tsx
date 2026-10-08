@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -269,6 +269,7 @@ export function AIRichText({
     if (!lastInteractionId || feedbackGiven) return;
     await logAIFeedbackAction({
       context: 'pcr_refinement', // This could be more dynamic if needed
+      number: lastInteractionId,
       interactionId: lastInteractionId,
       rating,
       response: editor?.getHTML(),
@@ -382,7 +383,14 @@ export function AIRichText({
                 const url = window.prompt('URL');
                 if (url) editor.chain().focus().setLink({ href: url }).run();
               }}><LinkIcon className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)}><ImageIcon className="w-4 h-4" /></Button>
             </BubbleMenu>
+          )}
+          {isMounted && editor && (
+            <FloatingMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-background border shadow-lg rounded-md overflow-hidden p-1 gap-1">
+              <Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)}><ImageIcon className="w-4 h-4" /> <span className="ml-2 text-xs">Media</span></Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="w-4 h-4" /> <span className="ml-2 text-xs">Heading</span></Button>
+            </FloatingMenu>
           )}
           <EditorContent editor={editor} />
         </>

@@ -32,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic routes for therapists
   const therapists = await listTherapists();
-  const therapistRoutes = therapists
+  const therapistRoutes = (therapists || [])
     .filter(therapist => therapist.isProfilePublic)
     .map((therapist) => ({
       url: `${baseUrl}/therapists/${therapist.name.toLowerCase().replace(/ /g, '-')}`,
@@ -59,16 +59,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
   const therapyCategories = await getTherapyCategories();
   // Dynamic routes for services
-  const serviceRoutes = therapyCategories.map((service: any) => {
+  const serviceRoutes = therapyCategories.flatMap((service: any) => {
     const serviceName = typeof service === 'string' ? service : (service?.name || '');
-    if (!serviceName) return null;
-    return {
+    if (!serviceName) return [];
+    return [{
       url: `${baseUrl}/services/${serviceName.toLowerCase().replace(/ /g, '-')}`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly' as const,
       priority: 0.7,
-    };
-  }).filter(Boolean);
+    }];
+  });
 
 
   return [...staticRoutes, ...therapistRoutes, ...postRoutes, ...serviceRoutes];
