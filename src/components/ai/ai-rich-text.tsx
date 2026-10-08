@@ -127,9 +127,13 @@ export function AIRichText({
   const [upload, setUpload] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
   }, []);
 
   const fetchMedia = useCallback(async () => {
@@ -286,7 +290,23 @@ export function AIRichText({
   const hasContent = editor.getText().trim().length >= minAIActionsChars;
 
   return (
-    <div className="rounded-md border bg-background">
+    <div 
+      className="rounded-md border bg-background"
+      onContextMenu={(e) => {
+        if (disabled || isSourceMode) return;
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
+      {contextMenu && (
+        <div 
+          className="fixed z-50 flex bg-background border shadow-lg rounded-md overflow-hidden p-1 gap-1"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)}><ImageIcon className="w-4 h-4" /> <span className="ml-2 text-xs">Media</span></Button>
+          <Button type="button" size="sm" variant={editor.isActive('heading', { level: 2 }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="w-4 h-4" /> <span className="ml-2 text-xs">Heading</span></Button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-1 border-b p-2">
         <TooltipProvider>
           {/* Text Formatting */}
@@ -388,12 +408,6 @@ export function AIRichText({
               }}><LinkIcon className="w-4 h-4" /></Button>
               <Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)}><ImageIcon className="w-4 h-4" /></Button>
             </BubbleMenu>
-          )}
-          {isMounted && editor && (
-            <FloatingMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-background border shadow-lg rounded-md overflow-hidden p-1 gap-1">
-              <Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)}><ImageIcon className="w-4 h-4" /> <span className="ml-2 text-xs">Media</span></Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="w-4 h-4" /> <span className="ml-2 text-xs">Heading</span></Button>
-            </FloatingMenu>
           )}
           <EditorContent editor={editor} />
         </>
