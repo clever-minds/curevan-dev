@@ -30,7 +30,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIRichText } from '@/components/ai/ai-rich-text';
-import { getTherapyCategories } from '@/lib/repos/categories';
+import { getTherapyCategories, getJournalCategoriesFull } from '@/lib/repos/categories';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
 import { submitEditorForm, updateKnowledgeBase } from "@/lib/repos/journal";
@@ -124,8 +124,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const cats = await getTherapyCategories();
-      setAllCategories(cats.map(c => ({ id: c.toLowerCase().replace(/ /g, '-'), name: c })));
+      const cats = await getJournalCategoriesFull();
+      setAllCategories(cats.filter(c => c.isActive).map(c => ({ id: c.slug, name: c.name })));
     };
     const fetchTags = async () => {
       const { getJournalTagsFull } = await import('@/lib/repos/categories');
@@ -166,8 +166,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
     const loadPost = async () => {
       try {
-        const cats = await getTherapyCategories();
-        const categoryIds = cats.map(c => c.toLowerCase().replace(/ /g, '-'));
+        const cats = await getJournalCategoriesFull();
+        const categoryIds = cats.map(c => c.slug);
 
         const post = await getKnowledgeBaseById(postId);
         if (!post) return;
