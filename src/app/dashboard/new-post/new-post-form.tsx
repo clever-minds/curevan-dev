@@ -891,7 +891,11 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                 {/* Content */}
                 <div
                   className="prose dark:prose-invert max-w-none text-lg"
-                  dangerouslySetInnerHTML={{ __html: watchedValues.content || '<p className="text-muted-foreground italic">No content written yet...</p>' }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: (watchedValues.content && watchedValues.content.replace(/<[^>]*>?/gm, '').trim().length > 0) 
+                      ? watchedValues.content 
+                      : '<p class="text-muted-foreground italic">No content written yet...</p>' 
+                  }}
                 />
 
                 {/* Video Preview */}
