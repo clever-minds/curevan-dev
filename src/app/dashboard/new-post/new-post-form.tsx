@@ -837,9 +837,9 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                 {(() => {
                   const img = watchedValues.coverImageUrl;
                   let src = '';
-                  if (Array.isArray(img) && img.length > 0) src = img[0].url;
+                  if (Array.isArray(img) && img.length > 0) src = getMediaUrl(img[0].url);
                   else if (img instanceof File) src = URL.createObjectURL(img);
-                  else if (typeof img === 'string' && img) src = img;
+                  else if (typeof img === 'string' && img) src = getMediaUrl(img);
                   
                   if (!src) return null;
                   
