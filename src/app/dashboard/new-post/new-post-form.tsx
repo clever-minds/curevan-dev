@@ -834,22 +834,27 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
             <div className="container mx-auto">
               <div className="mb-8">
                 {/* Featured Image Preview */}
-                {watchedValues.coverImageUrl && (
-                  <div className="relative h-64 w-full mb-8 rounded-lg overflow-hidden border">
-                    <Image
-                      src={(() => {
-                        const img = watchedValues.coverImageUrl;
-                        if (Array.isArray(img) && img.length > 0) return img[0].url;
-                        if (img instanceof File) return URL.createObjectURL(img);
-                        return '';
-                      })()}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const img = watchedValues.coverImageUrl;
+                  let src = '';
+                  if (Array.isArray(img) && img.length > 0) src = img[0].url;
+                  else if (img instanceof File) src = URL.createObjectURL(img);
+                  else if (typeof img === 'string' && img) src = img;
+                  
+                  if (!src) return null;
+                  
+                  return (
+                    <div className="relative h-64 w-full mb-8 rounded-lg overflow-hidden border">
+                      <Image
+                        src={src}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Categories */}
                 {watchedValues.categories && watchedValues.categories.length > 0 && (
