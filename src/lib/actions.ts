@@ -81,21 +81,15 @@ export async function createPayoutItemForBooking(bookingId: number): Promise<{ s
     return { success: false, message: `Payment not confirmed for booking ${bookingId}. PCR has been unlocked.` };
   }
 
-  // 3. Compute payout details
+  // 3. Compute payout details (0% platform fee, 0% GST, 0% TDS - No deductions currently)
   const grossAmount = appointment.serviceAmount || 0;
   const membershipPlanSnapshot = therapist.membershipPlan || 'standard';
-  const platformFeePct = membershipPlanSnapshot === 'premium' ? 0.10 : 0.00;
-  const platformFeeAmount = Math.round(grossAmount * platformFeePct);
-
-  // GST is 18% on the platform fee.
-  const gstOnPlatformFee = platformFeeAmount > 0 ? platformFeeAmount * 0.18 : 0;
-
-  const preTdsPayable = grossAmount - platformFeeAmount;
-
-  // TDS is 10% on the amount after platform fee deduction.
-  const tdsDeducted = preTdsPayable > 0 ? preTdsPayable * 0.10 : 0;
-
-  const netAmount = preTdsPayable - tdsDeducted;
+  const platformFeePct = 0;
+  const platformFeeAmount = 0;
+  const gstOnPlatformFee = 0;
+  const preTdsPayable = grossAmount;
+  const tdsDeducted = 0;
+  const netAmount = grossAmount;
 
   const bookingDate = new Date(appointment.date as any);
   const weekStart = startOfWeek(bookingDate, { weekStartsOn: 1 }).toISOString();

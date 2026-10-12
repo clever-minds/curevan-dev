@@ -52,12 +52,12 @@ export async function createPayoutItemForBooking(bookingId: number): Promise<{ s
     return { success: false, message: `Booking ${bookingId} has an invalid status: ${appointment.status}.` };
   }
 
-  // 3. Compute payout details
+  // 3. Compute payout details (0% platform fee, 0% TDS - No deductions currently)
   const grossAmount = appointment.serviceAmount || appointment.totalAmount || 0;
   const membershipPlanSnapshot = therapist.membershipPlan || 'standard';
-  const platformFeePct = membershipPlanSnapshot === 'premium' ? 0.10 : 0.00;
-  const platformFeeAmount = Math.round(grossAmount * platformFeePct);
-  const netAmount = grossAmount - platformFeeAmount;
+  const platformFeePct = 0;
+  const platformFeeAmount = 0;
+  const netAmount = grossAmount;
   
   const bookingDate = new Date(appointment.date);
   const weekStart = startOfWeek(bookingDate, { weekStartsOn: 1 }).toISOString();
