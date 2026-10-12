@@ -422,7 +422,7 @@ export interface PayoutItem {
   state: 'onHold' | 'inBatch' | 'paid' | 'disputed';
   weekStart: string; // ISO string of the Monday of the week
   createdAt: Date;
-  membershipPlanSnapshot: 'standard' | 'premium';
+  membershipPlanSnapshot: 'basic' | 'standard' | 'premium';
   therapistName?: string; // Added for easier reporting
   therapistPan?: string; // Added for easier reporting
 }
