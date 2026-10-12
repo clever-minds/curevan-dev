@@ -31,6 +31,7 @@ import {
   Users 
 } from "lucide-react";
 import { getSafeDate, downloadCsv } from "@/lib/utils";
+import { ManualPaymentDialog } from "@/components/admin/ManualPaymentDialog";
 
 export const dynamic = 'force-dynamic';
 
@@ -606,18 +607,19 @@ export default function FinancialReportPage() {
                     <TableHead className="text-right">TDS</TableHead>
                     <TableHead className="text-right">Net Payable</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={10}>
+                      <TableCell colSpan={11}>
                         <Skeleton className="h-24 w-full" />
                       </TableCell>
                     </TableRow>
                   ) : filteredData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                         No transactions found for the selected criteria.
                       </TableCell>
                     </TableRow>
@@ -660,6 +662,28 @@ export default function FinancialReportPage() {
                           >
                             {item.state}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {item.state !== 'paid' ? (
+                            <ManualPaymentDialog
+                              sourceId={item.sourceId}
+                              grossAmount={item.grossAmount}
+                              netAmount={item.netAmount}
+                              therapistName={item.therapistName}
+                              patientName={item.patientName}
+                              onPaymentSuccess={() => {
+                                setPayoutItems((prev) =>
+                                  prev.map((p) =>
+                                    p.sourceId === item.sourceId ? { ...p, state: 'paid' } : p
+                                  )
+                                );
+                              }}
+                            />
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+                              Paid
+                            </Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

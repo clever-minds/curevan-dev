@@ -30,6 +30,7 @@ import { ReviewDialog } from '@/components/patient/ReviewDialog';
 import useRazorpay from '@/hooks/use-razorpay';
 import serverApi from '@/lib/repos/axios.server';
 import { getToken } from '@/lib/auth';
+import { ManualPaymentDialog } from '@/components/admin/ManualPaymentDialog';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -203,6 +204,22 @@ const handleCancelAppointment = async () => {
         {isPatient && appointment.status === 'Payment Pending' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
+        {isAdmin && appointment.paymentStatus !== 'Paid' && (
+          <ManualPaymentDialog
+            sourceId={appointment.id}
+            grossAmount={((appointment.totalAmount || appointment.serviceAmount || 0) * 100)}
+            therapistName={appointment.therapist}
+            patientName={appointment.patientName}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-emerald-600 focus:text-emerald-600 cursor-pointer">
+                <PlayCircle className="mr-2" /> Record Manual Payment
+              </DropdownMenuItem>
+            }
+            onPaymentSuccess={() => {
+              window.location.reload();
+            }}
+          />
+        )}
         {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
           <RescheduleDialog appointmentId={appointment.id} />
         )}
@@ -231,6 +248,22 @@ const handleCancelAppointment = async () => {
              {isPatient && appointment.status === 'Payment Pending' && (
                <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
             )}
+             {isAdmin && appointment.paymentStatus !== 'Paid' && (
+               <ManualPaymentDialog
+                 sourceId={appointment.id}
+                 grossAmount={((appointment.totalAmount || appointment.serviceAmount || 0) * 100)}
+                 therapistName={appointment.therapist}
+                 patientName={appointment.patientName}
+                 trigger={
+                   <Button variant="outline" className="w-full justify-start text-emerald-600">
+                     <PlayCircle className="mr-2" /> Record Manual Payment
+                   </Button>
+                 }
+                 onPaymentSuccess={() => {
+                   window.location.reload();
+                 }}
+               />
+             )}
              {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
                  <RescheduleDialog appointmentId={appointment.id} />
              )}
