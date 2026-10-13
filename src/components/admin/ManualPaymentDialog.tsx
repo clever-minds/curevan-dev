@@ -37,11 +37,19 @@ import { getToken } from '@/lib/auth';
 import { addAuditLog } from '@/lib/repos/logs';
 
 export interface ManualPaymentDialogProps {
-  sourceId: number;
+  sourceId?: number;
+  sourceIds?: number[];
   grossAmount?: number;
   netAmount?: number;
   patientName?: string;
   therapistName?: string;
+  periodLabel?: string;
+  bookingsList?: {
+    id: number;
+    therapistName?: string;
+    patientName?: string;
+    netAmount?: number;
+  }[];
   mode?: 'appointment' | 'payout';
   trigger?: React.ReactNode;
   onPaymentSuccess?: (paymentInfo: {
@@ -54,10 +62,13 @@ export interface ManualPaymentDialogProps {
 
 export function ManualPaymentDialog({
   sourceId,
+  sourceIds,
   grossAmount,
   netAmount,
   patientName,
   therapistName,
+  periodLabel,
+  bookingsList,
   mode = 'payout',
   trigger,
   onPaymentSuccess,
@@ -75,9 +86,15 @@ export function ManualPaymentDialog({
   const [notes, setNotes] = React.useState('');
   const { toast } = useToast();
 
+  const idsToPay = React.useMemo(() => {
+    if (sourceIds && sourceIds.length > 0) return sourceIds;
+    if (sourceId) return [sourceId];
+    return [];
+  }, [sourceId, sourceIds]);
+
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sourceId) return;
+    if (idsToPay.length === 0) return;
 
     try {
       setLoading(true);
@@ -91,64 +108,74 @@ export function ManualPaymentDialog({
         return;
       }
 
-      const generatedPaymentId = referenceNo.trim() 
-        ? `${method.toUpperCase()}_${referenceNo.trim()}`
+      const cleanRef = referenceNo.trim();
+      const generatedPaymentId = cleanRef 
+        ? `${method.toUpperCase()}_${cleanRef}`
         : `${method.toUpperCase()}_${Date.now()}`;
 
-      // 1. If payout mode, update payout item state in general/payout-items
+      // 1. If payout mode, update payout item state in general/payout-items for all IDs
       if (mode === 'payout') {
-        try {
-          await serverApi.put(
-            `/api/general/payout-items/source/${sourceId}/state`,
+        await Promise.all(
+          idsToPay.map((sId) =>
+            serverApi.put(
+              `/api/general/payout-items/source/${sId}/state`,
+              {
+                state: 'paid',
+                method,
+                referenceNo: cleanRef,
+                paymentDate,
+                notes,
+              },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            ).catch((payoutErr) => {
+              console.warn(`Payout item update fallback for #${sId}:`, payoutErr);
+            })
+          )
+        );
+      }
+
+      // 2. Also call appointment payment confirmation for all IDs
+      await Promise.all(
+        idsToPay.map((sId) =>
+          serverApi.post(
+            `/api/appointments/${sId}/pay`,
             {
-              state: 'paid',
-              method,
-              referenceNo: referenceNo.trim(),
+              paymentId: generatedPaymentId,
+              gateway: `manual_${method}`,
+              collector: collectorName || (mode === 'payout' ? 'Finance Desk' : 'Admin Desk'),
               paymentDate,
               notes,
             },
             {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
-          );
-        } catch (payoutErr) {
-          console.warn('Payout item update fallback:', payoutErr);
-        }
-      }
-
-      // 2. Also call appointment payment confirmation
-      try {
-        await serverApi.post(
-          `/api/appointments/${sourceId}/pay`,
-          {
-            paymentId: generatedPaymentId,
-            gateway: `manual_${method}`,
-            collector: collectorName || (mode === 'payout' ? 'Finance Desk' : 'Admin Desk'),
-            paymentDate,
-            notes,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-      } catch (apptErr) {
-        console.warn('Appointment payment update warning:', apptErr);
-      }
+          ).catch((apptErr) => {
+            console.warn(`Appointment payment update warning for #${sId}:`, apptErr);
+          })
+        )
+      );
 
       // 3. Add an audit log entry for accounting
       try {
         await addAuditLog({
           actorId: 'admin',
-          action: mode === 'payout' ? 'therapist.payout_disbursed' : 'payment.manual_confirmed',
+          action: mode === 'payout' 
+            ? (idsToPay.length > 1 ? 'therapist.batch_payout_disbursed' : 'therapist.payout_disbursed') 
+            : 'payment.manual_confirmed',
           entityType: 'booking',
-          entityId: Number(sourceId),
+          entityId: Number(idsToPay[0]),
           timestamp: new Date(),
           details: {
+            sourceIds: idsToPay,
+            count: idsToPay.length,
+            periodLabel,
             mode,
             method,
-            referenceNo: referenceNo.trim(),
+            referenceNo: cleanRef,
             collectorName,
             paymentDate,
             grossAmount,
@@ -162,10 +189,14 @@ export function ManualPaymentDialog({
       }
 
       toast({
-        title: mode === 'payout' ? 'Payout Disbursed Successfully' : 'Payment Recorded Successfully',
+        title: mode === 'payout' 
+          ? (idsToPay.length > 1 ? 'Batch Payout Disbursed Successfully' : 'Payout Disbursed Successfully')
+          : 'Payment Recorded Successfully',
         description: mode === 'payout' 
-          ? `Payout disbursed to ${therapistName || 'therapist'} via ${method.toUpperCase()}.`
-          : `Booking #${sourceId} marked as Paid via ${method.toUpperCase()}.`,
+          ? (idsToPay.length > 1
+              ? `Disbursed total payout for ${idsToPay.length} bookings via ${method.toUpperCase()} (Ref: ${cleanRef || 'N/A'}).`
+              : `Payout disbursed to ${therapistName || 'therapist'} via ${method.toUpperCase()}.`)
+          : `Booking #${idsToPay.join(', #')} marked as Paid via ${method.toUpperCase()}.`,
       });
 
       setOpen(false);
@@ -173,7 +204,7 @@ export function ManualPaymentDialog({
       if (onPaymentSuccess) {
         onPaymentSuccess({
           method,
-          referenceNo: referenceNo.trim(),
+          referenceNo: cleanRef,
           paidAt: paymentDate,
           notes,
         });
@@ -196,48 +227,90 @@ export function ManualPaymentDialog({
         {trigger || (
           <Button size="sm" variant="outline" className="text-xs h-7 gap-1 text-emerald-700 hover:text-emerald-800 border-emerald-300">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            <span>{mode === 'payout' ? 'Pay Therapist' : 'Mark Paid'}</span>
+            <span>
+              {mode === 'payout' 
+                ? (idsToPay.length > 1 ? `Pay Total (${idsToPay.length})` : 'Pay Therapist') 
+                : 'Mark Paid'}
+            </span>
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[490px]">
         <form onSubmit={handleConfirm}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Banknote className="h-5 w-5 text-emerald-600" />
-              {mode === 'payout' ? 'Disburse Therapist Payout' : 'Record Manual Payment'}
+              {mode === 'payout' 
+                ? (idsToPay.length > 1 ? `Disburse Combined Payout (${idsToPay.length} Bookings)` : 'Disburse Therapist Payout') 
+                : 'Record Manual Payment'}
             </DialogTitle>
             <DialogDescription>
               {mode === 'payout'
-                ? `Disburse Net Payable earnings to ${therapistName || 'the therapist'} for Booking #${sourceId}.`
-                : `Mark Booking #${sourceId} as paid using cash, offline UPI, or bank transfer.`}
+                ? (idsToPay.length > 1
+                    ? `Disburse combined total Net Payable for ${idsToPay.length} bookings${periodLabel ? ` in ${periodLabel}` : ''} in a single transaction.`
+                    : `Disburse Net Payable earnings to ${therapistName || 'the therapist'} for Booking #${idsToPay[0]}.`)
+                : `Mark Booking #${idsToPay.join(', #')} as paid using cash, offline UPI, or bank transfer.`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4 text-sm">
-            {/* Booking Summary Box */}
-            <div className="rounded-lg bg-muted/60 p-3 space-y-1.5 border">
+            {/* Booking / Batch Summary Box */}
+            <div className="rounded-lg bg-muted/60 p-3 space-y-2 border">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">Booking ID:</span>
-                <span className="font-mono font-semibold">#{sourceId}</span>
+                <span className="text-muted-foreground">
+                  {idsToPay.length > 1 ? 'Bookings Included:' : 'Booking ID:'}
+                </span>
+                <span className="font-mono font-semibold">
+                  {idsToPay.length > 1 ? `${idsToPay.length} Bookings (#${idsToPay.join(', #')})` : `#${idsToPay[0]}`}
+                </span>
               </div>
+              {periodLabel && (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">Period:</span>
+                  <span className="font-semibold text-foreground">{periodLabel}</span>
+                </div>
+              )}
               {therapistName && (
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground">Therapist:</span>
+                  <span className="text-muted-foreground">{idsToPay.length > 1 ? 'Therapist(s):' : 'Therapist:'}</span>
                   <span className="font-semibold text-foreground">{therapistName}</span>
                 </div>
               )}
-              {patientName && (
+              {patientName && idsToPay.length === 1 && (
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-muted-foreground">Patient:</span>
                   <span className="font-medium">{patientName}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center text-xs pt-1 border-t border-border/50">
+
+              {/* Bookings Breakdown List if multiple */}
+              {bookingsList && bookingsList.length > 1 && (
+                <div className="pt-2 pb-1 border-t border-border/50 space-y-1.5">
+                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    Individual Breakdown:
+                  </div>
+                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+                    {bookingsList.map((b) => (
+                      <div key={b.id} className="flex justify-between items-center text-xs bg-background/80 px-2 py-1 rounded border">
+                        <span className="font-mono text-muted-foreground">
+                          #{b.id} {b.therapistName ? `• ${b.therapistName}` : ''}
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          <Price amount={b.netAmount ?? 0} showDecimals />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-xs pt-1.5 border-t border-border/50">
                 <span className="text-muted-foreground font-medium">
-                  {mode === 'payout' ? 'Net Payout to Therapist:' : 'Amount:'}
+                  {mode === 'payout' 
+                    ? (idsToPay.length > 1 ? 'Total Combined Net Payout:' : 'Net Payout to Therapist:') 
+                    : 'Amount:'}
                 </span>
-                <span className="font-bold text-emerald-600 text-sm">
+                <span className="font-bold text-emerald-600 text-base">
                   <Price amount={(mode === 'payout' ? netAmount : grossAmount) ?? netAmount ?? grossAmount ?? 0} showDecimals />
                 </span>
               </div>
@@ -349,9 +422,13 @@ export function ManualPaymentDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button type="submit" disabled={loading} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>{mode === 'payout' ? 'Confirm Payout Transfer' : 'Confirm & Mark Paid'}</span>
+              <span>
+                {mode === 'payout' 
+                  ? (idsToPay.length > 1 ? `Confirm Total Payout (${idsToPay.length})` : 'Confirm Payout Transfer') 
+                  : 'Confirm & Mark Paid'}
+              </span>
             </Button>
           </DialogFooter>
         </form>

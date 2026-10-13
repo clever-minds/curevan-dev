@@ -490,154 +490,233 @@ export default function FinancialReportPage() {
             </TableCell>
           </TableRow>
         ) : (
-          data.map((row) => (
-            <React.Fragment key={row.key}>
-              <TableRow>
-                <TableCell className="font-medium whitespace-nowrap">
-                  {row.label}
-                </TableCell>
-                <TableCell className="text-center font-mono font-semibold">
-                  <Badge variant="outline">{row.count}</Badge>
-                </TableCell>
-                <TableCell className="font-medium text-xs">
-                  {row.therapistNames.length > 0 ? (
-                    <div className="flex flex-col gap-0.5">
-                      {row.therapistNames.map((name, i) => (
-                        <span key={i} className="font-semibold text-foreground">
-                          {name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground font-mono">
-                      {row.therapistIds.size} therapist(s)
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  <Price amount={row.grossAmount} showDecimals />
-                </TableCell>
-                <TableCell className="text-right text-emerald-600 font-medium">
-                  <Price amount={row.platformFeeAmount} showDecimals />
-                </TableCell>
-                <TableCell className="text-right text-muted-foreground">
-                  <Price amount={row.gstOnPlatformFee} showDecimals />
-                </TableCell>
-                <TableCell className="text-right text-amber-600">
-                  <Price amount={row.tdsDeducted} showDecimals />
-                </TableCell>
-                <TableCell className="text-right font-bold text-primary">
-                  <Price amount={row.netAmount} showDecimals />
-                </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
-                  <div className="flex items-center justify-end gap-1.5">
-                    {row.items.some((it) => it.state !== 'paid') ? (
-                      row.items.length === 1 ? (
+          data.map((row) => {
+            const unpaidItems = row.items.filter((it) => it.state !== 'paid');
+            const totalUnpaidNet = unpaidItems.reduce((acc, it) => acc + (it.netAmount || 0), 0);
+            const totalUnpaidGross = unpaidItems.reduce((acc, it) => acc + (it.grossAmount || 0), 0);
+            const unpaidIds = unpaidItems.map((it) => it.sourceId);
+
+            return (
+              <React.Fragment key={row.key}>
+                <TableRow>
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {row.label}
+                  </TableCell>
+                  <TableCell className="text-center font-mono font-semibold">
+                    <Badge variant="outline">{row.count}</Badge>
+                  </TableCell>
+                  <TableCell className="font-medium text-xs">
+                    {row.therapistNames.length > 0 ? (
+                      <div className="flex flex-col gap-0.5">
+                        {row.therapistNames.map((name, i) => (
+                          <span key={i} className="font-semibold text-foreground">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground font-mono">
+                        {row.therapistIds.size} therapist(s)
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    <Price amount={row.grossAmount} showDecimals />
+                  </TableCell>
+                  <TableCell className="text-right text-emerald-600 font-medium">
+                    <Price amount={row.platformFeeAmount} showDecimals />
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    <Price amount={row.gstOnPlatformFee} showDecimals />
+                  </TableCell>
+                  <TableCell className="text-right text-amber-600">
+                    <Price amount={row.tdsDeducted} showDecimals />
+                  </TableCell>
+                  <TableCell className="text-right font-bold text-primary">
+                    <Price amount={row.netAmount} showDecimals />
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {unpaidItems.length > 0 ? (
                         <ManualPaymentDialog
-                          sourceId={row.items[0].sourceId}
-                          grossAmount={row.items[0].grossAmount}
-                          netAmount={row.items[0].netAmount}
-                          therapistName={row.items[0].therapistName}
-                          patientName={row.items[0].patientName}
+                          sourceIds={unpaidIds}
+                          sourceId={unpaidIds[0]}
+                          grossAmount={totalUnpaidGross}
+                          netAmount={totalUnpaidNet}
+                          therapistName={row.therapistNames.join(', ')}
+                          periodLabel={row.label}
+                          bookingsList={unpaidItems.map((it) => ({
+                            id: it.sourceId,
+                            therapistName: it.therapistName,
+                            patientName: it.patientName,
+                            netAmount: it.netAmount,
+                          }))}
+                          trigger={
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-7 gap-1 text-emerald-700 hover:text-emerald-800 border-emerald-300 font-semibold"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              <span>
+                                {unpaidItems.length > 1
+                                  ? `Pay Total (${unpaidItems.length})`
+                                  : 'Pay Therapist'}
+                              </span>
+                            </Button>
+                          }
                           onPaymentSuccess={() => {
                             setPayoutItems((prev) =>
                               prev.map((p) =>
-                                p.sourceId === row.items[0].sourceId ? { ...p, state: 'paid' } : p
+                                unpaidIds.includes(p.sourceId) ? { ...p, state: 'paid' } : p
                               )
                             );
                           }}
                         />
                       ) : (
+                        <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+                          Paid
+                        </Badge>
+                      )}
+                      {row.items.length > 1 && (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="text-xs h-7 gap-1"
+                          variant="ghost"
+                          className="text-xs h-7 px-1.5 text-muted-foreground hover:text-foreground"
                           onClick={() => toggleExpand(row.key)}
+                          title="View breakdown"
                         >
-                          <span>Pay ({row.items.filter((it) => it.state !== 'paid').length})</span>
-                          {expandedKeys[row.key] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          {expandedKeys[row.key] ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
                         </Button>
-                      )
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
-                        Paid
-                      </Badge>
-                    )}
-                    {row.items.length > 1 && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs h-7 px-1.5"
-                        onClick={() => toggleExpand(row.key)}
-                      >
-                        {expandedKeys[row.key] ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-              {expandedKeys[row.key] && (
-                <TableRow className="bg-muted/30 hover:bg-muted/30 border-b">
-                  <TableCell colSpan={9} className="p-3">
-                    <div className="rounded-lg border bg-background p-3 space-y-2 shadow-sm">
-                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Transactions in {row.label} ({row.items.length})
-                      </div>
-                      <div className="divide-y divide-border">
-                        {row.items.map((item, idx) => (
-                          <div key={item.id || `${item.sourceId}-${idx}`} className="flex flex-wrap items-center justify-between py-2 gap-2 text-xs">
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono font-bold bg-muted px-2 py-0.5 rounded text-[11px]">#{item.sourceId}</span>
-                              <div>
-                                <span className="font-semibold text-foreground">{item.therapistName}</span>
-                                {item.patientName && (
-                                  <span className="text-muted-foreground ml-2">({item.patientName})</span>
-                                )}
-                                {item.therapyType && (
-                                  <span className="text-muted-foreground text-[11px] block">{item.therapyType}</span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <div className="font-bold text-primary">
-                                  <Price amount={item.netAmount} showDecimals />
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">Net Payout</div>
-                              </div>
-                              <Badge variant={item.state === 'paid' ? 'default' : 'secondary'} className="text-[11px]">
-                                {item.state}
-                              </Badge>
-                              {item.state !== 'paid' ? (
-                                <ManualPaymentDialog
-                                  sourceId={item.sourceId}
-                                  grossAmount={item.grossAmount}
-                                  netAmount={item.netAmount}
-                                  therapistName={item.therapistName}
-                                  patientName={item.patientName}
-                                  onPaymentSuccess={() => {
-                                    setPayoutItems((prev) =>
-                                      prev.map((p) =>
-                                        p.sourceId === item.sourceId ? { ...p, state: 'paid' } : p
-                                      )
-                                    );
-                                  }}
-                                />
-                              ) : (
-                                <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
-                                  Paid
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
-              )}
-            </React.Fragment>
-          ))
+                {expandedKeys[row.key] && (
+                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-b">
+                    <TableCell colSpan={9} className="p-3">
+                      <div className="rounded-lg border bg-background p-3 space-y-3 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Transactions in {row.label} ({row.items.length})
+                          </div>
+                          {unpaidItems.length > 1 && (
+                            <ManualPaymentDialog
+                              sourceIds={unpaidIds}
+                              sourceId={unpaidIds[0]}
+                              grossAmount={totalUnpaidGross}
+                              netAmount={totalUnpaidNet}
+                              therapistName={row.therapistNames.join(', ')}
+                              periodLabel={row.label}
+                              bookingsList={unpaidItems.map((it) => ({
+                                id: it.sourceId,
+                                therapistName: it.therapistName,
+                                patientName: it.patientName,
+                                netAmount: it.netAmount,
+                              }))}
+                              trigger={
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  <span>
+                                    Pay All Total ({unpaidItems.length}) -{' '}
+                                    <Price amount={totalUnpaidNet} showDecimals />
+                                  </span>
+                                </Button>
+                              }
+                              onPaymentSuccess={() => {
+                                setPayoutItems((prev) =>
+                                  prev.map((p) =>
+                                    unpaidIds.includes(p.sourceId) ? { ...p, state: 'paid' } : p
+                                  )
+                                );
+                              }}
+                            />
+                          )}
+                        </div>
+                        <div className="divide-y divide-border">
+                          {row.items.map((item, idx) => (
+                            <div
+                              key={item.id || `${item.sourceId}-${idx}`}
+                              className="flex flex-wrap items-center justify-between py-2 gap-2 text-xs"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono font-bold bg-muted px-2 py-0.5 rounded text-[11px]">
+                                  #{item.sourceId}
+                                </span>
+                                <div>
+                                  <span className="font-semibold text-foreground">
+                                    {item.therapistName}
+                                  </span>
+                                  {item.patientName && (
+                                    <span className="text-muted-foreground ml-2">
+                                      ({item.patientName})
+                                    </span>
+                                  )}
+                                  {item.therapyType && (
+                                    <span className="text-muted-foreground text-[11px] block">
+                                      {item.therapyType}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="font-bold text-primary">
+                                    <Price amount={item.netAmount} showDecimals />
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    Net Payout
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant={item.state === 'paid' ? 'default' : 'secondary'}
+                                  className="text-[11px]"
+                                >
+                                  {item.state}
+                                </Badge>
+                                {item.state !== 'paid' ? (
+                                  <ManualPaymentDialog
+                                    sourceId={item.sourceId}
+                                    grossAmount={item.grossAmount}
+                                    netAmount={item.netAmount}
+                                    therapistName={item.therapistName}
+                                    patientName={item.patientName}
+                                    onPaymentSuccess={() => {
+                                      setPayoutItems((prev) =>
+                                        prev.map((p) =>
+                                          p.sourceId === item.sourceId
+                                            ? { ...p, state: 'paid' }
+                                            : p
+                                        )
+                                      );
+                                    }}
+                                  />
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs text-emerald-600 border-emerald-300"
+                                  >
+                                    Paid
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
+            );
+          })
         )}
       </TableBody>
     </Table>
