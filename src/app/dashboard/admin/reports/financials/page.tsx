@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { Price } from "@/components/money/price";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import type { PayoutItem, Therapist, Appointment } from "@/lib/types";
 import { listPayoutItems } from "@/lib/repos/payouts";
 import { listTherapists } from "@/lib/repos/therapists";
@@ -28,7 +28,9 @@ import {
   Receipt, 
   TrendingUp, 
   DollarSign, 
-  Users 
+  Users,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { getSafeDate, downloadCsv } from "@/lib/utils";
 import { ManualPaymentDialog } from "@/components/admin/ManualPaymentDialog";
@@ -54,6 +56,8 @@ interface PeriodSummary {
   tdsDeducted: number;
   netAmount: number;
   therapistIds: Set<string | number>;
+  therapistNames: string[];
+  items: EnrichedPayoutItem[];
 }
 
 export default function FinancialReportPage() {
@@ -64,6 +68,11 @@ export default function FinancialReportPage() {
   const [filters, setFilters] = useState<any>({});
   const [activeTab, setActiveTab] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
   const [quickPeriod, setQuickPeriod] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (key: string) => {
+    setExpandedKeys((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,15 +101,18 @@ export default function FinancialReportPage() {
   const therapistMap = useMemo(() => {
     const map = new Map<string, Therapist>();
     therapists.forEach((t) => {
-      map.set(String(t.id), t);
+      if (t.id != null) map.set(String(t.id), t);
+      if (t.user_id != null) map.set(String(t.user_id), t);
     });
     return map;
   }, [therapists]);
 
   const appointmentMap = useMemo(() => {
-    const map = new Map<number, Appointment>();
+    const map = new Map<string, Appointment>();
     appointments.forEach((a) => {
-      map.set(a.id, a);
+      if (a.id != null) {
+        map.set(String(a.id), a);
+      }
     });
     return map;
   }, [appointments]);
@@ -108,8 +120,9 @@ export default function FinancialReportPage() {
   // Enriched raw transactions
   const enrichedData: EnrichedPayoutItem[] = useMemo(() => {
     return payoutItems.map((item) => {
-      const appt = appointmentMap.get(item.sourceId);
-      const therapist = therapistMap.get(String(item.therapistId));
+      const appt = item.sourceId != null ? appointmentMap.get(String(item.sourceId)) : undefined;
+      const tId = item.therapistId || appt?.therapistId;
+      const therapist = tId != null ? therapistMap.get(String(tId)) : undefined;
 
       let tDate: Date | null = null;
       if (item.createdAt) {
@@ -125,11 +138,17 @@ export default function FinancialReportPage() {
         tDate = new Date();
       }
 
+      const resolvedTherapistName = 
+        item.therapistName || 
+        therapist?.name || 
+        appt?.therapist || 
+        (tId ? `Therapist #${tId}` : 'Therapist');
+
       return {
         ...item,
-        therapistName: item.therapistName || therapist?.name || appt?.therapist || `Therapist #${item.therapistId}`,
-        therapistPan: item.therapistPan || therapist?.tax?.pan || therapist?.pan || '-',
-        patientName: appt?.patientName || `Patient #${item.patientId}`,
+        therapistName: resolvedTherapistName,
+        therapistPan: item.therapistPan || (therapist as any)?.tax?.pan || (therapist as any)?.pan || '-',
+        patientName: appt?.patientName || (item.patientId ? `Patient #${item.patientId}` : 'Patient'),
         therapyType: appt?.therapyType || item.serviceTypeId || 'General Therapy',
         transactionDate: tDate,
       };
@@ -205,6 +224,8 @@ export default function FinancialReportPage() {
           tdsDeducted: 0,
           netAmount: 0,
           therapistIds: new Set(),
+          therapistNames: [],
+          items: [],
         });
       }
 
@@ -216,6 +237,10 @@ export default function FinancialReportPage() {
       entry.tdsDeducted += item.tdsDeducted || 0;
       entry.netAmount += item.netAmount || 0;
       if (item.therapistId) entry.therapistIds.add(item.therapistId);
+      if (item.therapistName && !entry.therapistNames.includes(item.therapistName)) {
+        entry.therapistNames.push(item.therapistName);
+      }
+      entry.items.push(item);
     });
 
     return Array.from(map.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -250,6 +275,8 @@ export default function FinancialReportPage() {
           tdsDeducted: 0,
           netAmount: 0,
           therapistIds: new Set(),
+          therapistNames: [],
+          items: [],
         });
       }
 
@@ -261,6 +288,10 @@ export default function FinancialReportPage() {
       entry.tdsDeducted += item.tdsDeducted || 0;
       entry.netAmount += item.netAmount || 0;
       if (item.therapistId) entry.therapistIds.add(item.therapistId);
+      if (item.therapistName && !entry.therapistNames.includes(item.therapistName)) {
+        entry.therapistNames.push(item.therapistName);
+      }
+      entry.items.push(item);
     });
 
     return Array.from(map.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -287,6 +318,8 @@ export default function FinancialReportPage() {
           tdsDeducted: 0,
           netAmount: 0,
           therapistIds: new Set(),
+          therapistNames: [],
+          items: [],
         });
       }
 
@@ -298,6 +331,10 @@ export default function FinancialReportPage() {
       entry.tdsDeducted += item.tdsDeducted || 0;
       entry.netAmount += item.netAmount || 0;
       if (item.therapistId) entry.therapistIds.add(item.therapistId);
+      if (item.therapistName && !entry.therapistNames.includes(item.therapistName)) {
+        entry.therapistNames.push(item.therapistName);
+      }
+      entry.items.push(item);
     });
 
     return Array.from(map.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -324,7 +361,7 @@ export default function FinancialReportPage() {
         (item.gstOnPlatformFee / 100).toFixed(2),
         (item.tdsDeducted / 100).toFixed(2),
         (item.netAmount / 100).toFixed(2),
-        item.therapistIds.size,
+        item.therapistNames.length > 0 ? item.therapistNames.join('; ') : item.therapistIds.size,
       ]);
       downloadCsv(headers, data, 'therapy-financial-daily-report.csv');
       return;
@@ -349,7 +386,7 @@ export default function FinancialReportPage() {
         (item.gstOnPlatformFee / 100).toFixed(2),
         (item.tdsDeducted / 100).toFixed(2),
         (item.netAmount / 100).toFixed(2),
-        item.therapistIds.size,
+        item.therapistNames.length > 0 ? item.therapistNames.join('; ') : item.therapistIds.size,
       ]);
       downloadCsv(headers, data, 'therapy-financial-weekly-report.csv');
       return;
@@ -374,7 +411,7 @@ export default function FinancialReportPage() {
         (item.gstOnPlatformFee / 100).toFixed(2),
         (item.tdsDeducted / 100).toFixed(2),
         (item.netAmount / 100).toFixed(2),
-        item.therapistIds.size,
+        item.therapistNames.length > 0 ? item.therapistNames.join('; ') : item.therapistIds.size,
       ]);
       downloadCsv(headers, data, 'therapy-financial-monthly-report.csv');
       return;
@@ -419,6 +456,192 @@ export default function FinancialReportPage() {
 
     downloadCsv(headers, data, 'therapy-financial-detailed-transactions.csv');
   };
+
+  const renderSummaryTable = (
+    data: PeriodSummary[],
+    periodHeader: string,
+    emptyMessage: string
+  ) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{periodHeader}</TableHead>
+          <TableHead className="text-center">Txn Count</TableHead>
+          <TableHead>Therapist(s)</TableHead>
+          <TableHead className="text-right">Gross Revenue</TableHead>
+          <TableHead className="text-right">Platform Fee</TableHead>
+          <TableHead className="text-right">GST on Fee</TableHead>
+          <TableHead className="text-right">TDS Withheld</TableHead>
+          <TableHead className="text-right">Net Payable</TableHead>
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableRow>
+            <TableCell colSpan={9}>
+              <Skeleton className="h-24 w-full" />
+            </TableCell>
+          </TableRow>
+        ) : data.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+              {emptyMessage}
+            </TableCell>
+          </TableRow>
+        ) : (
+          data.map((row) => (
+            <React.Fragment key={row.key}>
+              <TableRow>
+                <TableCell className="font-medium whitespace-nowrap">
+                  {row.label}
+                </TableCell>
+                <TableCell className="text-center font-mono font-semibold">
+                  <Badge variant="outline">{row.count}</Badge>
+                </TableCell>
+                <TableCell className="font-medium text-xs">
+                  {row.therapistNames.length > 0 ? (
+                    <div className="flex flex-col gap-0.5">
+                      {row.therapistNames.map((name, i) => (
+                        <span key={i} className="font-semibold text-foreground">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground font-mono">
+                      {row.therapistIds.size} therapist(s)
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  <Price amount={row.grossAmount} showDecimals />
+                </TableCell>
+                <TableCell className="text-right text-emerald-600 font-medium">
+                  <Price amount={row.platformFeeAmount} showDecimals />
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  <Price amount={row.gstOnPlatformFee} showDecimals />
+                </TableCell>
+                <TableCell className="text-right text-amber-600">
+                  <Price amount={row.tdsDeducted} showDecimals />
+                </TableCell>
+                <TableCell className="text-right font-bold text-primary">
+                  <Price amount={row.netAmount} showDecimals />
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
+                  <div className="flex items-center justify-end gap-1.5">
+                    {row.items.some((it) => it.state !== 'paid') ? (
+                      row.items.length === 1 ? (
+                        <ManualPaymentDialog
+                          sourceId={row.items[0].sourceId}
+                          grossAmount={row.items[0].grossAmount}
+                          netAmount={row.items[0].netAmount}
+                          therapistName={row.items[0].therapistName}
+                          patientName={row.items[0].patientName}
+                          onPaymentSuccess={() => {
+                            setPayoutItems((prev) =>
+                              prev.map((p) =>
+                                p.sourceId === row.items[0].sourceId ? { ...p, state: 'paid' } : p
+                              )
+                            );
+                          }}
+                        />
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 gap-1"
+                          onClick={() => toggleExpand(row.key)}
+                        >
+                          <span>Pay ({row.items.filter((it) => it.state !== 'paid').length})</span>
+                          {expandedKeys[row.key] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        </Button>
+                      )
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+                        Paid
+                      </Badge>
+                    )}
+                    {row.items.length > 1 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs h-7 px-1.5"
+                        onClick={() => toggleExpand(row.key)}
+                      >
+                        {expandedKeys[row.key] ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+              {expandedKeys[row.key] && (
+                <TableRow className="bg-muted/30 hover:bg-muted/30 border-b">
+                  <TableCell colSpan={9} className="p-3">
+                    <div className="rounded-lg border bg-background p-3 space-y-2 shadow-sm">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Transactions in {row.label} ({row.items.length})
+                      </div>
+                      <div className="divide-y divide-border">
+                        {row.items.map((item, idx) => (
+                          <div key={item.id || `${item.sourceId}-${idx}`} className="flex flex-wrap items-center justify-between py-2 gap-2 text-xs">
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono font-bold bg-muted px-2 py-0.5 rounded text-[11px]">#{item.sourceId}</span>
+                              <div>
+                                <span className="font-semibold text-foreground">{item.therapistName}</span>
+                                {item.patientName && (
+                                  <span className="text-muted-foreground ml-2">({item.patientName})</span>
+                                )}
+                                {item.therapyType && (
+                                  <span className="text-muted-foreground text-[11px] block">{item.therapyType}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="font-bold text-primary">
+                                  <Price amount={item.netAmount} showDecimals />
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">Net Payout</div>
+                              </div>
+                              <Badge variant={item.state === 'paid' ? 'default' : 'secondary'} className="text-[11px]">
+                                {item.state}
+                              </Badge>
+                              {item.state !== 'paid' ? (
+                                <ManualPaymentDialog
+                                  sourceId={item.sourceId}
+                                  grossAmount={item.grossAmount}
+                                  netAmount={item.netAmount}
+                                  therapistName={item.therapistName}
+                                  patientName={item.patientName}
+                                  onPaymentSuccess={() => {
+                                    setPayoutItems((prev) =>
+                                      prev.map((p) =>
+                                        p.sourceId === item.sourceId ? { ...p, state: 'paid' } : p
+                                      )
+                                    );
+                                  }}
+                                />
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+                                  Paid
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </React.Fragment>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="space-y-6">
@@ -709,64 +932,7 @@ export default function FinancialReportPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-center">Txn Count</TableHead>
-                    <TableHead className="text-center">Therapists</TableHead>
-                    <TableHead className="text-right">Gross Revenue</TableHead>
-                    <TableHead className="text-right">Platform Fee</TableHead>
-                    <TableHead className="text-right">GST on Fee</TableHead>
-                    <TableHead className="text-right">TDS Withheld</TableHead>
-                    <TableHead className="text-right">Net Payable</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8}>
-                        <Skeleton className="h-24 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ) : dailySummary.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No daily transactions found for the selected period.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    dailySummary.map((day) => (
-                      <TableRow key={day.key}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {day.label}
-                        </TableCell>
-                        <TableCell className="text-center font-mono font-semibold">
-                          <Badge variant="outline">{day.count}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-mono text-muted-foreground">
-                          {day.therapistIds.size}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          <Price amount={day.grossAmount} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-emerald-600 font-medium">
-                          <Price amount={day.platformFeeAmount} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          <Price amount={day.gstOnPlatformFee} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-amber-600">
-                          <Price amount={day.tdsDeducted} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          <Price amount={day.netAmount} showDecimals />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              {renderSummaryTable(dailySummary, 'Date', 'No daily transactions found for the selected period.')}
             </CardContent>
           </Card>
         </TabsContent>
@@ -786,64 +952,7 @@ export default function FinancialReportPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Week Period</TableHead>
-                    <TableHead className="text-center">Txn Count</TableHead>
-                    <TableHead className="text-center">Therapists</TableHead>
-                    <TableHead className="text-right">Gross Revenue</TableHead>
-                    <TableHead className="text-right">Platform Fee</TableHead>
-                    <TableHead className="text-right">GST on Fee</TableHead>
-                    <TableHead className="text-right">TDS Withheld</TableHead>
-                    <TableHead className="text-right">Net Payable</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8}>
-                        <Skeleton className="h-24 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ) : weeklySummary.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No weekly transactions found for the selected period.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    weeklySummary.map((week) => (
-                      <TableRow key={week.key}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {week.label}
-                        </TableCell>
-                        <TableCell className="text-center font-mono font-semibold">
-                          <Badge variant="outline">{week.count}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-mono text-muted-foreground">
-                          {week.therapistIds.size}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          <Price amount={week.grossAmount} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-emerald-600 font-medium">
-                          <Price amount={week.platformFeeAmount} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          <Price amount={week.gstOnPlatformFee} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-amber-600">
-                          <Price amount={week.tdsDeducted} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          <Price amount={week.netAmount} showDecimals />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              {renderSummaryTable(weeklySummary, 'Week Period', 'No weekly transactions found for the selected period.')}
             </CardContent>
           </Card>
         </TabsContent>
@@ -863,64 +972,7 @@ export default function FinancialReportPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Month & Year</TableHead>
-                    <TableHead className="text-center">Txn Count</TableHead>
-                    <TableHead className="text-center">Therapists</TableHead>
-                    <TableHead className="text-right">Gross Revenue</TableHead>
-                    <TableHead className="text-right">Platform Fee</TableHead>
-                    <TableHead className="text-right">GST on Fee</TableHead>
-                    <TableHead className="text-right">TDS Withheld</TableHead>
-                    <TableHead className="text-right">Net Payable</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8}>
-                        <Skeleton className="h-24 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ) : monthlySummary.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No monthly transactions found for the selected period.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    monthlySummary.map((month) => (
-                      <TableRow key={month.key}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {month.label}
-                        </TableCell>
-                        <TableCell className="text-center font-mono font-semibold">
-                          <Badge variant="outline">{month.count}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-mono text-muted-foreground">
-                          {month.therapistIds.size}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          <Price amount={month.grossAmount} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-emerald-600 font-medium">
-                          <Price amount={month.platformFeeAmount} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          <Price amount={month.gstOnPlatformFee} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right text-amber-600">
-                          <Price amount={month.tdsDeducted} showDecimals />
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          <Price amount={month.netAmount} showDecimals />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              {renderSummaryTable(monthlySummary, 'Month & Year', 'No monthly transactions found for the selected period.')}
             </CardContent>
           </Card>
         </TabsContent>
