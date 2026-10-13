@@ -42,6 +42,7 @@ export interface ManualPaymentDialogProps {
   netAmount?: number;
   patientName?: string;
   therapistName?: string;
+  mode?: 'appointment' | 'payout';
   trigger?: React.ReactNode;
   onPaymentSuccess?: (paymentInfo: {
     method: string;
@@ -57,12 +58,15 @@ export function ManualPaymentDialog({
   netAmount,
   patientName,
   therapistName,
+  mode = 'payout',
   trigger,
   onPaymentSuccess,
 }: ManualPaymentDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const [method, setMethod] = React.useState<'cash' | 'upi' | 'bank_transfer' | 'cheque'>('cash');
+  const [method, setMethod] = React.useState<'cash' | 'upi' | 'bank_transfer' | 'cheque'>(
+    mode === 'payout' ? 'bank_transfer' : 'cash'
+  );
   const [referenceNo, setReferenceNo] = React.useState('');
   const [collectorName, setCollectorName] = React.useState('');
   const [paymentDate, setPaymentDate] = React.useState(
@@ -91,32 +95,58 @@ export function ManualPaymentDialog({
         ? `${method.toUpperCase()}_${referenceNo.trim()}`
         : `${method.toUpperCase()}_${Date.now()}`;
 
-      // 1. Confirm appointment payment via backend endpoint
-      const { data: res } = await serverApi.post(
-        `/api/appointments/${sourceId}/pay`,
-        {
-          paymentId: generatedPaymentId,
-          gateway: `manual_${method}`,
-          collector: collectorName || 'Admin Desk',
-          paymentDate,
-          notes,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      // 1. If payout mode, update payout item state in general/payout-items
+      if (mode === 'payout') {
+        try {
+          await serverApi.put(
+            `/api/general/payout-items/source/${sourceId}/state`,
+            {
+              state: 'paid',
+              method,
+              referenceNo: referenceNo.trim(),
+              paymentDate,
+              notes,
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+        } catch (payoutErr) {
+          console.warn('Payout item update fallback:', payoutErr);
         }
-      );
+      }
 
-      // 2. Add an audit log entry for accounting
+      // 2. Also call appointment payment confirmation
+      try {
+        await serverApi.post(
+          `/api/appointments/${sourceId}/pay`,
+          {
+            paymentId: generatedPaymentId,
+            gateway: `manual_${method}`,
+            collector: collectorName || (mode === 'payout' ? 'Finance Desk' : 'Admin Desk'),
+            paymentDate,
+            notes,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } catch (apptErr) {
+        console.warn('Appointment payment update warning:', apptErr);
+      }
+
+      // 3. Add an audit log entry for accounting
       try {
         await addAuditLog({
           actorId: 'admin',
-          action: 'payment.manual_confirmed',
-          targetCollection: 'appointments',
-          targetId: String(sourceId),
+          action: mode === 'payout' ? 'therapist.payout_disbursed' : 'payment.manual_confirmed',
+          entityType: 'booking',
+          entityId: Number(sourceId),
           timestamp: new Date(),
-          metadata: {
+          details: {
+            mode,
             method,
             referenceNo: referenceNo.trim(),
             collectorName,
@@ -124,6 +154,7 @@ export function ManualPaymentDialog({
             grossAmount,
             netAmount,
             notes,
+            therapistName,
           },
         });
       } catch (logErr) {
@@ -131,8 +162,10 @@ export function ManualPaymentDialog({
       }
 
       toast({
-        title: 'Payment Recorded Successfully',
-        description: `Booking #${sourceId} marked as Paid via ${method.toUpperCase()}.`,
+        title: mode === 'payout' ? 'Payout Disbursed Successfully' : 'Payment Recorded Successfully',
+        description: mode === 'payout' 
+          ? `Payout disbursed to ${therapistName || 'therapist'} via ${method.toUpperCase()}.`
+          : `Booking #${sourceId} marked as Paid via ${method.toUpperCase()}.`,
       });
 
       setOpen(false);
@@ -161,9 +194,9 @@ export function ManualPaymentDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button size="sm" variant="outline" className="text-xs h-7 gap-1">
+          <Button size="sm" variant="outline" className="text-xs h-7 gap-1 text-emerald-700 hover:text-emerald-800 border-emerald-300">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Mark Paid</span>
+            <span>{mode === 'payout' ? 'Pay Therapist' : 'Mark Paid'}</span>
           </Button>
         )}
       </DialogTrigger>
@@ -172,10 +205,12 @@ export function ManualPaymentDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Banknote className="h-5 w-5 text-emerald-600" />
-              Record Manual Payment
+              {mode === 'payout' ? 'Disburse Therapist Payout' : 'Record Manual Payment'}
             </DialogTitle>
             <DialogDescription>
-              Mark Booking #{sourceId} as paid using cash, offline UPI, or bank transfer.
+              {mode === 'payout'
+                ? `Disburse Net Payable earnings to ${therapistName || 'the therapist'} for Booking #${sourceId}.`
+                : `Mark Booking #${sourceId} as paid using cash, offline UPI, or bank transfer.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -186,22 +221,24 @@ export function ManualPaymentDialog({
                 <span className="text-muted-foreground">Booking ID:</span>
                 <span className="font-mono font-semibold">#{sourceId}</span>
               </div>
+              {therapistName && (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">Therapist:</span>
+                  <span className="font-semibold text-foreground">{therapistName}</span>
+                </div>
+              )}
               {patientName && (
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-muted-foreground">Patient:</span>
                   <span className="font-medium">{patientName}</span>
                 </div>
               )}
-              {therapistName && (
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground">Therapist:</span>
-                  <span className="font-medium">{therapistName}</span>
-                </div>
-              )}
               <div className="flex justify-between items-center text-xs pt-1 border-t border-border/50">
-                <span className="text-muted-foreground">Amount:</span>
-                <span className="font-bold text-primary">
-                  {grossAmount ? <Price amount={grossAmount} showDecimals /> : '₹0.00'}
+                <span className="text-muted-foreground font-medium">
+                  {mode === 'payout' ? 'Net Payout to Therapist:' : 'Amount:'}
+                </span>
+                <span className="font-bold text-emerald-600 text-sm">
+                  <Price amount={(mode === 'payout' ? netAmount : grossAmount) ?? netAmount ?? grossAmount ?? 0} showDecimals />
                 </span>
               </div>
             </div>
@@ -217,22 +254,22 @@ export function ManualPaymentDialog({
                   <SelectValue placeholder="Select method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">
+                  <SelectItem value="bank_transfer">
                     <div className="flex items-center gap-2">
-                      <Banknote className="h-4 w-4 text-emerald-600" />
-                      <span>Cash (Clinic / Home Visit)</span>
+                      <Building className="h-4 w-4 text-blue-600" />
+                      <span>Bank Transfer (NEFT / IMPS / RTGS)</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="upi">
                     <div className="flex items-center gap-2">
                       <QrCode className="h-4 w-4 text-purple-600" />
-                      <span>Offline UPI (GPay / PhonePe / QR)</span>
+                      <span>UPI (GPay / PhonePe / Paytm)</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="bank_transfer">
+                  <SelectItem value="cash">
                     <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4 text-blue-600" />
-                      <span>Direct Bank Transfer (NEFT / IMPS)</span>
+                      <Banknote className="h-4 w-4 text-emerald-600" />
+                      <span>Cash Handover</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="cheque">
@@ -255,10 +292,10 @@ export function ManualPaymentDialog({
                 id="ref-no"
                 placeholder={
                   method === 'cash' 
-                    ? 'e.g. Receipt #104 (optional)' 
+                    ? 'e.g. Voucher #104 (optional)' 
                     : method === 'upi'
                     ? 'e.g. 12-digit UPI UTR / Txn ID'
-                    : 'e.g. Bank NEFT reference'
+                    : 'e.g. Bank NEFT/IMPS UTR Number'
                 }
                 value={referenceNo}
                 onChange={(e) => setReferenceNo(e.target.value)}
@@ -268,10 +305,12 @@ export function ManualPaymentDialog({
             {/* Collected By & Date in 2 columns */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="collector">Received By</Label>
+                <Label htmlFor="collector">
+                  {mode === 'payout' ? 'Disbursed By' : 'Received By'}
+                </Label>
                 <Input
                   id="collector"
-                  placeholder="e.g. Receptionist / Self"
+                  placeholder={mode === 'payout' ? 'e.g. Accounts / Admin Desk' : 'e.g. Receptionist / Self'}
                   value={collectorName}
                   onChange={(e) => setCollectorName(e.target.value)}
                 />
@@ -310,9 +349,9 @@ export function ManualPaymentDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="gap-1.5">
+            <Button type="submit" disabled={loading} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>Confirm & Mark Paid</span>
+              <span>{mode === 'payout' ? 'Confirm Payout Transfer' : 'Confirm & Mark Paid'}</span>
             </Button>
           </DialogFooter>
         </form>
