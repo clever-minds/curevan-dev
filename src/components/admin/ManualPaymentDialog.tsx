@@ -37,15 +37,15 @@ import { getToken } from '@/lib/auth';
 import { addAuditLog } from '@/lib/repos/logs';
 
 export interface ManualPaymentDialogProps {
-  sourceId?: number;
-  sourceIds?: number[];
+  sourceId?: number | string;
+  sourceIds?: (number | string)[];
   grossAmount?: number;
   netAmount?: number;
   patientName?: string;
   therapistName?: string;
   periodLabel?: string;
   bookingsList?: {
-    id: number;
+    id: number | string;
     therapistName?: string;
     patientName?: string;
     netAmount?: number;
@@ -87,8 +87,8 @@ export function ManualPaymentDialog({
   const { toast } = useToast();
 
   const idsToPay = React.useMemo(() => {
-    if (sourceIds && sourceIds.length > 0) return sourceIds;
-    if (sourceId) return [sourceId];
+    if (sourceIds && sourceIds.length > 0) return sourceIds.filter(Boolean);
+    if (sourceId !== undefined && sourceId !== null && sourceId !== '') return [sourceId];
     return [];
   }, [sourceId, sourceIds]);
 
@@ -246,10 +246,10 @@ export function ManualPaymentDialog({
             </DialogTitle>
             <DialogDescription>
               {mode === 'payout'
-                ? (idsToPay.length > 1
-                    ? `Disburse combined total Net Payable for ${idsToPay.length} bookings${periodLabel ? ` in ${periodLabel}` : ''} in a single transaction.`
-                    : `Disburse Net Payable earnings to ${therapistName || 'the therapist'} for Booking #${idsToPay[0]}.`)
-                : `Mark Booking #${idsToPay.join(', #')} as paid using cash, offline UPI, or bank transfer.`}
+                ? idsToPay.length > 1
+                  ? `Disburse combined total Net Payable for ${idsToPay.length} bookings${periodLabel ? ` in ${periodLabel}` : ''} in a single transaction.`
+                  : `Disburse Net Payable earnings to ${therapistName || 'the therapist'} for Booking #${idsToPay[0] || '-'}.`
+                : `Mark Booking #${idsToPay.length > 0 ? idsToPay.join(', #') : '-'} as paid using cash, offline UPI, or bank transfer.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -261,7 +261,11 @@ export function ManualPaymentDialog({
                   {idsToPay.length > 1 ? 'Bookings Included:' : 'Booking ID:'}
                 </span>
                 <span className="font-mono font-semibold">
-                  {idsToPay.length > 1 ? `${idsToPay.length} Bookings (#${idsToPay.join(', #')})` : `#${idsToPay[0]}`}
+                  {idsToPay.length > 1
+                    ? `${idsToPay.length} Bookings (#${idsToPay.join(', #')})`
+                    : idsToPay.length === 1
+                    ? `#${idsToPay[0]}`
+                    : '-'}
                 </span>
               </div>
               {periodLabel && (
@@ -290,13 +294,13 @@ export function ManualPaymentDialog({
                     Individual Breakdown:
                   </div>
                   <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                    {bookingsList.map((b) => (
-                      <div key={b.id} className="flex justify-between items-center text-xs bg-background/80 px-2 py-1 rounded border">
+                    {bookingsList.map((b, idx) => (
+                      <div key={b?.id ? String(b.id) : idx} className="flex justify-between items-center text-xs bg-background/80 px-2 py-1 rounded border">
                         <span className="font-mono text-muted-foreground">
-                          #{b.id} {b.therapistName ? `• ${b.therapistName}` : ''}
+                          #{b?.id} {b?.therapistName ? `• ${b.therapistName}` : ''}
                         </span>
                         <span className="font-semibold text-foreground">
-                          <Price amount={b.netAmount ?? 0} showDecimals />
+                          <Price amount={b?.netAmount ?? 0} showDecimals />
                         </span>
                       </div>
                     ))}

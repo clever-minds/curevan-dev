@@ -206,6 +206,7 @@ const handleCancelAppointment = async () => {
         )}
         {isAdmin && appointment.paymentStatus !== 'Paid' && (
           <ManualPaymentDialog
+            mode="appointment"
             sourceId={appointment.id}
             grossAmount={((appointment.totalAmount || appointment.serviceAmount || 0) * 100)}
             therapistName={appointment.therapist}
@@ -250,6 +251,7 @@ const handleCancelAppointment = async () => {
             )}
              {isAdmin && appointment.paymentStatus !== 'Paid' && (
                <ManualPaymentDialog
+                 mode="appointment"
                  sourceId={appointment.id}
                  grossAmount={((appointment.totalAmount || appointment.serviceAmount || 0) * 100)}
                  therapistName={appointment.therapist}

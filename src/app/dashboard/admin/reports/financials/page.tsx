@@ -491,10 +491,10 @@ export default function FinancialReportPage() {
           </TableRow>
         ) : (
           data.map((row) => {
-            const unpaidItems = row.items.filter((it) => it.state !== 'paid');
+            const unpaidItems = (row.items || []).filter((it) => it && it.state !== 'paid');
             const totalUnpaidNet = unpaidItems.reduce((acc, it) => acc + (it.netAmount || 0), 0);
             const totalUnpaidGross = unpaidItems.reduce((acc, it) => acc + (it.grossAmount || 0), 0);
-            const unpaidIds = unpaidItems.map((it) => it.sourceId);
+            const unpaidIds = unpaidItems.map((it) => it.sourceId).filter(Boolean);
 
             return (
               <React.Fragment key={row.key}>
@@ -506,7 +506,7 @@ export default function FinancialReportPage() {
                     <Badge variant="outline">{row.count}</Badge>
                   </TableCell>
                   <TableCell className="font-medium text-xs">
-                    {row.therapistNames.length > 0 ? (
+                    {(row.therapistNames || []).length > 0 ? (
                       <div className="flex flex-col gap-0.5">
                         {row.therapistNames.map((name, i) => (
                           <span key={i} className="font-semibold text-foreground">
@@ -516,7 +516,7 @@ export default function FinancialReportPage() {
                       </div>
                     ) : (
                       <span className="text-muted-foreground font-mono">
-                        {row.therapistIds.size} therapist(s)
+                        {(row.therapistIds || new Set()).size} therapist(s)
                       </span>
                     )}
                   </TableCell>
@@ -539,14 +539,15 @@ export default function FinancialReportPage() {
                     <div className="flex items-center justify-end gap-1.5">
                       {unpaidItems.length > 0 ? (
                         <ManualPaymentDialog
+                          mode="payout"
                           sourceIds={unpaidIds}
                           sourceId={unpaidIds[0]}
                           grossAmount={totalUnpaidGross}
                           netAmount={totalUnpaidNet}
-                          therapistName={row.therapistNames.join(', ')}
+                          therapistName={(row.therapistNames || []).join(', ')}
                           periodLabel={row.label}
-                          bookingsList={unpaidItems.map((it) => ({
-                            id: it.sourceId,
+                          bookingsList={unpaidItems.map((it, idx) => ({
+                            id: it.sourceId || idx,
                             therapistName: it.therapistName,
                             patientName: it.patientName,
                             netAmount: it.netAmount,
@@ -606,14 +607,15 @@ export default function FinancialReportPage() {
                           </div>
                           {unpaidItems.length > 1 && (
                             <ManualPaymentDialog
+                              mode="payout"
                               sourceIds={unpaidIds}
                               sourceId={unpaidIds[0]}
                               grossAmount={totalUnpaidGross}
                               netAmount={totalUnpaidNet}
-                              therapistName={row.therapistNames.join(', ')}
+                              therapistName={(row.therapistNames || []).join(', ')}
                               periodLabel={row.label}
-                              bookingsList={unpaidItems.map((it) => ({
-                                id: it.sourceId,
+                              bookingsList={unpaidItems.map((it, idx) => ({
+                                id: it.sourceId || idx,
                                 therapistName: it.therapistName,
                                 patientName: it.patientName,
                                 netAmount: it.netAmount,
