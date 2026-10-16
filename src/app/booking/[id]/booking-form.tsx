@@ -1036,7 +1036,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             reports: processedReports,
             addressId:
               data.sessionMode === "home" ? Number(data.addressId) : undefined,
-            status: "Pending Approval", // Initially pending approval by therapist
+            status: "Pending", // server decides the real status (pack P07: Pending until paid)
             verificationStatus: "Not Verified",
           },
         );
