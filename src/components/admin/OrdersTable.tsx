@@ -144,7 +144,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
     setIsRefunded(true);
     const result = await initiateRefundAction({ orderId: order.id, amount: parseFloat(amount), reason: reason || undefined });
     if (result.success) {
-      toast({ title: 'Refund Initiated', description: result.message || `Refund for order #${order.id} has been processed.` });
+      toast({ title: 'Refund Initiated', description: result.message || `Refund for order #${order.id} was sent to Razorpay. It shows as processed once Razorpay confirms.` });
       if (onRefresh) onRefresh();
     } else {
       toast({ variant: 'destructive', title: 'Refund Failed', description: result.message || 'Could not process refund.' });

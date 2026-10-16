@@ -92,7 +92,7 @@ const ActionsMenu = ({ rma, scope, onRefresh, asSheetItems = false }: { rma: Ret
     });
     
     if (result.success) {
-      toast({ title: 'Refund Initiated', description: `Refund for RMA #${rma.id} has been processed.` });
+      toast({ title: 'Refund Initiated', description: `Refund for RMA #${rma.id} was sent to Razorpay. It shows as processed once Razorpay confirms.` });
       if (onRefresh) onRefresh();
     } else {
       toast({ variant: 'destructive', title: 'Refund Failed', description: result.message });
