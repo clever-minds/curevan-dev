@@ -125,10 +125,16 @@ export default function SosAlertsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span className="flex-1">Location: <strong>{appointment?.serviceAddress?.line1 || 'Loading...'}</strong></span>
+                        <span className="flex-1">Patient: <strong>{appointment?.patientName || 'N/A'}</strong>{appointment?.mode ? ` (${appointment.mode} visit)` : ''}</span>
                       </div>
                     </div>
-                    <AlertMap lat={alert.location._latitude ?? alert.location.lat} lng={alert.location._longitude ?? alert.location.lng} />
+                    {(() => {
+                      const lat = Number(alert.location?._latitude ?? alert.location?.lat);
+                      const lng = Number(alert.location?._longitude ?? alert.location?.lng);
+                      return Number.isFinite(lat) && Number.isFinite(lng) && alert.location?.lat !== null
+                        ? <AlertMap lat={lat} lng={lng} />
+                        : <div className="h-24 bg-muted rounded-md flex items-center justify-center text-sm text-muted-foreground">Location was not available when this alert was raised. Call the therapist.</div>;
+                    })()}
                   </CardContent>
                 </Card>
               )

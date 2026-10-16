@@ -341,7 +341,7 @@ const AppointmentCard = ({ appointment, scope, context }: { appointment: Appoint
             <div className="mt-4 space-y-1 text-sm">
                 <p><strong>Service:</strong> {appointment.therapyType}</p>
                 <p><strong>Mode:</strong> {appointment.mode}</p>
-                 {appointment.mode === 'home' && appointment.serviceAddress && (
+                 {appointment.mode === 'home' && appointment.serviceAddress && typeof appointment.serviceAddress === 'object' && (
                     <p className="text-xs text-muted-foreground">
                         <strong>Location:</strong> {appointment.serviceAddress.line1}, {appointment.serviceAddress.city}
                     </p>
@@ -426,7 +426,7 @@ React.useEffect(() => {
                   <TableCell>{formatDateSafe(appointment.date)} at {appointment.time}</TableCell>
                   <TableCell>{scope === 'patient' ? appointment.therapist : appointment.patientName}</TableCell>
                   <TableCell>{appointment.therapyType}</TableCell>
-                  <TableCell>{appointment.serviceAddress ? `${appointment.serviceAddress.city}` : 'N/A'}</TableCell>
+                  <TableCell>{appointment.serviceAddress && typeof appointment.serviceAddress === 'object' ? `${appointment.serviceAddress.city}` : 'N/A'}</TableCell>
                   <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
                   <TableCell><Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{appointment.status}</Badge></TableCell>
                   <TableCell><Badge className={cn(getPaymentBadgeVariant(appointment.paymentStatus))} variant="secondary">{appointment.paymentStatus}</Badge></TableCell>
