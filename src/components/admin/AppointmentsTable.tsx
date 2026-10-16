@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
-import { listAppointments, listAppointmentsForUser, cancelAppointments, acceptBookingRequest, rejectBookingRequest } from '@/lib/repos/appointments';
+import { listAppointments, listAppointmentsForUser, acceptBookingRequest, rejectBookingRequest } from '@/lib/repos/appointments';
 import { format, parseISO } from 'date-fns';
 import { RescheduleDialog } from '@/components/patient/RescheduleDialog';
 import { ReviewDialog } from '@/components/patient/ReviewDialog';
@@ -33,6 +33,7 @@ import { startAppointmentPayment, verifyBookingPayment } from '@/lib/actions/boo
 import { getToken } from '@/lib/auth';
 import { ManualPaymentDialog } from '@/components/admin/ManualPaymentDialog';
 import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
+import { CancelBookingDialog } from '@/components/cancel-booking-dialog';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -173,30 +174,9 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
         }
     };
 
-const handleCancelAppointment = async () => {
-    if (!confirm("Are you sure you want to cancel this appointment?")) return;
+  const cancelRole: 'patient' | 'therapist' | 'admin' = isAdmin ? 'admin' : isTherapist ? 'therapist' : 'patient';
+  const canCancel = !isFinished(appointment.status) && appointment.status !== 'pcr_pending';
 
-        try {
-          setLoading(true);
-          // Call repo function
-          await cancelAppointments(appointment.id);
-          toast({
-            title: "Appointment Cancelled",
-            description: `Appointment #${appointment.id} has been cancelled.`,
-          });
-          if (oncancel) cancelAppointments(appointment.id);
-        } catch (error) {
-          console.error(error);
-          toast({
-            title: "Error",
-            description: "Failed to cancel the appointment.",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
-        }
-      };
-  
   const content = (
     <>
         <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
@@ -236,7 +216,14 @@ const handleCancelAppointment = async () => {
         {!isFinished(appointment.status) && (
           <RescheduleDialog appointmentId={appointment.id} />
         )}
-        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</DropdownMenuItem>
+        {canCancel && (
+          <CancelBookingDialog
+            appointment={appointment}
+            role={cancelRole}
+            onCancelled={() => window.location.reload()}
+            trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive cursor-pointer"><Ban className="mr-2" /> Cancel</DropdownMenuItem>}
+          />
+        )}
     </>
   );
 
@@ -281,7 +268,14 @@ const handleCancelAppointment = async () => {
              {!isFinished(appointment.status) && (
                  <RescheduleDialog appointmentId={appointment.id} />
              )}
-             <Button variant="destructive" className="w-full justify-start" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</Button>
+             {canCancel && (
+               <CancelBookingDialog
+                 appointment={appointment}
+                 role={cancelRole}
+                 onCancelled={() => window.location.reload()}
+                 trigger={<Button variant="destructive" className="w-full justify-start"><Ban className="mr-2" /> Cancel</Button>}
+               />
+             )}
           </div>
         </SheetContent>
       </Sheet>

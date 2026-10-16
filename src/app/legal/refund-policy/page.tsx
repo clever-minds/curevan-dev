@@ -1,6 +1,32 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function RefundPolicyPage() {
+// The numbers below come from the server (businessRules.cancellation via /api/config/public), so the page
+// can never disagree with what the app really charges. The fallback only covers the API being unreachable.
+export const revalidate = 300;
+
+type CancellationPolicy = {
+  freeHoursBefore: number; partialHoursBefore: number; partialChargePct: number; lateChargePct: number;
+  graceMinutesAfterBooking: number; therapistLateMinutes: number;
+};
+const FALLBACK_POLICY: CancellationPolicy = {
+  freeHoursBefore: 12, partialHoursBefore: 2, partialChargePct: 50, lateChargePct: 100, graceMinutesAfterBooking: 10, therapistLateMinutes: 30,
+};
+
+async function loadPolicy(): Promise<CancellationPolicy> {
+  try {
+    const base = process.env.NEXT_PUBLIC_API_URL;
+    if (!base) return FALLBACK_POLICY;
+    const res = await fetch(`${base}/api/config/public`, { next: { revalidate: 300 } });
+    if (!res.ok) return FALLBACK_POLICY;
+    const json = await res.json();
+    return { ...FALLBACK_POLICY, ...(json?.data?.cancellation ?? {}) };
+  } catch {
+    return FALLBACK_POLICY;
+  }
+}
+
+export default async function RefundPolicyPage() {
+  const p = await loadPolicy();
   return (
     <div className="container mx-auto py-12 md:py-20 max-w-4xl">
       <Card>
@@ -16,8 +42,12 @@ export default function RefundPolicyPage() {
             <h2 className="text-xl font-semibold text-foreground">SERVICE BOOKING CANCELLATIONS (THERAPY & CONSULTATION SESSIONS)</h2>
             <h3 className="font-semibold text-foreground">CANCELLATION BY CUSTOMER</h3>
             <ul className="list-disc pl-6 space-y-2">
-                <li>You may cancel a booked session up to <strong>4 hours</strong> before the scheduled time without penalty.</li>
-                <li>If you cancel within 4 hours of the appointment or fail to attend, no refund will be issued.</li>
+                <li>More than <strong>{p.freeHoursBefore} hours</strong> before the session: free cancellation, 100% refund.</li>
+                <li>Between <strong>{p.freeHoursBefore} and {p.partialHoursBefore} hours</strong> before the session: <strong>{p.partialChargePct}%</strong> of the session fee is kept, the rest is refunded.</li>
+                <li>Less than <strong>{p.partialHoursBefore} hours</strong> before the session, or if you are not available when the therapist arrives (no-show): <strong>{p.lateChargePct}%</strong> of the session fee is kept.</li>
+                <li>Cancelling within <strong>{p.graceMinutesAfterBooking} minutes</strong> of booking is always free.</li>
+                <li>If your therapist has not arrived <strong>{p.therapistLateMinutes} minutes</strong> after the start time, you may cancel for free.</li>
+                <li>You always see the exact charge on the cancel screen before you confirm.</li>
                 <li>Rescheduling is permitted once per session, subject to therapist availability.</li>
             </ul>
              <h3 className="font-semibold text-foreground mt-4">CANCELLATION BY THERAPIST OR CLINIC</h3>
@@ -39,7 +69,7 @@ export default function RefundPolicyPage() {
             <ul className="list-disc pl-6 space-y-2">
                 <li>Services already rendered</li>
                 <li>Patient dissatisfaction due to treatment outcome (clinical judgment)</li>
-                <li>Late cancellation or no-show by customer</li>
+                <li>The part of the fee kept for a late cancellation or a no-show, as set out above</li>
             </ul>
           </section>
 

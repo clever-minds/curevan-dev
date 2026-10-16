@@ -230,6 +230,35 @@ export async function updateAppointmentStatus(appointmentId: number, status: str
   }
 }
 
+export interface CancelQuote {
+  band: string; chargePct: number; chargeInr: number; refundInr: number; amountInr: number; paid: boolean; hoursBefore: number | null;
+}
+
+/** What cancelling costs right now (decided by the server). */
+export async function getCancelQuote(appointmentId: number): Promise<{ quote?: CancelQuote; error?: string }> {
+  try {
+    const token = await getToken();
+    if (!token) return { error: 'Please sign in again.' };
+    const { data: response } = await serverApi.get<any>(`/api/appointments/${appointmentId}/cancel-quote`, { headers: { Authorization: `Bearer ${token}` } });
+    return { quote: response?.data };
+  } catch (err: any) {
+    return { error: err?.response?.data?.error || 'Could not work out the cancellation charge.' };
+  }
+}
+
+/** Cancel with the policy applied. `acceptedChargeInr` is the charge the patient saw and agreed to. */
+export async function cancelWithPolicy(appointmentId: number, body: { reason?: string; acceptedChargeInr?: number }): Promise<{ success: boolean; error?: string; quote?: CancelQuote }> {
+  try {
+    const token = await getToken();
+    if (!token) return { success: false, error: 'Please sign in again.' };
+    const { data: response } = await serverApi.post<any>(`/api/appointments/${appointmentId}/cancel`, body, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: response?.success === true, quote: response?.quote };
+  } catch (err: any) {
+    const d = err?.response?.data;
+    return { success: false, error: d?.error || 'Could not cancel the booking.', quote: err?.response?.status === 409 ? d?.quote : undefined };
+  }
+}
+
 /** Bookable times for one therapist on one date (YYYY-MM-DD). The server decides; the form shows only these. */
 export async function getTherapistSlots(therapistId: number | string, date: string): Promise<{ slots: string[]; minLeadHours: number; maxAdvanceDays: number; error?: string }> {
   const fallback = { slots: [] as string[], minLeadHours: 4, maxAdvanceDays: 30 };
