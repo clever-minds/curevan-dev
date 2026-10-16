@@ -55,7 +55,7 @@ export interface EarningsData {
 
 export async function fetchEarningsData(therapistId: string | number): Promise<EarningsData | null> {
     try {
-        const { data } = await clientApi.get(`/api/therapist/earnings/${therapistId}`);
+        const { data } = await clientApi.get(`/api/therapists/earnings/${therapistId}`);
         if (data?.success || data?.status) {
             return data.data;
         }

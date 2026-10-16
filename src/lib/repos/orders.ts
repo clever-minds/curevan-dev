@@ -54,7 +54,7 @@ export async function getOrderById(id: number): Promise<Order | null> {
      if (!token) {
         throw new Error('Token missing, please login again');
       }
-    const { data } = await serverApi.get<{ data: any }>(`/api/orders/${id}`, {
+    const { data } = await serverApi.get<{ data: any }>(`/api/orders/order/${id}`, {
       withCredentials: true,
        headers: {
             Authorization: `Bearer ${token}`, 

@@ -57,7 +57,7 @@ const therapistNav = [
     { href: '/dashboard/therapist/schedule', label: 'Today', icon: Clock },
     { href: '/dashboard/therapist/pcr', label: 'PCRs', icon: ClipboardList },
     { href: '/dashboard/earnings', label: 'Earnings', icon: Wallet },
-    { href: '/dashboard/new-post', label: 'Write', icon: PenSquare },
+    { href: '/dashboard/journal/new', label: 'Write', icon: PenSquare },
 ];
 
 const ecomAdminNav = [

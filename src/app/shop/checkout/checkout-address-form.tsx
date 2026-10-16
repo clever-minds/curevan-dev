@@ -653,7 +653,7 @@ export function CheckoutAddressForm() {
 
             clearCart();
             toast({ title: "Order Placed!", description: `Your order ${verified.orderNumber || '#' + verified.orderId} has been confirmed.` });
-            router.push(`/dashboard/${user.role}/orders`);
+            router.push("/dashboard/patient/orders");
           },
           onFailure: (error) => {
             toast({ variant: 'destructive', title: 'Payment Failed', description: error.reason || 'Please try again.' });

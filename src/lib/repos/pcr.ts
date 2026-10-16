@@ -10,7 +10,7 @@ export async function listPcrs(filters?: { bookingId?: number }): Promise<PCR[] 
     const params: any = {};
     if (filters?.bookingId) params.bookingId = filters.bookingId;
 const token = await getToken();
-    const { data } = await serverApi.get<ApiResponse<PCR[]>>("/api/appointments/pcr", {
+    const { data } = await serverApi.get<ApiResponse<PCR[]>>("/api/appointments/pcr-list", {
       params,
       headers: {
         Authorization: `Bearer ${token}`,

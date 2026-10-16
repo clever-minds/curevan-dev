@@ -463,7 +463,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/terms-of-use" className="text-primary hover:underline">Terms of Use</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/terms-of-use" className="text-primary hover:underline">Terms of Use</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />
@@ -471,7 +471,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/medical-consent" className="text-primary hover:underline">Medical Consent Terms</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/medical-consent" className="text-primary hover:underline">Medical Consent Terms</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />
@@ -479,7 +479,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />
@@ -487,7 +487,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/refund-policy" className="text-primary hover:underline">Refund, Cancellation & Return Policy</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/refund-policy" className="text-primary hover:underline">Refund, Cancellation & Return Policy</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />

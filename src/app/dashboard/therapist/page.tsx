@@ -213,7 +213,7 @@ export default function TherapistDashboard() {
                  <Link href="/dashboard/therapist/edit">Edit Profile & Documents</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
-                 <Link href="/dashboard/therapist/support">Contact Support</Link>
+                 <Link href="/dashboard/support">Contact Support</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/reviews">My Ratings & Reviews</Link>

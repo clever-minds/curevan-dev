@@ -59,7 +59,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
              <BreadcrumbSeparator />
              <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                    <Link href="/dashboard/therapist/training/courses">Courses</Link>
+                    <Link href="/dashboard/therapist/training">Courses</Link>
                 </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -119,7 +119,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
 
        <div className="mt-8 flex gap-2">
          <Button asChild variant="outline">
-            <Link href="/dashboard/therapist/training/courses">
+            <Link href="/dashboard/therapist/training">
                 <ArrowLeft className="mr-2"/>
                 Back to Courses
             </Link>

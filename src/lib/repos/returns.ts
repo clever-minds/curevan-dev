@@ -13,21 +13,33 @@ export async function listReturns(filters?: any): Promise<Return[]> {
     if (!token) {
       throw new Error('Token missing, please login again');
     }
-    const { data } = await serverApi.get('/api/returns', {
+    const { data: res } = await serverApi.get('/api/orders/returns', {
       params: filters,
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    if (!data || !Array.isArray(data)) return [];
+    // the backend answers { success, data: [...] } with database column names (snake_case)
+    const rows = Array.isArray(res) ? res : res?.data;
+    if (!Array.isArray(rows)) return [];
 
-    return data.map((item: any) => ({
-      ...item,
-      // Convert any date fields to ISO strings if necessary
-      createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : undefined,
-      updatedAt: item.updatedAt ? new Date(item.updatedAt).toISOString() : undefined,
-    })) as Return[];
+    return rows.map((r: any) => ({
+      ...r,
+      id: String(r.id),
+      orderId: r.order_id ?? r.orderId,
+      orderNumber: r.order_number ?? r.orderNumber,
+      customerName: r.user_name ?? r.customerName ?? '',
+      cityState: r.cityState ?? '',
+      items: r.items ?? [],
+      reason: r.reason,
+      method: r.method ?? 'pickup',
+      status: r.status,
+      refundStatus: r.refund_status ?? r.refundStatus ?? (r.status === 'Refunded' ? 'Refunded' : 'Pending'),
+      totalRefundAmount: Number(r.refund_amount ?? r.total_refund_amount ?? r.totalRefundAmount ?? 0),
+      createdAt: (r.created_at ?? r.createdAt) ? new Date(r.created_at ?? r.createdAt).toISOString() : undefined,
+      updatedAt: (r.updated_at ?? r.updatedAt) ? new Date(r.updated_at ?? r.updatedAt).toISOString() : undefined,
+    })) as unknown as Return[];
   } catch (error: any) {
     console.error('Failed to fetch returns via API:', error?.response || error?.message);
     return [];
@@ -36,7 +48,7 @@ export async function listReturns(filters?: any): Promise<Return[]> {
 
 /**
  * Request a return for a specific order.
- * POST /api/returns/:id/return
+ * POST /api/orders/:id/return
  */
 export async function requestReturn(orderId: number, data?: any): Promise<{ success: boolean; message?: string }> {
   try {
@@ -64,14 +76,14 @@ export async function requestReturn(orderId: number, data?: any): Promise<{ succ
 
 /**
  * Approve a return request (Admin).
- * PUT /api/returns/:id/approve
+ * PUT /api/orders/returns/:id/approve
  */
 export async function approveReturn(returnId: string | number): Promise<{ success: boolean; message?: string }> {
   try {
     const token = await getToken();
     if (!token) throw new Error('Token missing, please login again');
 
-    const response = await serverApi.put(`/api/returns/${returnId}/approve`, {}, {
+    const response = await serverApi.put(`/api/orders/returns/${returnId}/approve`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
 

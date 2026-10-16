@@ -24,10 +24,12 @@ import { updatePcr } from './repos/pcr';
 export async function uploadFile(formData: FormData): Promise<{ fileUrl?: string; error?: string }> {
   const token = await getToken();
   try {
-    const { data } = await serverApi.post('/api/files/upload', formData, {
+    // files go to the media library; the backend answers { data: [{ file_path, ... }] }
+    const { data } = await serverApi.post('/api/media/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
     });
-    return data;
+    const first = Array.isArray(data?.data) ? data.data[0] : null;
+    return first ? { fileUrl: first.file_path } : { error: 'Failed to upload file.' };
   } catch (error: any) {
     console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return { error: 'Failed to upload file.' };
@@ -431,7 +433,7 @@ export async function listReturnsAction(filters?: any) {
 export async function submitTherapistReviewAction(appointmentId: string | number, data: { rating: number, review: string }) {
   const token = await getToken();
   try {
-    const response = await serverApi.put(`/api/appointments/${appointmentId}/review`, data, {
+    const response = await serverApi.post(`/api/appointments/${appointmentId}/review`, data, {
       headers: {
         Authorization: `Bearer ${token}`
       }

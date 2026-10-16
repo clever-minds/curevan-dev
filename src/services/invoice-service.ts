@@ -298,7 +298,7 @@ export async function getInvoiceById(invoiceId: string | number) {
 
       if (!orderData) {
           try {
-            const orderRes = await serverApi.get(`/api/orders/${sourceIdValue}`, {
+            const orderRes = await serverApi.get(`/api/orders/order/${sourceIdValue}`, {
               withCredentials: true,
               headers: {
                 Authorization: `Bearer ${token}`,

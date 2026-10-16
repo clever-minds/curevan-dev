@@ -157,7 +157,7 @@ export async function fetchProductById(id: number | string): Promise<Product | n
 export async function getProductsByIds(ids: number[]): Promise<Product[]> {
   if (!ids || ids.length === 0) return [];
   try {
-    const { data } = await serverApi.post("/api/product/get-by-ids", { ids });
+    const { data } = await serverApi.post("/api/products/get-by-ids", { ids });
     console.log("api/product/get-by-ids", data);
     return (data.data || []).map(mapProduct);
   } catch (error: any) {
