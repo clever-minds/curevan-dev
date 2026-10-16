@@ -48,9 +48,9 @@ import { useState, useMemo, useEffect, useTransition } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import useRazorpay from "@/hooks/use-razorpay";
-import { isSameDay, isPast, set, format } from "date-fns";
+import { isSameDay, addDays, startOfDay, format } from "date-fns";
 import { Price } from "@/components/money/price";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { getTherapistSlots } from "@/lib/repos/appointments";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
 import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
 import {
@@ -692,9 +692,12 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const [isPending, startTransition] = useTransition();
   const { openPayment, isLoaded } = useRazorpay();
 
-  const [therapistAppointments, setTherapistAppointments] = useState<
-    Appointment[]
-  >([]);
+  // open times for the chosen date, as decided by the server
+  const [serverSlots, setServerSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [leadHours, setLeadHours] = useState(4);
+  const [advanceDays, setAdvanceDays] = useState(30);
   const [therapyCategories, setTherapyCategories] = useState<
     { id: number; name: string }[]
   >([]);
@@ -709,12 +712,10 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [apps, cats, states] = await Promise.all([
-        listAppointmentsForUser(therapist.id, "therapist"),
+      const [cats, states] = await Promise.all([
         getTherapyCategoriesWithIds(),
         getIndianStates(),
       ]);
-      setTherapistAppointments(apps);
       setTherapyCategories(cats || []);
       setIndianStates(states);
     };
@@ -820,70 +821,43 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     [addresses, selectedAddressId],
   );
 
-  const getSlotsForDate = (date: Date) => {
-    if (!therapist.availability) return [];
-    const availabilityData =
-      therapist.availability.windows || therapist.availability;
-    if (!availabilityData) return [];
-
-    const day = date
-      .toLocaleString("en-US", { weekday: "short" })
-      .toLowerCase() as keyof typeof availabilityData;
+  // Does the therapist work on this weekday at all? (only a hint for the calendar; the server decides the real slots)
+  const worksOnDay = (date: Date) => {
+    const availabilityData = therapist.availability?.windows || therapist.availability;
+    if (!availabilityData) return false;
+    const day = date.toLocaleString("en-US", { weekday: "short" }).toLowerCase() as keyof typeof availabilityData;
     const avail = availabilityData[day];
+    const isFalsy = (val: any) => val === false || val === "false" || val === 0 || val === "0" || val === null;
+    return !!avail && !isFalsy(avail.enabled);
+  };
 
-    const isFalsy = (val: any) =>
-      val === false ||
-      val === "false" ||
-      val === 0 ||
-      val === "0" ||
-      val === null;
-
-    // If day is missing or explicitly disabled, return no slots
-    if (!avail || isFalsy(avail.enabled)) return [];
-
-    const slots: string[] = [];
-    const addSlots = (period: any) => {
-      // Assume enabled if not explicitly false
-      if (!period || isFalsy(period.enabled) || !period.start || !period.end)
-        return;
-      for (let i = parseInt(period.start); i < parseInt(period.end); i++) {
-        slots.push(`${i.toString().padStart(2, "0")}:00`);
+  useEffect(() => {
+    if (!selectedDate) {
+      setServerSlots([]);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    setSlotsError(null);
+    getTherapistSlots(therapist.id, format(selectedDate, "yyyy-MM-dd")).then((res) => {
+      if (cancelled) return;
+      setServerSlots(res.slots);
+      setLeadHours(res.minLeadHours);
+      setAdvanceDays(res.maxAdvanceDays);
+      setSlotsError(res.error ?? null);
+      setSlotsLoading(false);
+      // a time chosen earlier may no longer be offered
+      if (form.getValues("scheduledTime") && !res.slots.includes(form.getValues("scheduledTime"))) {
+        form.setValue("scheduledTime", "");
       }
+    });
+    return () => {
+      cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, therapist.id]);
 
-    addSlots(avail.morning);
-    addSlots(avail.evening);
-    return slots;
-  };
-
-  const timeSlots = useMemo(() => {
-    if (!selectedDate) return [];
-    return getSlotsForDate(selectedDate);
-  }, [selectedDate, therapist.availability]);
-
-  const isTimeSlotAvailable = (time: string): boolean => {
-    if (!selectedDate) return false;
-    const [h, m] = time.split(":").map(Number);
-    if (isPast(set(selectedDate, { hours: h, minutes: m }))) return false;
-    const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
-    return !therapistAppointments.some(
-      (a) =>
-        String(a.date).startsWith(selectedDateStr) &&
-        a.time === time &&
-        !isCancelled(a.status),
-    );
-  };
-
-  const isDateFullyBooked = (date: Date) => {
-    const slots = getSlotsForDate(date);
-    if (slots.length === 0) return true; // Disabled if no slots available
-
-    const dateStr = format(date, "yyyy-MM-dd");
-    const bookedCount = therapistAppointments.filter(
-      (a) => String(a.date).startsWith(dateStr) && !isCancelled(a.status),
-    ).length;
-    return bookedCount >= slots.length;
-  };
+  const timeSlots = serverSlots;
 
   // ── Address handlers ──────────────────────────────────────────────────────
 
@@ -1317,10 +1291,9 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) =>
-                        date <
-                          new Date(
-                            new Date().setDate(new Date().getDate() - 1),
-                          ) || isDateFullyBooked(date)
+                        date < startOfDay(new Date()) ||
+                        date > addDays(new Date(), advanceDays) ||
+                        !worksOnDay(date)
                       }
                       initialFocus
                       className="rounded-md border p-0"
@@ -1350,7 +1323,6 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                               "bg-primary text-primary-foreground",
                           )}
                           onClick={() => field.onChange(time)}
-                          disabled={!isTimeSlotAvailable(time)}
                         >
                           {time}
                         </Button>
@@ -1362,6 +1334,18 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                       Please select a date first.
                     </FormDescription>
                   )}
+                  {selectedDate && slotsLoading && (
+                    <FormDescription>Loading available times...</FormDescription>
+                  )}
+                  {selectedDate && !slotsLoading && slotsError && (
+                    <FormDescription className="text-destructive">{slotsError}</FormDescription>
+                  )}
+                  {selectedDate && !slotsLoading && !slotsError && timeSlots.length === 0 && (
+                    <FormDescription>No times are open on this date. Please try another day.</FormDescription>
+                  )}
+                  <FormDescription>
+                    Earliest booking is {leadHours} hours from now; you can book up to {advanceDays} days ahead.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

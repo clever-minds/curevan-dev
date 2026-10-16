@@ -230,6 +230,22 @@ export async function updateAppointmentStatus(appointmentId: number, status: str
   }
 }
 
+/** Bookable times for one therapist on one date (YYYY-MM-DD). The server decides; the form shows only these. */
+export async function getTherapistSlots(therapistId: number | string, date: string): Promise<{ slots: string[]; minLeadHours: number; maxAdvanceDays: number; error?: string }> {
+  const fallback = { slots: [] as string[], minLeadHours: 4, maxAdvanceDays: 30 };
+  try {
+    const { data: response } = await serverApi.get<any>(`/api/therapists/${therapistId}/slots`, { params: { date } });
+    const d = response?.data;
+    return {
+      slots: (d?.slots ?? []).map((x: { time: string }) => x.time),
+      minLeadHours: Number(d?.minLeadHours) || fallback.minLeadHours,
+      maxAdvanceDays: Number(d?.maxAdvanceDays) || fallback.maxAdvanceDays,
+    };
+  } catch (err: any) {
+    return { ...fallback, error: err?.response?.data?.error || 'Could not load the available times.' };
+  }
+}
+
 /**
  * Same as updateAppointmentStatus but also returns the server's reason when a move is refused.
  */
