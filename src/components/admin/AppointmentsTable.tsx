@@ -29,6 +29,7 @@ import { RescheduleDialog } from '@/components/patient/RescheduleDialog';
 import { ReviewDialog } from '@/components/patient/ReviewDialog';
 import useRazorpay from '@/hooks/use-razorpay';
 import serverApi from '@/lib/repos/axios.server';
+import { startAppointmentPayment, verifyBookingPayment } from '@/lib/actions/booking';
 import { getToken } from '@/lib/auth';
 import { ManualPaymentDialog } from '@/components/admin/ManualPaymentDialog';
 
@@ -94,34 +95,41 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
       });
   }
    
-    const handlePayNow = () => {
+    const handlePayNow = async () => {
+        // The server creates the Razorpay order and decides the amount; it re-checks the signature afterwards.
+        setLoading(true);
+        const started = await startAppointmentPayment(appointment.id);
+        setLoading(false);
+        if (!started.success || !started.razorpayOrderId || !started.amountPaise) {
+            toast({ title: 'Payment', description: started.error || 'Could not start the payment.', variant: 'destructive' });
+            return;
+        }
         openPayment({
-            amount: (appointment.totalAmount || appointment.serviceAmount || 0) * 100,
+            amount: started.amountPaise,
             currency: 'INR',
-            receipt: `receipt_booking_${appointment.id}_${Date.now()}`,
+            receipt: `appt-${appointment.id}`,
+            orderId: started.razorpayOrderId,
+            keyId: started.keyId,
             productName: `Session with ${appointment.therapist}`,
             productDescription: `A ${appointment.therapyType} session on ${formatDateSafe(appointment.date)} at ${appointment.time}.`,
             prefill: { name: appointment.patientName || 'Patient' },
             onSuccess: async (paymentResponse) => {
-                try {
-                    setLoading(true);
-                    const token = await getToken();
-                    const { data: res } = await serverApi.post(
-                        `/api/appointments/${appointment.id}/pay`,
-                        { paymentId: paymentResponse.razorpay_payment_id, gateway: 'razorpay' },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    if (res?.success) {
-                        toast({ title: 'Payment Successful', description: 'Your appointment is now confirmed.' });
-                        window.location.reload();
-                    } else {
-                        toast({ title: 'Error', description: 'Failed to confirm payment on server.', variant: 'destructive' });
-                    }
-                } catch (e) {
-                    toast({ title: 'Error', description: 'Failed to confirm payment.', variant: 'destructive' });
-                } finally {
-                    setLoading(false);
+                setLoading(true);
+                const verified = await verifyBookingPayment({
+                    razorpay_order_id: paymentResponse.razorpay_order_id,
+                    razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                    razorpay_signature: paymentResponse.razorpay_signature,
+                });
+                setLoading(false);
+                if (verified.success) {
+                    toast({ title: 'Payment Successful', description: 'Your appointment is now confirmed.' });
+                    window.location.reload();
+                } else {
+                    toast({ title: 'Payment not confirmed', description: verified.error || 'We could not confirm your payment.', variant: 'destructive' });
                 }
+            },
+            onFailure: (err) => {
+                toast({ title: 'Payment Failed', description: err.reason || 'Please try again.', variant: 'destructive' });
             },
         });
     };
@@ -196,12 +204,12 @@ const handleCancelAppointment = async () => {
         {isPatient && appointment.status === 'Completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
-        {isTherapist && (appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
             <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
         )}
 
 
-        {isPatient && appointment.status === 'Payment Pending' && (
+        {isPatient && (appointment.status === 'Payment Pending' || appointment.status === 'Accepted') && appointment.paymentStatus !== 'Paid' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
         {isAdmin && appointment.paymentStatus !== 'Paid' && (
@@ -246,7 +254,7 @@ const handleCancelAppointment = async () => {
                  <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
              )}
 
-             {isPatient && appointment.status === 'Payment Pending' && (
+             {isPatient && (appointment.status === 'Payment Pending' || appointment.status === 'Accepted') && appointment.paymentStatus !== 'Paid' && (
                <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
             )}
              {isAdmin && appointment.paymentStatus !== 'Paid' && (

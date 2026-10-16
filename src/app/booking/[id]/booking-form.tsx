@@ -52,7 +52,7 @@ import { isSameDay, isPast, set, format } from "date-fns";
 import { Price } from "@/components/money/price";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
-import { createBookingAndInvoice } from "@/lib/actions/booking";
+import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
 import {
   createAddress,
   deleteAddress,
@@ -979,7 +979,15 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       return;
     }
 
-    const serviceAmount = therapist.hourlyRate ?? 500;
+    // The price is set and charged by the server. Nothing is guessed in the browser.
+    if (!therapist.hourlyRate) {
+      toast({
+        variant: "destructive",
+        title: "Price not available",
+        description: "This therapist has not set a session price yet.",
+      });
+      return;
+    }
 
     // Convert reports to base64 if provided
     let reportsBase64: any = null;
@@ -1019,8 +1027,8 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             therapist: therapist.name,
             serviceTypeId: serviceTypeId,
             therapyType: data.serviceType,
-            serviceAmount,
-            totalAmount: serviceAmount,
+            serviceAmount: 0, // ignored: the server decides the price
+            totalAmount: 0,
             date: format(data.scheduledDate, "yyyy-MM-dd") as unknown as Date,
             time: data.scheduledTime,
             mode: data.sessionMode,
@@ -1031,10 +1039,38 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             status: "Pending Approval", // Initially pending approval by therapist
             verificationStatus: "Not Verified",
           },
-          { paymentId: "pending", gateway: "none" },
-        ); // No payment yet
+        );
 
-        if (result.success) {
+        if (result.success && result.razorpayOrderId && result.amountPaise) {
+          // Pay-immediately mode: open Razorpay for the amount the server calculated,
+          // then let the server verify the signature before the booking counts as paid.
+          openPayment({
+            amount: result.amountPaise,
+            currency: "INR",
+            receipt: `appt-${result.appointmentId}`,
+            orderId: result.razorpayOrderId,
+            keyId: result.keyId,
+            productName: "Curevan session",
+            productDescription: `${data.serviceType} session with ${therapist.name}`,
+            prefill: { name: data.patientFullName || user!.name || "" },
+            onSuccess: async (paymentResponse) => {
+              const verified = await verifyBookingPayment({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              });
+              if (verified.success) {
+                toast({ title: "Booking confirmed!", description: "Your payment was received." });
+                router.push("/dashboard/bookings");
+              } else {
+                toast({ variant: "destructive", title: "Payment not confirmed", description: verified.error || "We could not confirm your payment." });
+              }
+            },
+            onFailure: (err) => {
+              toast({ variant: "destructive", title: "Payment Failed", description: err.reason || "Please try again." });
+            },
+          });
+        } else if (result.success) {
           toast({
             title: "Booking Requested!",
             description:
@@ -1457,7 +1493,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
           <div className="p-4 rounded-lg bg-muted/50 text-center">
             <p className="text-muted-foreground">Service Fee</p>
             <p className="text-2xl font-bold">
-              <Price amount={therapist?.hourlyRate ?? 1500} showDecimals />
+              {therapist?.hourlyRate ? <Price amount={therapist.hourlyRate} showDecimals /> : <span className="text-sm text-muted-foreground">Price not set</span>}
             </p>
           </div>
 

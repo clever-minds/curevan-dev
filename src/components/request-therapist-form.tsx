@@ -24,7 +24,7 @@ import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { useAuth } from '@/context/auth-context';
-import { createBookingAndInvoice } from '@/lib/actions/booking';
+import { requestTherapist } from '@/lib/actions/booking';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { AddressFormModal, AddressPickerModal } from '@/app/booking/[id]/booking-form';
@@ -215,7 +215,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
       startTransition(async () => {
         const selectedCat = therapyCategories.find(c => c.name === data.therapyType);
         
-        const result = await createBookingAndInvoice({
+        const result = await requestTherapist({
           patientId: user!.id,
           patientName: data.patientFullName || user!.name || 'N/A',
           dateofBirth: data.dob,
@@ -233,7 +233,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
           addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,
           status: 'Pending',
           verificationStatus: 'Not Verified',
-        }, { paymentId: 'pay-later', gateway: 'none' });
+        });
 
         if (result.success) {
           toast({
