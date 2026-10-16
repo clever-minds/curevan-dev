@@ -43,7 +43,7 @@ export async function createPayoutItemForBooking(bookingId: number): Promise<{ s
   
   // 2. Validate conditions for payout
   const isPaid = appointment.paymentStatus === 'Paid';
-  const isValidStatus = ['Completed', 'Confirmed'].includes(appointment.status); // Allow late PCR locks
+  const isValidStatus = ['completed', 'pcr_pending'].includes(appointment.status); // Allow late PCR locks
 
   if (!isPaid) {
     return { success: false, message: `Booking ${bookingId} is not paid.` };

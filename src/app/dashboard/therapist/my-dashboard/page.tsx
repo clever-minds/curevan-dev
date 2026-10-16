@@ -25,9 +25,10 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
-import { listAppointmentsForUser, updateAppointmentStatus } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
+import { isFinished } from '@/lib/appointment-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -128,27 +129,39 @@ export default function TherapistDashboard() {
     setVerifyingAppointment(appointment);
   };
   
+  // statuses in which the therapist is in the middle of a visit (restored after a page reload)
+  const JOURNEY_STATUSES = ['therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'];
+  useEffect(() => {
+    if (activeSession) return;
+    const live = appointments.find((a) => JOURNEY_STATUSES.includes(a.status));
+    if (live) setActiveSession(live);
+  }, [appointments, activeSession]);
+
+  // the list buttons open the visit card; every real step is then checked by the server
+  const handleOpenJourney = (appointment: Appointment) => {
+    setActiveSession(appointment);
+  };
+
+  // the server has already moved the booking to in_progress when this runs
   const handleVerificationSuccess = (appointment: Appointment) => {
-    // This simulates creating a `sessions` row and starting the timer (B3 in DFD)
     setActiveSession(appointment);
     setVerifyingAppointment(null);
-  }
-
-  const handleEndSession = () => {
-    // This simulates closing the session and preparing for PCR documentation (P3 in DFD)
-    toast({
-        title: 'Session Complete',
-        description: `You have successfully checked out from your session with ${activeSession?.patientName}. Please complete the PCR now.`,
-    });
-    router.push(`/pcr/${activeSession?.id}`);
-    setActiveSession(null);
+    setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? { ...a, status: appointment.status, sessionStartedAt: appointment.sessionStartedAt } : a)));
   };
 
   const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
-      const success = await updateAppointmentStatus(appointmentId, newStatus);
-      if (success && activeSession && activeSession.id === appointmentId) {
-          setActiveSession({ ...activeSession, status: newStatus });
-      }
+    const result = await transitionAppointment(appointmentId, newStatus);
+    if (result.success) {
+      const stamp = new Date().toISOString();
+      setActiveSession((prev) => (prev && prev.id === appointmentId ? { ...prev, status: newStatus } : prev));
+      setAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus, travelStartedAt: newStatus === 'therapist_on_the_way' ? stamp : a.travelStartedAt, arrivedAt: newStatus === 'arrived' ? stamp : a.arrivedAt } : a)));
+    }
+    return result;
+  };
+
+  const handleEndSession = () => {
+    // the session is over; the PCR submission is what completes the booking
+    router.push(`/pcr/${activeSession?.id}`);
   };
 
   const handleShareCode = () => {

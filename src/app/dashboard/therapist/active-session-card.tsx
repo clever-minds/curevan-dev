@@ -1,62 +1,87 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Appointment } from "@/lib/types";
-import { Clock, User, MapPin, CheckCircle, Navigation, PlayCircle, Map } from "lucide-react";
+import { Clock, User, MapPin, CheckCircle, Navigation, PlayCircle, Map, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SosButton } from "@/components/sos-button";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getPublicConfig } from "@/lib/repos/appointments";
+import { mapsDirectionsUrl, slotStartMs } from "@/lib/appointment-status";
 
-export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVerifyRequest }: { session: Appointment; onEndSession: () => void; onStatusUpdate: (id: number, status: Appointment['status']) => void; onVerifyRequest: (session: Appointment) => void; }) {
+type Result = boolean | { success: boolean; error?: string } | void;
+
+export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVerifyRequest }: {
+  session: Appointment;
+  onEndSession: () => void;
+  onStatusUpdate: (id: number, status: Appointment['status']) => Promise<Result> | Result;
+  onVerifyRequest: (session: Appointment) => void;
+}) {
   const { toast } = useToast();
-  const [timer, setTimer] = useState(75 * 60); // 75 minutes in seconds
   const [loading, setLoading] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [config, setConfig] = useState({ timerMinutes: 60, travelFromMinutesBefore: 45 });
 
+  useEffect(() => { getPublicConfig().then(setConfig); }, []);
   useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-        // Simulate missed check-in alert
-        toast({
-            variant: 'destructive',
-            title: 'ALERT: Missed Check-In',
-            description: `A "Missed Check-In" alert has been sent to admins for your session with ${session.patientName}.`,
-        });
-    }
-  }, [timer, session.patientName, toast]);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
+  const status = session.status;
+  const isConfirmed = status === 'confirmed';
+  const isNavigating = status === 'therapist_on_the_way';
+  const isArrived = status === 'arrived';
+  const isInProgress = status === 'in_progress';
+  const isPcrPending = status === 'pcr_pending';
+
+  // the timer counts down from the moment the start code was verified
+  const startedMs = session.sessionStartedAt ? new Date(session.sessionStartedAt).getTime() : null;
+  const remaining = startedMs ? config.timerMinutes * 60 - Math.floor((now - startedMs) / 1000) : config.timerMinutes * 60;
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const abs = Math.abs(seconds);
+    const mm = Math.floor(abs / 60).toString().padStart(2, '0');
+    const ss = (abs % 60).toString().padStart(2, '0');
+    return `${seconds < 0 ? '+' : ''}${mm}:${ss}`;
   };
 
-  const handleUpdateStatus = async (newStatus: Appointment['status']) => {
-      setLoading(true);
-      await onStatusUpdate(session.id, newStatus);
-      setLoading(false);
-  }
+  // "Start travel" opens 45 minutes before the slot
+  const slotMs = slotStartMs(session.date, session.time);
+  const travelOpensMs = slotMs ? slotMs - config.travelFromMinutesBefore * 60000 : null;
+  const canTravel = travelOpensMs === null || now >= travelOpensMs;
+  const minutesToTravel = travelOpensMs ? Math.max(0, Math.ceil((travelOpensMs - now) / 60000)) : 0;
 
-  const handleCompleteSession = async () => {
-    await handleUpdateStatus('Completed');
-    toast({
-        title: 'Session Complete',
-        description: `You have successfully checked out from your session with ${session.patientName}.`,
-    });
+  const detail = session.serviceAddressDetail;
+  const mapsUrl = mapsDirectionsUrl(detail);
+  const addressText = detail ? [detail.fullAddress, detail.city, detail.state, detail.pincode].filter(Boolean).join(', ') : null;
+
+  const run = async (newStatus: Appointment['status'], after?: () => void) => {
+    setLoading(true);
+    const result = await onStatusUpdate(session.id, newStatus);
+    setLoading(false);
+    const ok = result === undefined ? true : typeof result === 'boolean' ? result : result.success;
+    if (!ok) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not update the booking',
+        description: typeof result === 'object' && result?.error ? result.error : 'Please try again.',
+      });
+      return false;
+    }
+    after?.();
+    return true;
+  };
+
+  const handleStartTravel = () => run('therapist_on_the_way', () => {
+    if (mapsUrl) window.open(mapsUrl, '_blank', 'noopener');
+  });
+
+  const handleCompleteSession = () => run('pcr_pending', () => {
+    toast({ title: 'Session complete', description: 'Submit the PCR to finish this session and unlock your payout.' });
     onEndSession();
-  }
-
-  // Determine what controls to show based on status
-  const currentStatus = session.status || 'Accepted';
-  const isNavigating = currentStatus === 'Navigating' || currentStatus === 'On The Way';
-  const isArrived = currentStatus === 'Arrived';
-  const isInProgress = currentStatus === 'In Progress' || currentStatus === 'Session Started';
-  const isPendingOrAssigned = currentStatus === 'Pending' || currentStatus === 'Assigned' || currentStatus === 'Accepted' || currentStatus === 'Confirmed';
+  });
 
   return (
     <Card className="border-primary/50 bg-primary/5 shadow-lg">
@@ -66,15 +91,16 @@ export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVer
           {isInProgress && (
               <div className="flex items-center gap-2 text-lg font-bold text-primary">
                 <Clock className="w-5 h-5" />
-                <span>{formatTime(timer)}</span>
+                <span>{formatTime(remaining)}</span>
               </div>
           )}
         </CardTitle>
         <CardDescription>
-          {isPendingOrAssigned && "You have an upcoming session. Start your journey when ready."}
-          {isNavigating && "You are currently navigating to the patient's location."}
-          {isArrived && "You have arrived. Please start the session with the patient."}
-          {isInProgress && "This is your currently active session. Your safety is our priority."}
+          {isConfirmed && (canTravel ? "Your session is coming up. Start travelling when you are ready." : `You can start travelling in ${minutesToTravel} minute(s).`)}
+          {isNavigating && "You are on your way to the patient's location."}
+          {isArrived && "You have arrived. Ask the patient for their start code to begin."}
+          {isInProgress && (remaining < 0 ? "The booked time is over. Please wrap up the session." : "This is your currently active session. Your safety is our priority.")}
+          {isPcrPending && "Submit the PCR to finish this session and unlock your payout."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -84,34 +110,46 @@ export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVer
                     <User className="w-4 h-4 text-muted-foreground" />
                     <span className="font-semibold">{session.patientName}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Fake Address, 123 Wellness St.</span>
+                <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {addressText || "The full address is shown 2 hours before the session."}
+                    </span>
                 </div>
             </div>
             <div className="flex flex-wrap w-full sm:w-auto items-center gap-2">
-                {isPendingOrAssigned && (
-                    <Button onClick={() => handleUpdateStatus('On The Way')} disabled={loading} variant="default" className="flex-1 sm:flex-none">
+                {isConfirmed && (
+                    <Button onClick={handleStartTravel} disabled={loading || !canTravel} variant="default" className="flex-1 sm:flex-none">
                         <Navigation className="mr-2" />
-                        Start Navigation
+                        Start travel
+                    </Button>
+                )}
+                {isNavigating && mapsUrl && (
+                    <Button asChild variant="outline" className="flex-1 sm:flex-none">
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer"><Map className="mr-2" />Open Maps</a>
                     </Button>
                 )}
                 {isNavigating && (
-                    <Button onClick={() => handleUpdateStatus('Arrived')} disabled={loading} variant="default" className="flex-1 sm:flex-none">
+                    <Button onClick={() => run('arrived')} disabled={loading} variant="default" className="flex-1 sm:flex-none">
                         <Map className="mr-2" />
-                        Reach Destination
+                        I have arrived
                     </Button>
                 )}
                 {isArrived && (
                     <Button onClick={() => onVerifyRequest(session)} disabled={loading} variant="default" className="flex-1 sm:flex-none">
                         <PlayCircle className="mr-2" />
-                        Start Session
+                        Start session
                     </Button>
                 )}
                 {isInProgress && (
                     <Button onClick={handleCompleteSession} disabled={loading} variant="outline" className="flex-1 sm:flex-none">
                         <CheckCircle className="mr-2" />
-                        Complete Session
+                        Complete session
+                    </Button>
+                )}
+                {isPcrPending && (
+                    <Button asChild variant="default" className="flex-1 sm:flex-none">
+                        <Link href={`/pcr/${session.id}`}><FileText className="mr-2" />Submit PCR</Link>
                     </Button>
                 )}
                 <SosButton session={session} />

@@ -60,6 +60,7 @@ import {
   updateAddress,
 } from "@/lib/repos/address";
 import { getIndianStates } from "@/lib/repos/meta";
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reverse Geocoding helper (OpenStreetMap Nominatim — free, no key needed)
@@ -869,7 +870,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       (a) =>
         String(a.date).startsWith(selectedDateStr) &&
         a.time === time &&
-        a.status !== "Cancelled",
+        !isCancelled(a.status),
     );
   };
 
@@ -879,7 +880,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
 
     const dateStr = format(date, "yyyy-MM-dd");
     const bookedCount = therapistAppointments.filter(
-      (a) => String(a.date).startsWith(dateStr) && a.status !== "Cancelled",
+      (a) => String(a.date).startsWith(dateStr) && !isCancelled(a.status),
     ).length;
     return bookedCount >= slots.length;
   };
@@ -1036,7 +1037,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             reports: processedReports,
             addressId:
               data.sessionMode === "home" ? Number(data.addressId) : undefined,
-            status: "Pending", // server decides the real status (pack P07: Pending until paid)
+            status: "pending_payment", // server decides the real status (pack P07: Pending until paid)
             verificationStatus: "Not Verified",
           },
         );

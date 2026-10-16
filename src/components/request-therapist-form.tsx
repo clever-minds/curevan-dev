@@ -231,7 +231,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
           notes: data.description,
           reports: processedReports,
           addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,
-          status: 'Pending',
+          status: 'searching_therapist',
           verificationStatus: 'Not Verified',
         });
 

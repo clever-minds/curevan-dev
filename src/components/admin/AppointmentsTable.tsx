@@ -32,6 +32,7 @@ import serverApi from '@/lib/repos/axios.server';
 import { startAppointmentPayment, verifyBookingPayment } from '@/lib/actions/booking';
 import { getToken } from '@/lib/auth';
 import { ManualPaymentDialog } from '@/components/admin/ManualPaymentDialog';
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -41,17 +42,20 @@ interface AppointmentsTableProps {
 
 const getStatusBadgeVariant = (status: Appointment['status'] | string) => {
   switch (status) {
-    case 'Completed': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-    case 'Session Started': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
-    case 'Arrived': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
-    case 'On The Way': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
-    case 'Accepted': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300';
-    case 'Assigned': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-    case 'Confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-    case 'Searching Therapist': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
-    case 'Pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-    case 'Cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-    case 'No-Show': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+    case 'in_progress': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+    case 'pcr_pending': return 'bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-300';
+    case 'arrived': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
+    case 'therapist_on_the_way': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+    case 'accepted_unpaid': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300';
+    case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+    case 'searching_therapist': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    case 'pending_payment': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+    case 'cancelled_by_patient':
+    case 'cancelled_by_therapist':
+    case 'cancelled_by_admin':
+    case 'cancelled_unpaid': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+    case 'no_show': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     default: return 'secondary';
   }
 }
@@ -201,15 +205,15 @@ const handleCancelAppointment = async () => {
         <DropdownMenuItem asChild><Link href={`/dashboard/admin/users?search=${appointment.patientId}`} className="w-full flex items-center"><User className="mr-2"/>View Patient</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link href={`/therapists/${appointment.therapist.toLowerCase().replace(/ /g, '-')}`} className="w-full flex items-center"><User className="mr-2"/>View Therapist</Link></DropdownMenuItem>
         <DropdownMenuSeparator />
-        {isPatient && appointment.status === 'Completed' && (
+        {isPatient && appointment.status === 'completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
-        {isTherapist && (appointment.status === 'Pending Approval' || appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+        {isTherapist && appointment.status === 'searching_therapist' && (
             <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
         )}
 
 
-        {isPatient && (appointment.status === 'Payment Pending' || appointment.status === 'Accepted') && appointment.paymentStatus !== 'Paid' && (
+        {isPatient && appointment.status === 'accepted_unpaid' && appointment.paymentStatus !== 'Paid' && (
           <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
         )}
         {isAdmin && appointment.paymentStatus !== 'Paid' && (
@@ -229,7 +233,7 @@ const handleCancelAppointment = async () => {
             }}
           />
         )}
-        {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
+        {!isFinished(appointment.status) && (
           <RescheduleDialog appointmentId={appointment.id} />
         )}
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</DropdownMenuItem>
@@ -250,11 +254,11 @@ const handleCancelAppointment = async () => {
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/pcr/${appointment.id}`}><FileText className="mr-2" /> Open PCR</Link></Button>
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
-             {isTherapist && (appointment.status === 'Pending' || appointment.status === 'Searching' || appointment.status === 'Searching Therapist') && (
+             {isTherapist && appointment.status === 'searching_therapist' && (
                  <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
              )}
 
-             {isPatient && (appointment.status === 'Payment Pending' || appointment.status === 'Accepted') && appointment.paymentStatus !== 'Paid' && (
+             {isPatient && appointment.status === 'accepted_unpaid' && appointment.paymentStatus !== 'Paid' && (
                <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
             )}
              {isAdmin && appointment.paymentStatus !== 'Paid' && (
@@ -274,7 +278,7 @@ const handleCancelAppointment = async () => {
                  }}
                />
              )}
-             {appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
+             {!isFinished(appointment.status) && (
                  <RescheduleDialog appointmentId={appointment.id} />
              )}
              <Button variant="destructive" className="w-full justify-start" onClick={handleCancelAppointment}><Ban className="mr-2" /> Cancel</Button>
@@ -335,7 +339,7 @@ const AppointmentCard = ({ appointment, scope, context }: { appointment: Appoint
                     <p className="font-bold">{formatDateSafe(appointment.date)} at {appointment.time}</p>
                     <p className="text-sm text-muted-foreground">{scope === 'patient' ? appointment.therapist : appointment.patientName}</p>
                 </div>
-                {context === 'bookings' && <Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{appointment.status}</Badge>}
+                {context === 'bookings' && <Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{statusLabel(appointment.status)}</Badge>}
                 {context === 'pcr' && <Badge className={cn(getPcrBadgeVariant(appointment.pcrStatus))} variant="secondary">{appointment.pcrStatus}</Badge>}
             </div>
             <div className="mt-4 space-y-1 text-sm">
@@ -428,7 +432,7 @@ React.useEffect(() => {
                   <TableCell>{appointment.therapyType}</TableCell>
                   <TableCell>{appointment.serviceAddress && typeof appointment.serviceAddress === 'object' ? `${appointment.serviceAddress.city}` : 'N/A'}</TableCell>
                   <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
-                  <TableCell><Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{appointment.status}</Badge></TableCell>
+                  <TableCell><Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{statusLabel(appointment.status)}</Badge></TableCell>
                   <TableCell><Badge className={cn(getPaymentBadgeVariant(appointment.paymentStatus))} variant="secondary">{appointment.paymentStatus}</Badge></TableCell>
                   <TableCell><Badge className={cn(getPcrBadgeVariant(appointment.pcrStatus))} variant="secondary">{appointment.pcrStatus}</Badge></TableCell>
                   <TableCell className="text-right">

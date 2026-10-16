@@ -11,6 +11,8 @@ import { useAuth } from "@/context/auth-context";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
 import { downloadCsv, getSafeDate } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
+import { StartCodeCard } from "@/components/patient/start-code-card";
+import { UPCOMING_STATUSES } from "@/lib/appointment-status";
 
 
 export default function PatientBookingsPage() {
@@ -107,6 +109,13 @@ export default function PatientBookingsPage() {
         showSearch={true}
         showTherapyFilters={true}
       />
+      {appointments.filter((a) => (UPCOMING_STATUSES as string[]).includes(a.status)).length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 no-print">
+          {appointments.filter((a) => (UPCOMING_STATUSES as string[]).includes(a.status)).map((a) => (
+            <StartCodeCard key={a.id} appointment={a} />
+          ))}
+        </div>
+      )}
       <AppointmentsTable scope="patient" />
     </div>
   );

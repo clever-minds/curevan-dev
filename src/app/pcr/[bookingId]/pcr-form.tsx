@@ -227,12 +227,15 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
     setIsFinalizing(true);
     try {
       const data = form.getValues();
-      await updatePcr(bookingId, { 
+      const saved = await updatePcr(bookingId, { 
         ...formToDb(data), 
         status: 'submitted',
         pcrStatus: 'submitted',
       } as any);
-      toast({ title: 'PCR Submitted', description: 'Your report has been submitted for review and is now locked.' });
+      if (!saved) {
+        throw new Error('The report was not saved. If the session is still running, tap "Complete session" first, then submit the PCR.');
+      }
+      toast({ title: 'PCR Submitted', description: 'Your report is submitted and the session is now completed.' });
       form.reset({ ...data, status: 'submitted' });
     } catch (error: any) {
       console.error("Submission error:", error);

@@ -45,6 +45,7 @@ import { listAppointments } from "@/lib/repos/appointments";
 import { listPayoutItems } from "@/lib/repos/payouts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getSafeDate } from "@/lib/utils";
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
 
 const KpiCard = ({ title, value, icon: Icon, description, loading, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, isCurrency?: boolean }) => (
     <Card className="avoid-break">
@@ -108,11 +109,11 @@ export default function TherapyAdminDashboardPage() {
     }, [filters]);
 
     const kpis = useMemo(() => {
-        const completedSessions = appointments.filter(a => a.status === 'Completed').length;
-        const totalPcrs = appointments.filter(a => a.status === 'Completed' || a.status === 'Confirmed').length;
+        const completedSessions = appointments.filter(a => a.status === 'completed').length;
+        const totalPcrs = appointments.filter(a => a.status === 'completed' || a.status === 'pcr_pending').length;
         const lockedPcrs = appointments.filter(a => a.pcrStatus === 'locked').length;
         const pcrLockRate = totalPcrs > 0 ? (lockedPcrs / totalPcrs) * 100 : 0;
-        const noShowCount = appointments.filter(a => a.status === 'No-Show').length;
+        const noShowCount = appointments.filter(a => a.status === 'no_show').length;
         const noShowRate = appointments.length > 0 ? (noShowCount / appointments.length) * 100 : 0;
 
         return {
@@ -129,7 +130,7 @@ export default function TherapyAdminDashboardPage() {
             if (!date) return;
             if (!dataMap.has(date)) dataMap.set(date, { sessionCount: 0, cancelled: 0 });
             const entry = dataMap.get(date)!;
-            if (appt.status === 'Cancelled') {
+            if (isCancelled(appt.status)) {
                 entry.cancelled += 1;
             } else {
                 entry.sessionCount += 1;
@@ -175,7 +176,7 @@ export default function TherapyAdminDashboardPage() {
     }, [payoutItems]);
 
     const unlockedPcrs = useMemo(() => {
-        return appointments.filter(a => a.pcrStatus !== 'locked' && a.status === 'Completed').slice(0, 3);
+        return appointments.filter(a => a.pcrStatus !== 'locked' && a.status === 'completed').slice(0, 3);
     }, [appointments]);
 
     return (

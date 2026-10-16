@@ -170,13 +170,13 @@ export default function AccountPage() {
       const now = new Date();
 
       const upcomingCount = appointments.filter(appt => 
-        (appt.status === 'Pending' || appt.status === 'Confirmed') && 
+        (appt.status === 'pending_payment' || appt.status === 'confirmed') && 
         new Date(appt.date) >= now
       ).length;
 
       const servicesSpend = appointments
         .filter(appt => 
-          appt.status === 'Completed' && 
+          appt.status === 'completed' && 
           new Date(appt.date) >= ninetyDaysAgo
         )
         .reduce((sum, appt) => sum + (appt.totalAmount || appt.serviceAmount || 0), 0);
@@ -238,7 +238,7 @@ export default function AccountPage() {
       ];
 
       // Find the first active session for the patient
-      const activeSession = appointments.find(a => a.status !== 'Completed' && a.status !== 'Cancelled' && a.status !== 'No-Show' && a.status !== 'Confirmed');
+      const activeSession = appointments.find(a => ['therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'].includes(a.status));
 
       return (
         <div className="space-y-8">
@@ -313,7 +313,7 @@ export default function AccountPage() {
                                     <Button variant="link" size="sm" asChild>
                                         <Link href={`/pcr/${appointment.id}`}>View PCR</Link>
                                     </Button>
-                                    {appointment.status === 'Completed' && (
+                                    {appointment.status === 'completed' && (
                                         <>
                                             <Dialog open={reviewingId === appointment.id} onOpenChange={(open) => !open && setReviewingId(null)}>
                                               <DialogTrigger asChild>

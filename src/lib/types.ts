@@ -169,7 +169,7 @@ export interface Appointment {
   date: Date;
   time: string;
   mode: 'home' | 'online' | 'clinic';
-  status: 'Pending Approval' | 'Pending' | 'Payment Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show' | 'Searching' | 'Searching Therapist' | 'Assigned' | 'Accept' | 'Accepted' | 'Navigating' | 'On The Way' | 'Arrived' | 'In Progress' | 'Session Started';
+  status: import('./appointment-status').AppointmentStatus;
   cancellationReason?: string | null;
   notes?: string;
   reports?: any;
@@ -178,6 +178,11 @@ export interface Appointment {
   longitude?: number;
   createdAt: Date;
   serviceAddress?: Address;
+  serviceAddressDetail?: { fullAddress?: string; city?: string; state?: string; pincode?: string; lat?: number | string | null; lng?: number | string | null } | null;
+  sessionStartedAt?: string | null;
+  travelStartedAt?: string | null;
+  arrivedAt?: string | null;
+  completedAt?: string | null;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';
   pcrStatus: 'not_started' | 'in_progress' | 'submitted' | 'locked' | 'returned' | 'Draft';
   verificationStatus: 'Verified' | 'Not Verified';
