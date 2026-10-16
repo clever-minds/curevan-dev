@@ -7,11 +7,12 @@ interface ListOrdersResponse {
   data: Order[];
 }
 
-export async function listOrders(filters?: { userId?: number }): Promise<Order[] | null> {
+export async function listOrders(filters?: { userId?: number; couponCode?: string }): Promise<Order[] | null> {
 
   try {
     const params: any = {};
     if (filters?.userId) params.userId = filters.userId;
+    if (filters?.couponCode) params.couponCode = filters.couponCode;
      const token =await getToken();
      if (!token) {
         throw new Error('Token missing, please login again');

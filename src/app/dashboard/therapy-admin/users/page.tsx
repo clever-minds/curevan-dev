@@ -53,7 +53,7 @@ const ApprovalDialog = ({ request, onAction }: { request: ProfileChangeRequest, 
         onAction(); // Trigger a refetch in the parent
         setIsOpen(false); // Close dialog on success
       } else {
-        toast({ variant: 'destructive', title: 'Action Failed', description: result.error || result.message });
+        toast({ variant: 'destructive', title: 'Action Failed', description: (result as any).error || result.message });
       }
     });
   }

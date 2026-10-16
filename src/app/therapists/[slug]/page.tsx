@@ -9,7 +9,7 @@ import { listPublicJournalEntries } from '@/lib/repos/content';
 export const dynamic = 'force-dynamic';
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata(

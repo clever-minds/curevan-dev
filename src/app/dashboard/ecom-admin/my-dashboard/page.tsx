@@ -75,9 +75,9 @@ export default function EcomAdminDashboardPage() {
                     listProducts(),
                 ]);
                 setProductCategories(categoriesData);
-                setRecentOrders(ordersData.slice(0, 5));
+                setRecentOrders((ordersData ?? []).slice(0, 5));
                 setProducts(productsData);
-                setOrders(ordersData);
+                setOrders(ordersData ?? []);
             } catch (err) {
                 console.error("Fetch Data Error:", err);
             } finally {

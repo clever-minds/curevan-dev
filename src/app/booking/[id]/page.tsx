@@ -24,7 +24,7 @@ export default function BookingPage() {
   useEffect(() => {
     async function fetchTherapist() {
       try {
-        const t = await getTherapistById(id);
+        const t = await getTherapistById(Number(id));
         if (!t) {
             notFound();
         }

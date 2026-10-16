@@ -16,9 +16,9 @@ import { calculateProductPrice, Offer, PricingResult } from '@/lib/pricing';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number) => Promise<void>;
+  addToCart: (product: Product, quantity?: number, variantId?: number, variantAttributes?: Record<string, string>) => Promise<void>;
   removeFromCart: (productId: number) => Promise<void>;
-  updateQuantity: (productId: number, quantity: number) => Promise<void>;
+  updateQuantity: (productId: number, quantity: number, variantId?: number) => Promise<void>;
   clearCart: () => Promise<void>;
   getCartTotal: () => { 
     subtotal: number; 

@@ -72,7 +72,8 @@ import { listSosAlerts } from '@/lib/repos/alerts';
 import { listSupportTickets } from '@/lib/repos/support';
 import { listProfileChangeRequests } from '@/lib/repos/content';
 
-const allNavItems = {
+type NavEntry = { type?: 'header'; href?: string; label: string; icon?: any; exact?: boolean };
+const allNavItems: Record<'patient' | 'therapist', NavEntry[]> = {
   patient: [
     { href: '/dashboard/patient/my-dashboard', label: 'My Dashboard', icon: AreaChart, exact: true },
     { href: '/dashboard/patient/bookings', label: 'My Bookings', icon: CalendarDays },
@@ -239,7 +240,7 @@ export function DashboardNav() {
                     <SidebarMenuButton
                     isActive={checkActive(item.href, (item as any).exact)}
                     >
-                    <item.icon className="w-5 h-5"/>
+                    {item.icon && <item.icon className="w-5 h-5"/>}
                     <span>{item.label}</span>
                     </SidebarMenuButton>
                 </Link>

@@ -94,7 +94,7 @@ export default function BottomNav() {
     return null;
   }
   
-  let navItems = guestNav; // Default for logged-out users
+  let navItems: { href: string; label: string; icon: any; badgeCount?: number }[] = guestNav; // Default for logged-out users
   if (user) {
     const roles = user.roles || [];
     if(roles.includes('admin.super')) navItems = superAdminNav;

@@ -37,9 +37,10 @@ export default function PatientBookingsPage() {
     ];
 
     const reportData = appointments.map((appt) => {
-      let displayDate = appt.date;
-      if (appt.date && appt.date.length >= 10 && appt.date.includes("-")) {
-        const parts = appt.date.substring(0, 10).split("-");
+      const rawDate = appt.date as unknown as string;
+      let displayDate: string = rawDate;
+      if (rawDate && rawDate.length >= 10 && rawDate.includes("-")) {
+        const parts = rawDate.substring(0, 10).split("-");
         if (parts.length === 3) {
           const [y, m, d] = parts.map(Number);
           const localDate = new Date(y, m - 1, d);
@@ -49,9 +50,9 @@ export default function PatientBookingsPage() {
         }
       } else {
         try {
-          displayDate = appt.date ? format(parseISO(appt.date), "MM/dd/yyyy") : "N/A";
+          displayDate = rawDate ? format(parseISO(rawDate), "MM/dd/yyyy") : "N/A";
         } catch (e) {
-          displayDate = appt.date || "N/A";
+          displayDate = rawDate || "N/A";
         }
       }
 

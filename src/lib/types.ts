@@ -51,6 +51,7 @@ export interface UserProfile {
 
 
 export interface PatientProfile {
+  userId?: number;
   number: string;
   mrn: string; // Medical Record Number
   dob: Date;
@@ -70,6 +71,8 @@ export interface TherapistReview {
 }
 
 export interface Therapist {
+  address?: any;
+  experience?: number | string;
   id: number; // This is the user UID
   user_id: number;
   name: string;
@@ -440,6 +443,7 @@ export interface PayoutBatch {
 }
 
 export interface Invoice {
+  userId?: number;
   id: string;
   invoiceNumber: string;
   status: 'issued' | 'draft' | 'cancelled';
@@ -450,6 +454,7 @@ export interface Invoice {
 }
 
 export interface CreditNote {
+  userId?: number;
   id: string;
   creditNoteNumber: string;
   referenceInvoiceId: string;
@@ -554,6 +559,7 @@ export interface Notification {
 }
 
 export interface SOSAlert {
+  type?: string;
   id: string;
   therapistId: string;
   bookingId: string;
@@ -589,6 +595,7 @@ export interface SupportTicket {
 }
 
 export interface PaymentTransaction {
+  userId?: number;
   id: string;
   ref: string;
   number: string;
@@ -612,6 +619,7 @@ export interface AuditLog {
 }
 
 export interface AIFeedback {
+  userId?: number;
   id: string;
   timestamp: Date;
   number: string;
@@ -691,6 +699,9 @@ export interface ProfileChangeRequest {
 
 // --- Content Types ---
 export interface KnowledgeBase {
+  coverImageUrl?: string;
+  categoryIds?: number[];
+  attachments?: any[];
   id: string;
   title: string;
   slug: string;
@@ -790,11 +801,14 @@ export interface Address {
 }
 
 export interface GeoPoint {
+  _latitude?: number;
+  _longitude?: number;
   lat: number;
   lng: number;
 }
 export interface ApiResponse<T = any> {
   success?: boolean;
+  error?: string;
   message?: string;
   data?: T | null;
 }

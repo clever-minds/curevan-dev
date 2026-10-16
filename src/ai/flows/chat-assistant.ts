@@ -52,7 +52,7 @@ const getAppointmentDetailsTool = ai.defineTool(
     }
     // We assume a 'role' property exists on our user object.
     const role = user.role || 'patient'; 
-    return getAppointmentsForUser(user.uid, role as 'patient' | 'therapist');
+    return getAppointmentsForUser(Number(user.uid), role as 'patient' | 'therapist');
   }
 );
 

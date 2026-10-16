@@ -19,7 +19,7 @@ export default async function NewPcrPage({ params }: { params: Promise<{ booking
         </div>
         <p className="text-muted-foreground">Booking ID: {bookingId}. Complete the form to document the patient encounter.</p>
       </div>
-      <PcrForm bookingId={bookingId} />
+      <PcrForm bookingId={Number(bookingId)} />
     </div>
   );
 }

@@ -24,7 +24,7 @@ import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { isSameDay, addDays } from "date-fns";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, updateAppointmentStatus } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 
 export const dynamic = 'force-dynamic';
@@ -101,6 +101,13 @@ export default function TherapistSchedulePage() {
     setVerifyingAppointment(null);
   }
 
+  const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
+    const success = await updateAppointmentStatus(appointmentId, newStatus);
+    if (success && activeSession && activeSession.id === appointmentId) {
+      setActiveSession({ ...activeSession, status: newStatus });
+    }
+  };
+
   const handleEndSession = () => {
     toast({
         title: 'Session Complete',
@@ -143,7 +150,7 @@ export default function TherapistSchedulePage() {
 
       {activeSession && (
           <div className="sticky top-[calc(var(--header-height)+1rem)] z-20">
-              <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} />
+              <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} onStatusUpdate={handleStatusUpdate} onVerifyRequest={handleStartSessionRequest} />
           </div>
       )}
 

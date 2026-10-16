@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import { useParams } from 'next/navigation';
 import TherapistCard from '@/components/therapist-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterBar } from '@/components/admin/FilterBar';
@@ -29,8 +30,8 @@ const SPECIALTIES = [
 
 const PAGE_SIZE = 12;
 
-export default function TherapistCategoryPage({ params }: { params: { service: string | string[] } }) {
-  // Safe fallback since React.use is not available in React 18
+export default function TherapistCategoryPage() {
+  const params = useParams<{ service: string | string[] }>();
   const rawService = Array.isArray(params?.service) ? params.service.join('/') : params?.service || '';
   const serviceName = decodeURIComponent(rawService);
   const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);

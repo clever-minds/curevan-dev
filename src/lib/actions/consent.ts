@@ -1,7 +1,8 @@
 import serverApi from "@/lib/repos/axios.server";
+import { getToken } from "@/lib/auth";
 
 export interface LogConsentPayload {
-  userId: number;
+  userId?: number;
   consentType: 'terms' | 'privacy' | 'medical' | 'marketing';
   version: string;
 }

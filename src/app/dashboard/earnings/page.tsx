@@ -102,7 +102,7 @@ export default function EarningsPage() {
 
         if (therapistData?.referralCode) {
           const orderData = await listOrders({ couponCode: therapistData.referralCode });
-          setReferralOrders(orderData);
+          setReferralOrders(orderData ?? []);
         }
       } catch (error) {
         console.error("Failed to load earnings data:", error);
@@ -364,7 +364,7 @@ export default function EarningsPage() {
                     <TableBody>
                         {referralOrders.map(order => (
                              <TableRow key={order.id}>
-                                <TableCell>{new Date(order.createdAt as string).toLocaleDateString()}</TableCell>
+                                <TableCell>{new Date(order.createdAt as unknown as string).toLocaleDateString()}</TableCell>
                                 <TableCell>{order.id}</TableCell>
                                 <TableCell>{order.customerName}</TableCell>
                                 <TableCell><Price amount={(order.couponDiscount || 0)} showDecimals /></TableCell>

@@ -48,7 +48,7 @@ export default function DiscoverPage() {
           listTherapists(),
           getTherapyCategories(),
         ]);
-        setAllTherapists(therapistsData);
+        setAllTherapists(therapistsData ?? []);
         setTherapyCategories(categoriesData);
       } catch (error) {
         toast({
