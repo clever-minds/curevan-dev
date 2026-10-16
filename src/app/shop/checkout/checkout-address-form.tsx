@@ -12,7 +12,7 @@ import { useAuth } from '@/context/auth-context';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import useRazorpay from '@/hooks/use-razorpay';
-import { createOrder } from '@/lib/actions/order';
+import { createOrder, verifyPayment } from '@/lib/actions/order';
 import { Loader2, Edit, Trash2, Plus, X, MapPin, User, Mail, Phone, ChevronRight, Navigation } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useTransition } from 'react';
@@ -608,55 +608,51 @@ export function CheckoutAddressForm() {
         return;
       }
 
-      const { total, subtotal, offerDiscount, couponDiscount, discount } = getCartTotal();
-      console.log("data for check create order total", total, "discount", discount, "subtotal", subtotal);
-
       const finalShippingId = Number(data.shippingAddressId);
       const finalBillingId = data.useShippingAsBilling
         ? Number(data.shippingAddressId)
         : Number(data.billingAddressId);
 
       try {
+        // 1️⃣ Server creates the unpaid order and the Razorpay order.
+        //    Amount, coupon and GST are decided by the server; nothing price-related is sent.
+        const created = await createOrder({
+          shippingAddressId: finalShippingId,
+          billingAddressId: finalBillingId,
+          couponCode: appliedCoupon?.code,
+          referredTherapistId: String(commissionInfo?.referredTherapistId || ""),
+        });
 
+        if (!created.success || !created.razorpayOrderId || !created.amountPaise) {
+          toast({ variant: 'destructive', title: 'Could not start payment', description: created.error || 'Please try again.' });
+          return;
+        }
 
-        // 2️⃣ Open Razorpay modal
+        // 2️⃣ Open Razorpay with the server's order id and amount
         openPayment({
-          amount: Math.round(total * 100),
+          amount: created.amountPaise,
           currency: 'INR',
-          receipt: "",          // internal receipt id
-          orderId: "", // Razorpay order ID
+          receipt: created.orderNumber || '',
+          orderId: created.razorpayOrderId,
+          keyId: created.keyId,
           productName: `Curevan Order`,
           productDescription: `Your order with ${cart.length} items.`,
           prefill: { name: data.customerName, email: data.customerEmail, contact: data.customerPhone },
           onSuccess: async (paymentResponse) => {
-            // 3️⃣ After payment success, create order in DB
-            const orderResult = await createOrder({
-              userId: user.id,
-              customerName: data.customerName,
-              customerPhone: data.customerPhone,
-              items: cart,
-              shippingAddressId: finalShippingId,
-              billingAddressId: finalBillingId,
-              couponCode: appliedCoupon?.code,
-              couponDiscount: couponDiscount,
-              offerDiscount: offerDiscount,
-              subtotal: subtotal,
-
-              total: total,
-              referredTherapistId: String(commissionInfo?.referredTherapistId || ""),
-              paymentStatus: "Paid",
-              paymentRef: paymentResponse.razorpay_payment_id,
-              paymentGateway: "razorpay",
-              shippingCharges: shippingCost,
+            // 3️⃣ The server checks the signature; only then is the order paid.
+            const verified = await verifyPayment({
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
             });
 
-            if (!orderResult.success || !orderResult.orderId) {
-              toast({ variant: 'destructive', title: 'Order Failed', description: orderResult.error || 'Could not create your order after payment.' });
-              return;
+            if (!verified.success) {
+              toast({ variant: 'destructive', title: 'Payment not confirmed', description: verified.error || 'We could not confirm your payment. If money was deducted it will be refunded automatically.' });
+              return; // cart is kept
             }
 
             clearCart();
-            toast({ title: "Order Placed!", description: `Your order #${orderResult.orderId} has been confirmed.` });
+            toast({ title: "Order Placed!", description: `Your order ${verified.orderNumber || '#' + verified.orderId} has been confirmed.` });
             router.push(`/dashboard/${user.role}/orders`);
           },
           onFailure: (error) => {
