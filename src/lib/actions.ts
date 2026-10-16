@@ -40,14 +40,19 @@ export async function uploadFile(formData: FormData): Promise<{ fileUrl?: string
  * Generate objective notes via AI backend endpoint
  */
 export async function handleGenerateNotes(formData: FormData): Promise<{ objectiveNotes?: string; error?: string }> {
-  const token = await getToken();
+  // only a logged-in user may use the AI; the flow runs here on the server
+  const user = await getCurrentUser();
+  if (!user) return { error: 'Please sign in to use this feature.' };
+
+  const patientDescription = String(formData.get('patientDescription') ?? formData.get('description') ?? '').trim();
+  if (patientDescription.length < 10) return { error: 'Please describe the problem in a little more detail.' };
+
   try {
-    const { data } = await serverApi.post('/api/ai/objective-notes', formData, {
-      headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
-    });
-    return data;
+    const { generateObjectiveNotes } = await import('@/ai/flows/generate-objective-notes');
+    const result = await generateObjectiveNotes({ patientDescription });
+    return { objectiveNotes: result.objectiveNotes };
   } catch (error: any) {
-    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
+    console.error('Error generating objective notes:', error?.message);
     return { error: 'Failed to generate notes.' };
   }
 }

@@ -7,8 +7,7 @@ Re-run after changing routes. Calls with no backend route are marked with the ta
 |---|---|---|---|---|
 | POST | `/api/addresses/add` | `/api/addresses/add` | `addressController.addOrderAddress` | lib/repos/address.ts |
 | PUT | `/api/addresses/edit/:id` | `/api/addresses/edit/:addressId` | `addressController.updateOrderAddress` | lib/repos/address.ts |
-| POST | `/api/ai-feedback/log` | **no backend route** | P10 | lib/actions.ts |
-| POST | `/api/ai/objective-notes` | **no backend route** | P10 | lib/actions.ts |
+| POST | `/api/ai-feedback/log` | **no backend route** | P26 (AI feedback log) | lib/actions.ts |
 | GET | `/api/appointments/:id` | `/api/appointments/:id` | `appointmentsController.getAppointmentById` | services/invoice-service.ts |
 | POST | `/api/appointments/:id/pay` | `/api/appointments/:id/pay` | `appointmentsController.confirmPayment` | components/admin/ManualPaymentDialog.tsx |
 | POST | `/api/appointments/:id/review` | `/api/appointments/:id/review` | `appointmentsController.addReview` | lib/actions.ts |
@@ -38,7 +37,7 @@ Re-run after changing routes. Calls with no backend route are marked with the ta
 | PUT | `/api/category/edit/:id` | `/api/category/edit/:id` | `category.editCategory` | lib/api/categories.ts |
 | GET | `/api/category/get-all` | `/api/category/get-all` | `category.getAllCategories` | lib/repos/products.ts |
 | GET | `/api/category/list` | `/api/category/list` | `category.listCategories` | lib/api/categories.ts, lib/repos/products.ts |
-| POST | `/api/consent/log` | **no backend route** | P10 | lib/actions/consent.ts |
+| POST | `/api/consent/log` | `/api/consent/log` | `consent.logConsent` | lib/actions/consent.ts |
 | GET | `/api/coupons/:id` | `/api/coupons/:id` | `coupons.getCouponById` | lib/api/coupons.ts, lib/repos/coupons.ts |
 | POST | `/api/coupons/add` | `/api/coupons/add` | `coupons.addCoupon` | lib/api/coupons.ts, lib/repos/coupons.ts |
 | DELETE | `/api/coupons/delete/:id` | `/api/coupons/delete/:id` | `coupons.deleteCoupon` | lib/api/coupons.ts |
@@ -100,9 +99,9 @@ Re-run after changing routes. Calls with no backend route are marked with the ta
 | POST | `/api/shipment/create` | `/api/shipment/create` | `shipment.createShipment` | lib/actions/shipment.ts |
 | GET | `/api/shipment/estimate` | `/api/shipment/estimate` | `shipment.estimateShipping` | lib/repos/shipment.ts |
 | GET | `/api/shipment/list` | `/api/shipment/list` | `shipment.listShipments` | lib/repos/shipments.ts |
-| POST | `/api/sos/create` | **no backend route** | P10 | lib/repos/alerts.ts |
-| GET | `/api/sos/list` | **no backend route** | P10 | lib/repos/alerts.ts |
-| POST | `/api/sos/resolve` | **no backend route** | P10 | lib/repos/alerts.ts |
+| POST | `/api/sos/create` | `/api/sos/create` | `sos.createAlert` | lib/repos/alerts.ts |
+| GET | `/api/sos/list` | `/api/sos/list` | `sos.listAlerts` | lib/repos/alerts.ts |
+| POST | `/api/sos/resolve` | `/api/sos/resolve` | `sos.resolveAlert` | lib/repos/alerts.ts |
 | GET | `/api/stats/public` | `/api/stats/public` | `users.publicStats` | lib/repos/stats.ts |
 | POST | `/api/subcategory/add` | `/api/subcategory/add` | `subCategory.addSubCategory` | lib/api/categories.ts |
 | GET | `/api/subcategory/category/:id` | `/api/subcategory/category/:categoryId` | `subCategory.getSubCategoriesByCategory` | lib/repos/categories.ts |
@@ -137,4 +136,4 @@ Re-run after changing routes. Calls with no backend route are marked with the ta
 | POST | `/api/users/save` | **no backend route** | dead code (the only caller is commented out) | lib/repos/users.ts |
 | POST | `/api/users/update-roles` | `/api/users/update-roles` | `users.updateUserRoles` | lib/actions/team.ts |
 
-Total distinct calls: 131; without a backend route: 12
+Total distinct calls: 130; without a backend route: 7
