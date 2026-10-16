@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:links": "node scripts/check-links.mjs",
     "test": "vitest",
     "test:e2e": "playwright test",
     "db:seed": "node seed.mjs"

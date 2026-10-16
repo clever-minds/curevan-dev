@@ -102,7 +102,7 @@ export const therapistOnboardingSchema = z.object({
   // Availability & Pricing
   experience_years: z.coerce.number().min(0, 'Experience must be a positive number.'),
   hourlyRate: z.coerce.number().min(1, "Rate is required"),
-  membershipPlan: z.enum(['basic', 'standard', 'premium']),
+  membershipPlan: z.enum(['standard', 'premium']),
   availability: z.object({
     mon: availabilitySchema, tue: availabilitySchema, wed: availabilitySchema,
     thu: availabilitySchema, fri: availabilitySchema, sat: availabilitySchema,

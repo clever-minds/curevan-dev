@@ -108,7 +108,7 @@ export interface Therapist {
   referralActive?: boolean;
   availability?: any;
   hourlyRate?: number;
-  membershipPlan?: 'basic' | 'standard' | 'premium';
+  membershipPlan?: 'standard' | 'premium';
   platformFeePct?: number;
   isHighlighted?: boolean;
   distance?: number;
@@ -425,7 +425,7 @@ export interface PayoutItem {
   state: 'onHold' | 'inBatch' | 'paid' | 'disputed';
   weekStart: string; // ISO string of the Monday of the week
   createdAt: Date;
-  membershipPlanSnapshot: 'basic' | 'standard' | 'premium';
+  membershipPlanSnapshot: 'standard' | 'premium';
   therapistName?: string; // Added for easier reporting
   therapistPan?: string; // Added for easier reporting
 }

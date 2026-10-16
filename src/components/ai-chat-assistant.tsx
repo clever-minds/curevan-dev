@@ -31,7 +31,7 @@ const getContextualWelcomeMessage = (pathname: string, name: string): string => 
     if (pathname.startsWith('/dashboard/bookings')) return "Want an update on your booking?";
     if (pathname.startsWith('/therapists/')) return "Would you like to book this therapist?";
     if (pathname.startsWith('/journal') || pathname.startsWith('/dashboard/admin/journal') || pathname.startsWith('/dashboard/my-journal')) return "Need help writing, researching, or summarizing a journal article?";
-    if (pathname.startsWith('/dashboard/new-post')) return "Shall I help you draft your new post or choose a catchy title?";
+    if (pathname.startsWith('/dashboard/journal/new')) return "Shall I help you draft your new post or choose a catchy title?";
     
     return `Welcome, ${name}! How can I help you today?
 e.g., "What are my upcoming appointments?"`;

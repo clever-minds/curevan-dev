@@ -199,7 +199,7 @@ export default function TherapistSchedulePage() {
                 description="Use free time to publish de-identified case insights or knowledge posts. More posts → higher visibility → more bookings."
                 icon={BookOpen}
                 button1Text="Write Post"
-                button1Href="/dashboard/new-post"
+                button1Href="/dashboard/journal/new"
                 button2Text="View Writing Tips"
                 button2Href="/dashboard/therapist/training"
             />

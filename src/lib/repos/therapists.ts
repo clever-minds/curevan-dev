@@ -49,7 +49,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             serviceTypes: Array.isArray(item.specialty) 
                 ? item.specialty.map((id: number) => categoryMap.get(id) || id?.toString()) 
                 : [],
-            membershipPlan: item.membershipPlan || 'standard',
+            membershipPlan: (item.membershipPlan === 'premium' ? 'premium' : 'standard'),
             isProfilePublic: item.isProfilePublic,
             profileViewCount: item.profileViewCount,
             clinicId: item.clinicId,
@@ -148,7 +148,7 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       referralActive: item.referralActive,
       availability: availability,
       hourlyRate: item.hourlyRate,
-      membershipPlan: item.membershipPlan || 'standard',
+      membershipPlan: (item.membershipPlan === 'premium' ? 'premium' : 'standard'),
       platformFeePct: item.platformFeePct,
       isHighlighted: item.isHighlighted,
       distance:item.distance_km,
@@ -220,7 +220,7 @@ export async function listTherapistsByLocation(
       user_id: item.user_id,
       specialty: item.specialty,
       phone: item.phone,
-      membershipPlan: item.membership_plan || 'basic',
+      membershipPlan: (item.membership_plan === 'premium' ? 'premium' : 'standard'),
       bank_account_number: item.bank_account_number,
       bank_ifsc_code: item.bank_ifsc_code,
       registration_no: item.registration_no,

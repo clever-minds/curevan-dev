@@ -406,7 +406,7 @@ export async function initiateRefundAction(data: { orderId: string | number; amo
   const res = await initiateRefund(data);
   if (res.success) {
     revalidatePath('/dashboard/admin/orders');
-    revalidatePath('/dashboard/admin/refunds');
+    revalidatePath('/dashboard/admin/returns');
   }
   return res;
 }
