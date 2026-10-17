@@ -34,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { PCR, DueMeasure } from '@/lib/types';
 import { OutcomeMeasureInput, outcomeKey, type OutcomeEntry } from '@/components/clinical/OutcomeMeasureInput';
 import { TreatmentPlanForm } from '@/components/clinical/TreatmentPlanForm';
+import { NextSessionPlanner, nextPlanProblem, type NextSessionPlan } from '@/components/clinical/NextSessionPlanner';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
 
@@ -147,7 +148,9 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
 
   // P16: visit type, the treatment plan, the outcome measures due today
   const [sessionType, setSessionType] = useState<string>(searchParams.get('type') || 'follow_up');
-  const [plan, setPlan] = useState<{ id: number; condition: string; planned_sessions?: number | null } | null>(null);
+  const [plan, setPlan] = useState<{ id: number; condition: string; planned_sessions?: number | null; frequency_per_week?: number | null } | null>(null);
+  const [nextPlan, setNextPlan] = useState<NextSessionPlan>({ mode: 'single' });
+  const [therapistUserId, setTherapistUserId] = useState(0);
   const [sessionNumber, setSessionNumber] = useState<number | null>(null);
   const [due, setDue] = useState<DueMeasure[]>([]);
   const [entries, setEntries] = useState<Record<string, OutcomeEntry>>({});
@@ -158,6 +161,8 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   const applyMeta = (pcrData: any) => {
     setPlan(pcrData?.treatmentPlan ?? null);
     setSessionNumber(pcrData?.sessionNumber ?? null);
+    setTherapistUserId(Number(pcrData?.therapist_id ?? 0));
+    if (pcrData?.next_session_plan?.mode) setNextPlan(pcrData.next_session_plan);
     setDue(pcrData?.dueMeasures ?? []);
     setPatientRef({ patientId: Number(pcrData?.patient_id ?? 0), serviceTypeId: pcrData?.service_type_id ?? null });
     // the server-stored type wins unless the page was opened with ?type=...
@@ -173,6 +178,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       const e = entries[outcomeKey(m)] ?? { value: '', couldNotAssess: false, reason: '' };
       return { measureId: m.measureId, side: m.side ?? undefined, item: m.item ?? undefined, value: e.value === '' ? undefined : Number(e.value), couldNotAssess: e.couldNotAssess, reason: e.reason };
     }),
+    nextSessionPlan: sessionType === 'discharge' && nextPlan.mode !== 'single' && nextPlan.mode !== 'series' ? { mode: 'none' } : nextPlan,
     progressSummary: progressSummary.trim() || undefined,
     dischargeReason: dischargeReason.trim() || undefined,
   });
@@ -301,6 +307,8 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       if (!e || !((e.value !== '' && !e.couldNotAssess) || (e.couldNotAssess && e.reason.trim().length >= 3))) missing.push(`${m.name}${m.side ? ` (${m.side})` : ''}`);
     }
     if (sessionType === 'initial_assessment' && !plan) missing.push('treatment plan');
+    const nextProblem = nextPlanProblem(nextPlan, sessionType);
+    if (nextProblem) missing.push(nextProblem);
     if ((sessionType === 'review' || sessionType === 'discharge') && progressSummary.trim().length < 10) missing.push('progress summary');
     if (sessionType === 'discharge' && dischargeReason.trim().length < 3) missing.push('discharge reason');
     if (missing.length) {
@@ -646,9 +654,11 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               <FormField control={form.control} name="planOfCare" render={({ field }) => (
                 <FormItem><FormLabel>Plan of Care</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Recommended next steps, exercises, or future treatment plan..." context={{ entityType: 'pcr', field: 'planOfCare' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="nextTreatmentDate" render={({ field }) => (
-                <FormItem><FormLabel>Next Treatment Date (Optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <NextSessionPlanner
+                therapistUserId={therapistUserId} sessionType={sessionType} frequencyPerWeek={plan?.frequency_per_week}
+                remainingSessions={plan?.planned_sessions && sessionNumber ? Math.max(1, plan.planned_sessions - sessionNumber) : null}
+                value={nextPlan} onChange={setNextPlan} disabled={isReadOnly}
+              />
             </div>
 
             <Separator />

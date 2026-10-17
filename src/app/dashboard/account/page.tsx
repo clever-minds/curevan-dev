@@ -38,6 +38,7 @@ import { listOrders } from "@/lib/repos/orders";
 import { listProducts } from "@/lib/repos/products";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { PatientJourneyCard } from "../patient/patient-journey-card";
+import { ReminderPreferences } from '@/components/account/ReminderPreferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -396,6 +397,8 @@ export default function AccountPage() {
                     </CardContent>
                 </Card>
             </DashboardSection>
+
+             <ReminderPreferences />
 
              <CardFooter className="justify-end gap-2 pt-4">
                 <Button variant="outline" asChild><Link href="/dashboard/bookings">View all bookings</Link></Button>

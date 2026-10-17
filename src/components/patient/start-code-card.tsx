@@ -7,6 +7,7 @@ import { KeyRound, Loader2 } from 'lucide-react';
 import type { Appointment } from '@/lib/types';
 import { VISIT_STEPS, statusLabel } from '@/lib/appointment-status';
 import { getStartOtp } from '@/lib/repos/appointments';
+import { AddToCalendarButton } from '@/components/calendar/AddToCalendarButton';
 
 /** Shown to the patient for confirmed / on the way / arrived bookings. */
 export function StartCodeCard({ appointment }: { appointment: Appointment }) {
@@ -45,6 +46,7 @@ export function StartCodeCard({ appointment }: { appointment: Appointment }) {
           ))}
         </ol>
 
+        <AddToCalendarButton appointmentId={appointment.id} date={String(appointment.date)} time={appointment.time} withName={appointment.therapist} />
         {otp ? (
           <div className="text-center">
             <p className="font-mono text-4xl font-bold tracking-[0.4em]" aria-label="Start code">{otp}</p>

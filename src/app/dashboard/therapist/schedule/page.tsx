@@ -26,7 +26,8 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { isSameDay, addDays } from "date-fns";
 import { listAppointmentsForUser, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
-import { isFinished } from '@/lib/appointment-status';
+import { isFinished, statusLabel } from '@/lib/appointment-status';
+import { CalendarFeedCard } from '@/components/calendar/CalendarFeedCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -182,6 +183,7 @@ export default function TherapistSchedulePage() {
                             <TableHead>Patient</TableHead>
                             <TableHead>Service</TableHead>
                             <TableHead>Mode</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -192,8 +194,9 @@ export default function TherapistSchedulePage() {
                                 <TableCell>{appt.patientName}</TableCell>
                                 <TableCell>{appt.therapyType}</TableCell>
                                 <TableCell><Badge variant="outline">{appt.mode}</Badge></TableCell>
+                                <TableCell><Badge variant={appt.status === 'proposed' ? 'secondary' : 'default'}>{appt.status === 'proposed' ? 'Proposed (tentative)' : statusLabel(appt.status)}</Badge></TableCell>
                                 <TableCell className="space-x-2">
-                                     <Button variant="outline" size="sm" onClick={() => handleOpenJourney(appt)} disabled={!!activeSession || isFinished(appt.status) || appt.status === 'pending_payment'}><PlayCircle className="mr-2"/>Start</Button>
+                                     <Button variant="outline" size="sm" onClick={() => handleOpenJourney(appt)} disabled={!!activeSession || !['confirmed', 'therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'].includes(appt.status)}><PlayCircle className="mr-2"/>Start</Button>
                                      <Button variant="ghost" size="sm" asChild><Link href={`/pcr/${appt.id}`}><ExternalLink className="mr-2"/>PCR</Link></Button>
                                 </TableCell>
                             </TableRow>
@@ -208,6 +211,8 @@ export default function TherapistSchedulePage() {
         </CardContent>
       </Card>
       
+       <CalendarFeedCard />
+
        <div className="grid md:grid-cols-2 gap-6 pt-8">
             <GrowthCTA 
                 title="Write a Case Study" 

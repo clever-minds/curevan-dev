@@ -328,7 +328,7 @@ export default function TherapistDashboard() {
                                         variant="outline" 
                                         size="sm" 
                                         onClick={() => handleOpenJourney(appointment)} 
-                                        disabled={!!activeSession || isFinished(appointment.status) || appointment.status === 'pending_payment'}
+                                        disabled={!!activeSession || !['confirmed', 'therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'].includes(appointment.status)}
                                     >
                                         <PlayCircle className="mr-2 h-4 w-4"/>
                                         Start

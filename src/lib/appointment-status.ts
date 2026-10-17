@@ -1,6 +1,6 @@
 // Appointment status codes (same list as the backend state machine) and how they are shown.
 export const APPOINTMENT_STATUSES = [
-  'pending_payment', 'searching_therapist', 'accepted_unpaid', 'confirmed', 'therapist_on_the_way', 'arrived',
+  'proposed', 'proposal_expired', 'proposal_declined', 'pending_payment', 'searching_therapist', 'accepted_unpaid', 'confirmed', 'therapist_on_the_way', 'arrived',
   'in_progress', 'pcr_pending', 'completed', 'cancelled_by_patient', 'cancelled_by_therapist', 'cancelled_by_admin',
   'cancelled_unpaid', 'no_show',
 ] as const;
@@ -8,6 +8,9 @@ export const APPOINTMENT_STATUSES = [
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 const LABELS: Record<AppointmentStatus, string> = {
+  proposed: 'Recommended - confirm to keep',
+  proposal_expired: 'Released (not confirmed)',
+  proposal_declined: 'Declined',
   pending_payment: 'Payment pending',
   searching_therapist: 'Finding a therapist',
   accepted_unpaid: 'Therapist found - pay to confirm',
@@ -42,7 +45,7 @@ export const UPCOMING_STATUSES: AppointmentStatus[] = ['confirmed', 'therapist_o
 export const LIVE_STATUSES: AppointmentStatus[] = ['confirmed', 'therapist_on_the_way', 'arrived', 'in_progress'];
 
 /** No more changes can happen to these. */
-export const isFinished = (status?: string | null) => status === 'completed' || status === 'no_show' || isCancelled(status);
+export const isFinished = (status?: string | null) => status === 'completed' || status === 'no_show' || status === 'proposal_expired' || status === 'proposal_declined' || isCancelled(status);
 
 const IST_OFFSET_MS = 5.5 * 3600 * 1000;
 

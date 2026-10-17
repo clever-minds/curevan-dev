@@ -51,6 +51,9 @@ const getStatusBadgeVariant = (status: Appointment['status'] | string) => {
     case 'accepted_unpaid': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300';
     case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
     case 'searching_therapist': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    case 'proposed': return 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300';
+    case 'proposal_expired':
+    case 'proposal_declined': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     case 'pending_payment': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
     case 'cancelled_by_patient':
     case 'cancelled_by_therapist':
