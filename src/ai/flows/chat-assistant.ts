@@ -1,117 +1,137 @@
 'use server';
 
 /**
- * @fileOverview A conversational AI assistant for Curevan users.
- * This flow uses tools to access Firestore data securely to answer user questions.
+ * Curevan Assistant (handoff pack P26): AI first, a person when needed.
+ *  - the model comes from AI_MODEL_ID (no code change to switch it)
+ *  - red-flag words and "I want a human" are handled in code BEFORE the model (src/ai/safety.ts)
+ *  - the tools call the backend with the user's own token (src/ai/tools.ts); two failed tool attempts hand the chat to a person
+ *  - the model sees no phone numbers or addresses, and never diagnoses or prescribes
  */
 
-import { ai } from '@/ai/genkit';
-import { getAppointmentsForUser } from '@/services/firestore-service';
 import { z } from 'zod';
-import { getCurrentUser } from '@/lib/auth';
+import { ai, AiNotConfiguredError, aiModelId, requireModel } from '@/ai/genkit';
+import { categoryFor, detectRedFlag, EMERGENCY_MESSAGE, wantsHuman } from '@/ai/safety';
+import { createTools } from '@/ai/tools';
+import { escalate, makeHttp, userIdFromToken, type Escalation } from '@/ai/backend';
+import { getToken } from '@/lib/auth';
 
-// Define the input schema for the main flow
 const ChatAssistantInputSchema = z.object({
   query: z.string().describe("The user's question or message."),
+  sessionId: z.number().optional(),
+  history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string() })).optional(),
 });
 export type ChatAssistantInput = z.infer<typeof ChatAssistantInputSchema>;
 
-// Define the output schema for the main flow
-const ChatAssistantOutputSchema = z.object({
-  answer: z
-    .string()
-    .describe('The AI assistant\'s response to the user\'s query.'),
-});
-export type ChatAssistantOutput = z.infer<typeof ChatAssistantOutputSchema>;
+export interface ChatAssistantOutput {
+  answer: string;
+  emergency?: boolean;
+  escalation?: Escalation;
+  sessionId?: number;
+}
 
-// Define a tool for the AI to get appointment details for the current user.
-// The AI will decide when to use this tool based on the user's query.
-const getAppointmentDetailsTool = ai.defineTool(
-  {
-    name: 'getAppointmentDetails',
-    description: 'Get a list of upcoming or past appointments for the current user. Use this to answer any questions about their bookings, schedules, treatment history, or appointment history. This includes details like PCR status, payment status, and booking status.',
-    inputSchema: z.object({}), // No input needed as we get user from auth context
-    outputSchema: z.array(z.object({
-        id: z.string(),
-        date: z.string(),
-        time: z.string(),
-        therapistName: z.string(),
-        patientName: z.string(),
-        status: z.string(),
-        therapyType: z.string(),
-        pcrStatus: z.string().optional(),
-        paymentStatus: z.string().optional(),
-    })),
-  },
-  async () => {
-    // IMPORTANT: Security is handled here. We get the user from the authenticated session
-    // on the server, not from the client. This prevents a user from asking for another user's data.
-    const user = await getCurrentUser();
-    if (!user || !user.uid) {
-        throw new Error('User not authenticated.');
-    }
-    // We assume a 'role' property exists on our user object.
-    const role = user.role || 'patient'; 
-    return getAppointmentsForUser(Number(user.uid), role as 'patient' | 'therapist');
-  }
-);
+const MAX_QUERY = 1000;
+const MAX_HISTORY = 6;
 
+const SYSTEM_PROMPT = `You are Curevan Assistant, a friendly customer care assistant of Curevan (Himaya Care Pvt. Ltd.), a home-therapy and wellness-shop platform in India.
+Rules you always follow:
+- You do NOT diagnose, prescribe, interpret test results or give medical advice. For anything medical, say that the therapist or a doctor must answer it.
+- Use the tools for the user's own orders, bookings, progress, therapist suggestions, returns and cancellations. Never guess facts about them.
+- Only the tools may reveal a start code, and only the user's own. Never repeat phone numbers or full addresses.
+- To cancel a booking: first call cancelBooking without confirm and tell the user the charge; call it with confirm=true only after the user clearly says yes.
+- If a tool says it failed or you cannot help, say so briefly and offer to connect the user to a person.
+- Keep answers short and plain. Contact: care@curevan.com, +91 95144 46292.
+About Curevan: a brand of Himaya Care Pvt. Ltd. Services: physiotherapy, nursing care, geriatric care, speech therapy, mental health counselling, dietitian services. "Cure. Anywhere."`;
 
 export async function curevanAssistant(input: ChatAssistantInput): Promise<ChatAssistantOutput> {
-  // Get the current user's role to provide better context to the AI.
-  const user = await getCurrentUser();
-  const userRole = user?.role || 'patient';
+  const query = String(input.query ?? '').trim().slice(0, MAX_QUERY);
+  if (!query) return { answer: 'Please type your question.' };
 
-  const llmResponse = await ai.generate({
-    model: 'googleai/gemini-2.0-flash',
-    tools: [getAppointmentDetailsTool],
-    prompt: `You are Curevan Assistant, a helpful and friendly AI customer care executive.
-      Your role is to assist users with their questions about the Curevan platform.
-      The user you are chatting with has the role: ${userRole}.
-      Use the available tools to answer their questions about their appointments, treatment history, or schedule.
-      For general questions, use the information provided below.
-      Keep your answers concise and clear. If you cannot answer based on the provided context, use this exact fallback response: "I am unable to find the answer to your question in my current data. Please feel free to create a new support ticket or contact our team directly by phone or email at care@curevan.com."
+  const token = await getToken();
+  const userId = token ? userIdFromToken(token) : null;
+  const http = token ? makeHttp(token) : null;
+  const history = (input.history ?? []).slice(-MAX_HISTORY);
+  let sessionId = input.sessionId;
 
-      START OF CONTEXT
-      
-      **About Curevan:**
-      - Curevan is a brand by Himaya Care Pvt. Ltd., established in 2025.
-      - Its mission is to bring organized, continuous, and clinically-guided care to your doorstep.
-      - It solves problems like unorganized home visits, lack of treatment history, and no standardized tools for therapists.
-      - The name means "Cure. Anywhere."
+  const save = async (answer: string, toolCalls?: unknown) => {
+    if (!http || !sessionId) return;
+    try { await http('POST', `/api/support/chat/sessions/${sessionId}/messages`, { messages: [{ sender: 'user', text: query }, { sender: 'ai', text: answer, toolCalls }] }); } catch { /* the chat works without the log */ }
+  };
 
-      **Services Offered:**
-      - Physiotherapy: For post-surgery rehab, back/neck pain, arthritis, stroke recovery.
-      - Nursing Care: Injections, wound dressing, IV drips, vital monitoring.
-      - Geri care Therapy: Assisting elderly with daily skills.
-      - Speech Therapy: For children with speech delays or adults post-stroke.
-      - Mental Health Counseling: For anxiety, depression via secure video calls.
-      - Dietitian/Nutritionist Services: Personalized meal planning.
-
-      **Contact Information:**
-      - Email: care@curevan.com
-      - Phone: +91 95144 46292
-      - Address: Himaya Care Pvt. Ltd., Office 704, Time Square, Vasna - Bhayli Main Rd, Ashwamegh Nagar, Tandalja, Vadodara, Gujarat 390012.
-
-      **Earnings & Payments:**
-      - You cannot access specific earnings or payout data. If asked about earnings, refer the user to the "My Earnings" page in their dashboard for detailed information.
-
-      END OF CONTEXT
-
-      User's question: "${input.query}"`,
-    config: {
-        // Lower temperature for more factual, less creative responses
-        temperature: 0.2,
-    }
-  });
-
-  const text = llmResponse.text;
-  
-  if (!text) {
-    // If the model doesn't return text (e.g., it only used a tool),
-    // we provide a generic but helpful response.
-    return { answer: "I've retrieved the information. What would you like to know about it?" };
+  if (http && !sessionId) {
+    try { sessionId = (await http('POST', '/api/support/chat/sessions', { channel: 'web' }))?.data?.id; } catch { sessionId = undefined; }
   }
 
-  return { answer: text };
+  // 1. emergency words: never the model, always the banner text, and a P1 ticket when the user is signed in
+  if (detectRedFlag(query)) {
+    const escalation = http ? await escalate(http, { reason: 'red_flag', category: 'clinical', sessionId, summary: `The user wrote words that suggest an emergency.\nMessage: "${query.slice(0, 200)}"` }) ?? undefined : undefined;
+    await save(EMERGENCY_MESSAGE);
+    return { answer: EMERGENCY_MESSAGE, emergency: true, escalation, sessionId };
+  }
+
+  // 2. "I want a human": a ticket with a two-line summary and the right team
+  if (wantsHuman(query)) {
+    if (!http) return { answer: 'Please sign in so that we can connect you to our team, or write to care@curevan.com or call +91 95144 46292.', sessionId };
+    const lastQuestion = [...history].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const topic = `${lastQuestion} ${query}`;
+    const escalation = await escalate(http, { reason: 'human_requested', category: categoryFor(topic), sessionId, summary: `The user asked for a person.\nLast topic: ${(lastQuestion || query).slice(0, 200)}` });
+    const answer = escalation
+      ? `I have passed this to our team (ticket #${escalation.ticketId}, priority ${escalation.priority}). ${escalation.callbackMessage ?? 'Someone will contact you soon.'}`
+      : 'I could not reach our team right now. Please write to care@curevan.com or call +91 95144 46292.';
+    await save(answer);
+    return { answer, escalation: escalation ?? undefined, sessionId };
+  }
+
+  // 3. the model, with the tools that run as this user
+  let model;
+  try { model = requireModel(); } catch (e) {
+    if (e instanceof AiNotConfiguredError) return { answer: 'The assistant is not available right now. Please write to care@curevan.com or call +91 95144 46292.', sessionId };
+    throw e;
+  }
+
+  const tools = userId && http ? createTools({ http, userId, userMessage: query }) : null;
+  const dynamicTools = tools ? [
+    ai.dynamicTool({ name: 'trackOrder', description: "Status, courier status and tracking link of one of the user's own orders (order number like ORD-123).", inputSchema: z.object({ orderId: z.string() }) }, async (i: { orderId: string }) => tools.trackOrder(i)),
+    ai.dynamicTool({ name: 'appointmentStatus', description: "The user's own bookings and their status, the start code when it is available, and any recommended next session waiting for the user.", inputSchema: z.object({ appointmentId: z.string().optional() }) }, async (i: { appointmentId?: string }) => tools.appointmentStatus(i)),
+    ai.dynamicTool({ name: 'myProgress', description: "A plain-language summary of the user's own active treatment plan: goals and the latest change of the recorded measures. No advice.", inputSchema: z.object({}) }, async () => tools.myProgress()),
+    ai.dynamicTool({ name: 'findSpecialty', description: 'Which kind of therapist fits the symptoms the user describes; with lat and lng also nearby approved therapists.', inputSchema: z.object({ symptoms: z.string(), lat: z.number().optional(), lng: z.number().optional() }) }, async (i: { symptoms: string; lat?: number; lng?: number }) => tools.findSpecialty(i)),
+    ai.dynamicTool({ name: 'requestReturn', description: "Start a return of one of the user's delivered orders (reason: damaged, not working, wrong item, missing part).", inputSchema: z.object({ orderId: z.string(), reason: z.string() }) }, async (i: { orderId: string; reason: string }) => tools.requestReturn(i)),
+    ai.dynamicTool({ name: 'cancelBooking', description: "Cancel one of the user's bookings. Call it first WITHOUT confirm to get the charge; call it with confirm=true only after the user clearly said yes.", inputSchema: z.object({ appointmentId: z.string(), confirm: z.boolean().optional() }) }, async (i: { appointmentId: string; confirm?: boolean }) => tools.cancelBooking(i)),
+  ] : [];
+
+  let answer = '';
+  try {
+    const response = await ai.generate({
+      model,
+      system: SYSTEM_PROMPT + (tools ? '' : '\nThe user is not signed in: you cannot look anything up for them; ask them to sign in for orders and bookings.'),
+      messages: [...history.map((m) => ({ role: (m.role === 'user' ? 'user' : 'model') as 'user' | 'model', content: [{ text: m.content.slice(0, 600) }] })), { role: 'user' as const, content: [{ text: query }] }],
+      tools: dynamicTools,
+      config: { temperature: 0.2 },
+    });
+    answer = response.text || '';
+  } catch (e: any) {
+    console.error('Assistant model call failed:', e?.message);
+    answer = '';
+  }
+
+  let escalation: Escalation | undefined;
+  if (tools?.shouldHandOver || !answer) {
+    // two failed tool attempts, or no answer from the model: a person takes over
+    if (http) escalation = (await escalate(http, { reason: 'tool_failures', category: categoryFor(`${history.map((m) => m.content).join(' ')} ${query}`), sessionId, summary: `The assistant could not help (tool failures: ${tools?.failures ?? 0}).\nUser question: ${query.slice(0, 200)}` })) ?? undefined;
+    answer = `${answer ? answer + ' ' : ''}I am not able to sort this out myself, so I have passed it to our team${escalation ? ` (ticket #${escalation.ticketId}). ${escalation.callbackMessage ?? 'Someone will contact you soon.'}` : '. Please write to care@curevan.com or call +91 95144 46292.'}`;
+  }
+
+  await save(answer, tools?.trace);
+  return { answer, escalation, sessionId };
+}
+
+/** Admin AI page: is a model configured, and does it answer? */
+export async function aiHealthCheck(): Promise<{ configured: boolean; model: string; ok: boolean; error?: string }> {
+  const model = aiModelId();
+  if (!model) return { configured: false, model: '', ok: false, error: 'AI_MODEL_ID is not set.' };
+  try {
+    const r = await ai.generate({ model: requireModel(), prompt: 'Reply with the single word OK.', config: { temperature: 0, maxOutputTokens: 8 } });
+    return { configured: true, model, ok: /ok/i.test(r.text || ''), error: r.text ? undefined : 'The model returned no text.' };
+  } catch (e: any) {
+    return { configured: true, model, ok: false, error: String(e?.message ?? e).slice(0, 200) };
+  }
 }

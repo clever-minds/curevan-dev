@@ -17,7 +17,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDes
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useState, useTransition } from "react";
-import { curevanAssistant } from "@/ai/flows/chat-assistant";
+import { aiHealthCheck, curevanAssistant } from "@/ai/flows/chat-assistant";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { DashboardCard } from "@/components/ui/dashboard-card";
@@ -52,6 +52,8 @@ const queryLogs = [
 export default function AdminAiPage() {
     const { toast } = useToast();
     const form = useForm();
+    const [health, setHealth] = useState<{ configured: boolean; model: string; ok: boolean; error?: string } | null>(null);
+    const [checking, setChecking] = useState(false);
     const [testQuery, setTestQuery] = useState("");
     const [testResponse, setTestResponse] = useState("");
     const [isTesting, startTestTransition] = useTransition();
@@ -256,6 +258,23 @@ END OF CONTEXT`;
                   </Button>
                 </CardContent>
               </Card>
+
+             <Card className="lg:col-span-2" data-testid="ai-health">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles /> Model health check</CardTitle>
+                    <CardDescription>The assistant uses the model set in AI_MODEL_ID. Change it in the environment, no code change is needed.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                    <Button variant="outline" onClick={async () => { setChecking(true); setHealth(await aiHealthCheck()); setChecking(false); }} disabled={checking}>
+                        {checking ? "Checking..." : "Check the model now"}
+                    </Button>
+                    {health && (
+                        <p className={health.ok ? "text-green-700" : "text-red-700"}>
+                            {health.configured ? `Model ${health.model}: ` : ""}{health.ok ? "answers correctly." : health.error || "no answer."}
+                        </p>
+                    )}
+                </CardContent>
+             </Card>
 
              <Card className="lg:col-span-2">
                 <CardHeader>
