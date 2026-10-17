@@ -839,7 +839,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     let cancelled = false;
     setSlotsLoading(true);
     setSlotsError(null);
-    getTherapistSlots(therapist.id, format(selectedDate, "yyyy-MM-dd")).then((res) => {
+    getTherapistSlots(therapist.user_id ?? therapist.id, format(selectedDate, "yyyy-MM-dd")).then((res) => {
       if (cancelled) return;
       setServerSlots(res.slots);
       setLeadHours(res.minLeadHours);
@@ -998,7 +998,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             patientId: user!.id,
             patientName: data.patientFullName || user!.name || "N/A",
             dateofBirth: data.dob,
-            therapistId: therapist.id,
+            therapistId: therapist.user_id ?? therapist.id,   // bookings, leave and slots are all keyed by the therapist's USER id
             therapist: therapist.name,
             serviceTypeId: serviceTypeId,
             therapyType: data.serviceType,
