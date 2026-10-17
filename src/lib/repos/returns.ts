@@ -99,3 +99,17 @@ export async function approveReturn(returnId: string | number): Promise<{ succes
     };
   }
 }
+/**
+ * Admin steps after approval: reject (with reason), receive (item reached the warehouse), inspect (pass refunds, fail rejects).
+ * PUT /api/orders/returns/:id/(reject|receive|inspect)
+ */
+export async function returnStep(returnId: string | number, step: 'reject' | 'receive' | 'inspect', body: Record<string, unknown> = {}): Promise<{ success: boolean; message?: string }> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+    const response = await serverApi.put(`/api/orders/returns/${returnId}/${step}`, body, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: response.data?.success ?? true, message: response.data?.message };
+  } catch (error: any) {
+    return { success: false, message: error?.response?.data?.message || 'Could not update the return.' };
+  }
+}

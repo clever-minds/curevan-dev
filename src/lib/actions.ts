@@ -294,7 +294,7 @@ export async function deleteJournal(
 }
 
 
-import { requestReturn, approveReturn, listReturns } from './repos/returns';
+import { requestReturn, approveReturn, listReturns, returnStep } from './repos/returns';
 import { listRefunds, getMyRefunds, initiateRefund } from './repos/refunds';
 
 /**
@@ -317,6 +317,17 @@ export async function approveReturnAction(returnId: string | number) {
   if (res.success) {
     revalidatePath('/dashboard/admin/returns');
     revalidatePath('/dashboard/ecom-admin/returns');
+  }
+  return res;
+}
+
+/** Reject, receive or inspect a return (Admin) */
+export async function returnStepAction(returnId: string | number, step: 'reject' | 'receive' | 'inspect', body: Record<string, unknown> = {}) {
+  const res = await returnStep(returnId, step, body);
+  if (res.success) {
+    revalidatePath('/dashboard/admin/returns');
+    revalidatePath('/dashboard/ecom-admin/returns');
+    revalidatePath('/dashboard/patient/orders');
   }
   return res;
 }

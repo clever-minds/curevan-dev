@@ -502,7 +502,7 @@ function AddressModal({
 
 export function CheckoutAddressForm() {
   const { user } = useAuth();
-  const { cart, getCartTotal, appliedCoupon, commissionInfo, clearCart, shippingCost, setShippingCost } = useCart();
+  const { cart, getCartTotal, appliedCoupon, commissionInfo, clearCart } = useCart();
 
   const { toast } = useToast();
   const { openPayment, isLoaded } = useRazorpay();
@@ -555,51 +555,6 @@ export function CheckoutAddressForm() {
       form.setValue('shippingAddressId', '', { shouldValidate: true });
     }
   };
-
-  // Shipping Estimation logic
-  useEffect(() => {
-    const updateShipping = async () => {
-      if (!shippingAddressId || shippingAddressId === 'new') {
-        setShippingCost(0);
-        return;
-      }
-
-      const selectedAddr = addresses.find(a => String(a.id) === shippingAddressId);
-      if (!selectedAddr || !selectedAddr.pincode) {
-        setShippingCost(0);
-        return;
-      }
-
-      // Calculate total weight
-      const totalWeight = cart.reduce((sum, item) => {
-        const weight = item.dimensions?.weightKg || 0.5; // default 0.5kg
-        return sum + (weight * item.quantity);
-      }, 0);
-
-      try {
-        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const FREE_SHIPPING_THRESHOLD = 1000;
-
-        if (subtotal >= FREE_SHIPPING_THRESHOLD) {
-          setShippingCost(0);
-          return;
-        }
-
-        const estimate = await estimateShipping(selectedAddr.pincode, totalWeight);
-        if (estimate) {
-          setShippingCost(estimate.rate);
-        } else {
-          setShippingCost(0);
-        }
-      } catch (error) {
-        console.error("Shipping estimate failed:", error);
-        setShippingCost(0);
-      }
-    };
-
-    updateShipping();
-  }, [shippingAddressId, addresses, cart, setShippingCost]);
-
 
   const onSubmit = (data: AddressFormValues) => {
     startTransition(async () => {

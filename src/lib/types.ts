@@ -330,6 +330,7 @@ export interface Order {
   customerName: string;
   customerPhone?: string;
   items: {
+    id?: number;
     sku: string;
     name: string;
     qty: number;
@@ -351,7 +352,8 @@ export interface Order {
   igst?: number;
   totalTax?: number;
   total: number;
-  status: 'Placed' | 'Pending' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'Refunded';
+  status: 'Placed' | 'Pending' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'Refunded' | 'awb_generated' | 'picked_up' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'rto' | 'Return Approved';
+  awb?: string | null;
   createdAt: Date;
   deliveredAt?: string | null;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';

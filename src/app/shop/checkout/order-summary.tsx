@@ -21,7 +21,7 @@ export function OrderSummary() {
   const [couponLoading, setCouponLoading] = useState(false);
   const { toast } = useToast();
 
-  const { subtotal, discount, offerDiscount, couponDiscount, totalGst, total, totalWithTax, gstToPay, shippingCost, message } = getCartTotal();
+  const { subtotal, discount, offerDiscount, couponDiscount, totalGst, total, totalWithTax, gstToPay, shippingCost, freeShippingGap, message } = getCartTotal();
 
   const handleApplyCoupon = useCallback(async (codeToApply: string) => {
     if (!codeToApply.trim()) return;
@@ -209,6 +209,11 @@ export function OrderSummary() {
               )}
             </span>
           </div>
+          {freeShippingGap > 0 && (
+            <p className="text-[11px] font-medium text-primary" data-testid="free-shipping-hint">
+              Add <Price amount={freeShippingGap} showDecimals /> more for free delivery
+            </p>
+          )}
 
           {gstToPay > 0 && (
             <div className="flex justify-between font-medium text-destructive">
