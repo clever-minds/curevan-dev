@@ -85,6 +85,7 @@ const allNavItems: Record<'patient' | 'therapist', NavEntry[]> = {
     { href: '/dashboard/support', label: 'My Tickets', icon: Send },
     { href: '/dashboard/account', label: 'Account Settings', icon: UserCog },
     { href: '/dashboard/account/security', label: 'Security', icon: KeyRound },
+    { href: '/dashboard/account/privacy', label: 'Privacy & Data', icon: ShieldAlert },
   ],
   therapist: [
     { type: 'header', label: 'Core' },
@@ -105,6 +106,7 @@ const allNavItems: Record<'patient' | 'therapist', NavEntry[]> = {
     { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
     { href: '/dashboard/account', label: 'Profile Settings', icon: UserCog },
     { href: '/dashboard/account/security', label: 'Security', icon: KeyRound },
+    { href: '/dashboard/account/privacy', label: 'Privacy & Data', icon: ShieldAlert },
   ],
 };
 
@@ -149,6 +151,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
         { href: '/dashboard/admin/sos-alerts', label: 'SOS Alerts', icon: ShieldAlert, badgeCount: activeAlertCount },
         { href: '/dashboard/admin/support-tickets', label: 'Support Tickets', icon: Send, badgeCount: openTicketCount },
         { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell },
+        { href: '/dashboard/admin/privacy-requests', label: 'Privacy Requests', icon: ShieldAlert },
         { href: '/dashboard/admin/ai', label: 'AI Settings', icon: Sparkles },
         { href: '/dashboard/admin/settings', label: 'Platform Settings', icon: Settings },
     ]},
@@ -307,6 +310,14 @@ export function DashboardNav() {
                         <SidebarMenuButton isActive={checkActive('/dashboard/account/security', true)}>
                             <KeyRound className="w-5 h-5"/>
                             <span>Security</span>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <Link href="/dashboard/account/privacy">
+                        <SidebarMenuButton isActive={checkActive('/dashboard/account/privacy', true)}>
+                            <ShieldAlert className="w-5 h-5"/>
+                            <span>Privacy &amp; Data</span>
                         </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>

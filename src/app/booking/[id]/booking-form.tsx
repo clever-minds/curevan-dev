@@ -43,6 +43,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { GuardianFields } from "@/components/booking/GuardianFields";
+import { consentPayload, guardianIssues } from "@/lib/booking-consent";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useTransition } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -666,6 +668,13 @@ const bookingFormSchema = z
     consent_refund: z.boolean().refine((val) => val === true, {
       message: "You must agree to the Refund, Cancellation & Return Policy.",
     }),
+    guardianName: z.string().optional(),
+    guardianRelation: z.string().optional(),
+    guardianPhone: z.string().optional(),
+    guardianConsent: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    for (const i of guardianIssues(data)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: i.message, path: i.path });
   })
   .refine(
     (data) => {
@@ -799,6 +808,10 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       consent_medical: false,
       consent_privacy: false,
       consent_refund: false,
+      guardianName: "",
+      guardianRelation: "",
+      guardianPhone: "",
+      guardianConsent: false,
       addressId: "",
     },
   });
@@ -998,6 +1011,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             patientId: user!.id,
             patientName: data.patientFullName || user!.name || "N/A",
             dateofBirth: data.dob,
+            ...consentPayload(data),
             therapistId: therapist.user_id ?? therapist.id,   // bookings, leave and slots are all keyed by the therapist's USER id
             therapist: therapist.name,
             serviceTypeId: serviceTypeId,
@@ -1172,6 +1186,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               </FormItem>
             )}
           />
+          <GuardianFields />
 
           {/* Session Mode */}
           <FormField

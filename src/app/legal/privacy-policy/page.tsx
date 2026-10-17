@@ -109,6 +109,20 @@ export default function PrivacyPolicyPage() {
             <p>Requests can be sent to <a href="mailto:care@curevan.com" className="text-primary hover:underline">care@curevan.com</a></p>
           </section>
           
+          <section data-testid="dpdp-section">
+            <h2 className="text-xl font-semibold text-foreground">YOUR RIGHTS UNDER THE DIGITAL PERSONAL DATA PROTECTION ACT, 2023</h2>
+            <p>You can, at any time and free of charge, from <Link href="/dashboard/account/privacy" className="text-primary underline">Account &gt; Privacy &amp; Data</Link>:</p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>download a copy of the personal data we hold about you;</li>
+              <li>ask us to correct data that is wrong or incomplete;</li>
+              <li>ask us to erase your data (records we must keep by law, such as medical, tax and payment records, are kept for the period in our retention schedule and then deleted);</li>
+              <li>withdraw your consent to marketing messages (messages about your bookings and orders continue).</li>
+            </ul>
+            <p>We keep a record of every request and of the version of this policy you accepted. Medical records are kept for [OWNER TO CONFIRM: at least 3 years after your last session, 5 years recommended]; records of a patient under 18 until the patient is 18 plus [OWNER TO CONFIRM: 3] years; tax and payment records for [OWNER TO CONFIRM: 8] years.</p>
+            <p><strong>Grievance officer:</strong> [OWNER TO CONFIRM: name, e-mail and phone]. If you are not satisfied you may complain to the Data Protection Board of India.</p>
+            <p>If a personal data breach affects you, we will tell you without delay, and we report it to CERT-In and to the Data Protection Board as the law requires.</p>
+          </section>
+
           <section>
             <h2 className="text-xl font-semibold text-foreground">DATA RETENTION</h2>
             <p>We retain your data only as long as necessary:</p>
