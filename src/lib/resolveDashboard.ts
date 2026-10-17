@@ -18,6 +18,6 @@ export function resolveMyDashboardHref(roles?: string[] | null): string {
   if (has('admin.therapy')) return '/dashboard/therapy-admin/my-dashboard';
   if (has('therapist')) return '/dashboard/therapist/my-dashboard';
 
-  // Patient dashboard is the default account page
-  return '/dashboard/account';
+  // Patients land on their own home screen (the account page stays as "Account settings")
+  return '/dashboard/patient/my-dashboard';
 }

@@ -25,3 +25,15 @@ export async function getAffiliateRules(): Promise<AffiliateRules> {
     return DEFAULT_AFFILIATE_RULES;
   }
 }
+
+export interface Features { maskedCall: boolean; carePacks: boolean }
+
+/** Switches for features that arrive in later releases (both off). */
+export async function getFeatures(): Promise<Features> {
+  try {
+    const { data } = await clientApi.get('/api/config/public');
+    return { maskedCall: data?.data?.features?.maskedCall === true, carePacks: data?.data?.features?.carePacks === true };
+  } catch {
+    return { maskedCall: false, carePacks: false };
+  }
+}
