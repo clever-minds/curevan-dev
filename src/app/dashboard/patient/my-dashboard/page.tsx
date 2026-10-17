@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
 import { ActiveBookingCard } from '@/components/patient/ActiveBookingCard';
+import { ActiveCarePackCard } from '@/components/patient/ActiveCarePackCard';
 import { ConfirmNextSessionCard } from '@/components/patient/ConfirmNextSessionCard';
 import { ProgressSummary } from '@/components/patient/ProgressSummary';
 import { QuickActions } from '@/components/patient/QuickActions';
 import { RecentOrders } from '@/components/patient/RecentOrders';
 import { RecentRecords } from '@/components/patient/RecentRecords';
 import { getPatientDashboard, type PatientDashboard } from '@/lib/repos/patientDashboard';
+import { getMyCarePacks, type CarePack } from '@/lib/repos/carePacks';
 
 const REFRESH_MS = 30_000;
 
@@ -32,8 +34,18 @@ function HoldCountdown({ expiresAt }: { expiresAt: string }) {
 export default function PatientHomePage() {
   const { user } = useAuth();
   const [data, setData] = React.useState<PatientDashboard | null | undefined>(undefined);
+  const [activeCarePack, setActiveCarePack] = React.useState<CarePack | null>(null);
 
-  const load = React.useCallback(async () => setData(await getPatientDashboard()), []);
+  const load = React.useCallback(async () => {
+    const [dash, packs] = await Promise.all([
+      getPatientDashboard(),
+      getMyCarePacks().catch(() => []),
+    ]);
+    setData(dash);
+    const active = packs.find((p) => p.status === 'active' && (p.sessions_total - p.sessions_used) > 0) || null;
+    setActiveCarePack(active);
+  }, []);
+
   React.useEffect(() => {
     if (!user) return;
     load();
@@ -71,6 +83,8 @@ export default function PatientHomePage() {
               <CardContent><Button asChild><Link href={data.lastTherapist ? `/booking/${data.lastTherapist.therapistId}` : '/book'}>Book now</Link></Button></CardContent>
             </Card>
           ) : null}
+
+          {activeCarePack && <ActiveCarePackCard carePack={activeCarePack} />}
 
           {data.activeBooking && <ActiveBookingCard booking={data.activeBooking} />}
 

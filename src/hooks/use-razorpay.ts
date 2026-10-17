@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay?: any;
   }
 }
 

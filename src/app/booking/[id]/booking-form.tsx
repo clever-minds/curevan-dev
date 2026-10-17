@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Loader2,
   Navigation,
+  Package,
 } from "lucide-react";
 import {
   Form,
@@ -55,6 +56,7 @@ import { Price } from "@/components/money/price";
 import { getTherapistSlots } from "@/lib/repos/appointments";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
 import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
+import { getMyCarePacks, type CarePack } from "@/lib/repos/carePacks";
 import {
   createAddress,
   deleteAddress,
@@ -719,6 +721,33 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const [showAddressFormModal, setShowAddressFormModal] = useState(false);
   const [showAddressPickerModal, setShowAddressPickerModal] = useState(false);
 
+  // Care Pack state (P28)
+  const [myPacks, setMyPacks] = useState<CarePack[]>([]);
+  const [usePack, setUsePack] = useState(false);
+  const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    getMyCarePacks()
+      .then((packs) => {
+        const active = (packs || []).filter(
+          (p) => p.status === "active" && p.sessions_total - p.sessions_used > 0
+        );
+        setMyPacks(active);
+        const paramId = searchParams.get("carePackId");
+        if (paramId) {
+          const match = active.find((p) => String(p.id) === paramId);
+          if (match) {
+            setSelectedPackId(match.id);
+            setUsePack(true);
+          }
+        } else if (active.length > 0) {
+          setSelectedPackId(active[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [user, searchParams]);
+
   useEffect(() => {
     const fetchData = async () => {
       const [cats, states] = await Promise.all([
@@ -1027,8 +1056,19 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               data.sessionMode === "home" ? Number(data.addressId) : undefined,
             status: "pending_payment", // server decides the real status (pack P07: Pending until paid)
             verificationStatus: "Not Verified",
-          },
+            payWith: usePack ? "pack" : undefined,
+            carePackId: usePack && selectedPackId ? selectedPackId : undefined,
+          } as any,
         );
+
+        if (result.success && result.paidWith === "pack") {
+          toast({
+            title: "Booking Confirmed!",
+            description: `Session booked using your Care Package. ${result.sessionsRemaining ?? ""} sessions left.`,
+          });
+          router.push("/dashboard/bookings");
+          return;
+        }
 
         if (result.success && result.razorpayOrderId && result.amountPaise) {
           // Pay-immediately mode: open Razorpay for the amount the server calculated,
@@ -1489,12 +1529,63 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             ))}
           </div>
 
+          {/* Care Package Option (P28) */}
+          {myPacks.length > 0 && (
+            <div className="p-4 rounded-xl border border-primary/40 bg-primary/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm">Pay with Care Package</span>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-primary">
+                  <input
+                    type="checkbox"
+                    checked={usePack}
+                    onChange={(e) => setUsePack(e.target.checked)}
+                    className="h-4 w-4 rounded accent-primary cursor-pointer"
+                  />
+                  Use Package
+                </label>
+              </div>
+
+              {usePack && (
+                <div className="space-y-2 pt-2 border-t border-primary/20">
+                  <label className="text-xs text-muted-foreground block">Select Active Package:</label>
+                  <select
+                    value={selectedPackId || ""}
+                    onChange={(e) => setSelectedPackId(Number(e.target.value))}
+                    className="w-full text-xs rounded-lg border bg-background p-2.5 font-medium"
+                  >
+                    {myPacks.map((p) => {
+                      const left = p.sessions_total - p.sessions_used;
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.plan_name} — {left} sessions remaining
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-emerald-600 font-medium">
+                    ✓ 1 session will be redeemed from your package. No online payment required.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Price */}
           <div className="p-4 rounded-lg bg-muted/50 text-center">
             <p className="text-muted-foreground">Service Fee</p>
-            <p className="text-2xl font-bold">
-              {therapist?.hourlyRate ? <Price amount={therapist.hourlyRate} showDecimals /> : <span className="text-sm text-muted-foreground">Price not set</span>}
-            </p>
+            {usePack ? (
+              <div className="space-y-0.5">
+                <p className="text-2xl font-bold text-emerald-600">₹0</p>
+                <p className="text-xs text-muted-foreground font-medium">Covered by active Care Package</p>
+              </div>
+            ) : (
+              <p className="text-2xl font-bold">
+                {therapist?.hourlyRate ? <Price amount={therapist.hourlyRate} showDecimals /> : <span className="text-sm text-muted-foreground">Price not set</span>}
+              </p>
+            )}
           </div>
 
           {/* Submit */}

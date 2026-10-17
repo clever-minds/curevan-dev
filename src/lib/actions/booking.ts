@@ -21,6 +21,9 @@ export interface BookingPaymentStart {
   razorpayOrderId?: string;
   amountPaise?: number;
   keyId?: string;
+  paidWith?: string;
+  carePackId?: number;
+  sessionsRemaining?: number;
   error?: string;
 }
 
@@ -53,6 +56,9 @@ export async function createBookingAndInvoice(
       razorpayOrderId: data.razorpayOrderId,
       amountPaise: data.amountPaise,
       keyId: data.keyId,
+      paidWith: data.paidWith,
+      carePackId: data.carePackId,
+      sessionsRemaining: data.sessionsRemaining,
     };
   } catch (error: any) {
     return fail(error, 'Failed to create booking');
