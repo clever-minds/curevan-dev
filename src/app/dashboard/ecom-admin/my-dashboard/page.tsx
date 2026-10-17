@@ -156,18 +156,13 @@ export default function EcomAdminDashboardPage() {
 
     const kpis = useMemo(() => {
         const paidOrders = orders.filter(o => o.paymentStatus === 'Paid');
-        const gmv = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+        const gmv = paidOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);      // the API sends numeric columns as strings
         const totalOrders = orders.length;
         const aov = totalOrders > 0 ? gmv / totalOrders : 0;
-        const refunds = orders.filter(o => o.status === 'Refunded').length;
+        const refunds = orders.filter(o => String(o.status).toLowerCase() === 'refunded').length;
         const refundRate = totalOrders > 0 ? (refunds / totalOrders) * 100 : 0;
-        const onTime = orders.filter(o => o.status === 'Delivered').length; // Mock
+        const onTime = orders.filter(o => String(o.status).toLowerCase() === 'delivered').length;   // delivered orders (courier status 'delivered' or the older 'Delivered')
         const onTimeRate = totalOrders > 0 ? (onTime / totalOrders) * 100 : 0;
-        console.log("gmv", gmv);
-        console.log("totalOrders", totalOrders);
-        console.log("aov", aov);
-        console.log("refundRate", refundRate.toFixed(1) + '%');
-        console.log("onTimeRate", onTimeRate.toFixed(1) + '%');
         return { gmv, totalOrders, aov, refundRate: refundRate.toFixed(1) + '%', onTimeRate: onTimeRate.toFixed(1) + '%' };
 
     }, [orders]);

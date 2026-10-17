@@ -941,6 +941,7 @@ export interface InventoryForecastItem {
   reserved: number;
   stock: number;
   reorderPoint: number;
+  updatedAt?: string | null;
   sold30d: number;
   runRate: number;
   daysCover: number;

@@ -156,10 +156,10 @@ export default function AdminDashboardPage() {
             if (!date) return;
             if (!dataMap.has(date)) dataMap.set(date, { revenue: 0, refunds: 0 });
             const entry = dataMap.get(date)!;
-            if (order.status !== 'Refunded') {
-                entry.revenue += (order.total || 0) / 100;
+            if (String(order.status).toLowerCase() !== 'refunded') {
+                if (order.paymentStatus === 'Paid') entry.revenue += Number(order.total || 0);      // only money received; amounts are in rupees and arrive as strings
             } else {
-                entry.refunds += (order.total || 0) / 100;
+                entry.refunds += Number(order.total || 0);
             }
         });
         return Array.from(dataMap.entries()).map(([date, values]) => ({ date, ...values }));
@@ -177,11 +177,11 @@ export default function AdminDashboardPage() {
     const topServicesData = useMemo(() => {
         const serviceMap = new Map<string, number>();
         appointments.forEach(appt => {
-            const revenue = appt.totalAmount || 0;
+            const revenue = Number(appt.totalAmount || 0);
             serviceMap.set(appt.therapyType, (serviceMap.get(appt.therapyType) || 0) + revenue);
         });
         return Array.from(serviceMap.entries())
-            .map(([name, revenue]) => ({ name, revenue: revenue / 100 }))
+            .map(([name, revenue]) => ({ name, revenue }))
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 10);
     }, [appointments]);
@@ -205,8 +205,8 @@ export default function AdminDashboardPage() {
 
     const totalRefunds = useMemo(() => {
         return orders
-            .filter(o => o.status === 'Refunded')
-            .reduce((sum, o) => sum + (o.total || 0), 0);
+            .filter(o => String(o.status).toLowerCase() === 'refunded')
+            .reduce((sum, o) => sum + Number(o.total || 0), 0);
     }, [orders]);
 
     return (

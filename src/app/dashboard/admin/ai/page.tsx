@@ -260,19 +260,19 @@ END OF CONTEXT`;
              <Card className="lg:col-span-2">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><BarChart /> Analytics & Reporting</CardTitle>
-                    <CardDescription>Understand how the AI is being used and its performance.</CardDescription>
+                    <CardDescription>Understand how the AI is being used and its performance. Numbers appear here once the AI assistant is live.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid sm:grid-cols-3 gap-4">
                     <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-3xl font-bold">{Math.floor(Math.random() * 500) + 1000}</p>
+                        <p className="text-3xl font-bold">-</p>
                         <p className="text-sm text-muted-foreground">Total Queries (24h)</p>
                     </div>
                      <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-3xl font-bold">{Math.floor(Math.random() * 10) + 88}%</p>
+                        <p className="text-3xl font-bold">-</p>
                         <p className="text-sm text-muted-foreground">Positive Feedback</p>
                     </div>
                      <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-3xl font-bold">{Math.floor(Math.random() * 20)}</p>
+                        <p className="text-3xl font-bold">-</p>
                         <p className="text-sm text-muted-foreground">Flagged Responses</p>
                     </div>
                 </CardContent>

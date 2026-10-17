@@ -103,11 +103,8 @@ export default function TherapistDashboard() {
             setStats(results[4]);
             setEarningsData(results[5]);
             
-            const fetchedCats = results[3] || [];
-            setTopServicesData(fetchedCats.slice(0,3).map((cat: string) => ({
-                name: cat.split(" ")[0],
-                count: Math.floor(Math.random() * 20) + 5,
-            })))
+            // real counts of this therapist's completed sessions per service (last 90 days)
+            setTopServicesData((results[4] as any)?.charts?.topServicesData ?? []);
         } catch (error) {
             toast({
                 variant: "destructive",
