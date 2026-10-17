@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusTimeline } from '@/components/patient/StatusTimeline';
+import { CallButton } from '@/components/communication/CallButton';
 import { statusLabel } from '@/lib/appointment-status';
 import { imageUrl } from '@/lib/image';
 import { getStartOtp } from '@/lib/repos/appointments';
@@ -58,7 +59,10 @@ export function ActiveBookingCard({ booking }: { booking: DashboardBooking }) {
             ) : state === 'loading' ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : <p className="text-sm text-muted-foreground">The start code is not available right now.</p>}
           </div>
         )}
-        <Link href="/dashboard/bookings" className="text-sm text-primary underline">All my bookings</Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <CallButton appointmentId={booking.id} date={booking.date} time={booking.time} status={booking.status} label="Call your therapist" />
+          <Link href="/dashboard/bookings" className="text-sm text-primary underline">All my bookings</Link>
+        </div>
       </CardContent>
     </Card>
   );

@@ -5,6 +5,7 @@ import type { Appointment } from "@/lib/types";
 import { Clock, User, MapPin, CheckCircle, Navigation, PlayCircle, Map, FileText, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SosButton } from "@/components/sos-button";
+import { CallButton } from "@/components/communication/CallButton";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -157,6 +158,7 @@ export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVer
                         <Link href={`/pcr/${session.id}`}><FileText className="mr-2" />Submit PCR</Link>
                     </Button>
                 )}
+                <CallButton appointmentId={session.id} date={session.date} time={session.time} status={session.status} label="Call patient" />
                 <SosButton session={session} />
             </div>
         </div>

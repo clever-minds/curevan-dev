@@ -37,3 +37,22 @@ export async function getFeatures(): Promise<Features> {
     return { maskedCall: false, carePacks: false };
   }
 }
+
+export interface CallConfig { enabled: boolean; windowHoursBefore: number; windowHoursAfter: number; slotMinutes: number }
+
+/** Is masked calling live, and when does the calling window open and close? (the server decides the same again when the call is made) */
+export async function getCallConfig(): Promise<CallConfig> {
+  const off: CallConfig = { enabled: false, windowHoursBefore: 2, windowHoursAfter: 1, slotMinutes: 60 };
+  try {
+    const { data } = await clientApi.get('/api/config/public');
+    const d = data?.data ?? {};
+    return {
+      enabled: d.features?.maskedCall === true,
+      windowHoursBefore: Number(d.maskedCall?.windowHoursBefore ?? off.windowHoursBefore),
+      windowHoursAfter: Number(d.maskedCall?.windowHoursAfter ?? off.windowHoursAfter),
+      slotMinutes: Number(d.session?.slotMinutes ?? off.slotMinutes),
+    };
+  } catch {
+    return off;
+  }
+}
