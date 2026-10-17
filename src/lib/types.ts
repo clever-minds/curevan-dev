@@ -874,3 +874,12 @@ export interface PlanProgress {
 }
 export interface ProgressReportRow { id: number; reportType: 'review' | 'discharge'; sessionNumber: number | null; createdAt: string; sharedAt?: string | null }
 export interface CaregiverLink { id: number; relation?: string | null; createdAt: string; activatedAt?: string | null; revokedAt?: string | null; phone?: string | null }
+
+
+// --- Payout batches as the backend returns them (P18) ---
+export interface PayoutBatchRow {
+  id: number; therapistId: number; therapistName: string; weekStart: string; weekEnd: string;
+  gross: number; platformFee: number; gstOnFee: number; tds: number; adjustments: number; net: number;
+  status: 'scheduled' | 'approved' | 'on_hold' | 'paid';
+  approvedBy?: number | null; approvedAt?: string | null; utr?: string | null; paidAt?: string | null; holdReason?: string | null; itemCount: number;
+}

@@ -41,8 +41,10 @@ export interface PayoutSummary {
     period: string;
     payoutDate: string;
     totalAmount: number;
-    status: 'Paid' | 'Processing';
+    status: 'Paid' | 'Scheduled' | 'Approved' | 'On-Hold' | 'Processing';
     numberOfSessions: number;
+    batchId?: number;
+    utr?: string;
 }
 
 export interface EarningsData {

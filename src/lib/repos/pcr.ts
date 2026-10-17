@@ -73,11 +73,11 @@ export async function updatePcr(id: number, data: Partial<PCR>): Promise<boolean
   }
 }
 /** Like updatePcr, but tells the caller why the server refused (missing fields, not started yet, reason needed...). */
-export async function updatePcrDetailed(id: number, data: Partial<PCR> & Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+export async function updatePcrDetailed(id: number, data: Partial<PCR> & Record<string, unknown>): Promise<{ ok: boolean; error?: string; payout?: { created: boolean; reason?: string } }> {
   const token = await getToken();
   try {
-    await serverApi.patch(`/api/appointments/pcr/${id}`, data, { headers: { Authorization: `Bearer ${token}` } });
-    return { ok: true };
+    const res = await serverApi.patch(`/api/appointments/pcr/${id}`, data, { headers: { Authorization: `Bearer ${token}` } });
+    return { ok: true, payout: res.data?.payout };
   } catch (error: any) {
     return { ok: false, error: error?.response?.data?.error || error?.message || 'The report could not be saved.' };
   }

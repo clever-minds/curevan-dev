@@ -16,7 +16,7 @@ import { addPayoutItem, getPayoutItemBySourceId } from '@/lib/repos/payouts';
 import { addAuditLog } from '@/lib/repos/logs';
 import { getTherapistProfileById } from './repos/therapistProfiles';
 import { getCurrentUser, getToken } from '@/lib/auth';
-import { updatePcr } from './repos/pcr';
+import { updatePcr, updatePcrDetailed } from './repos/pcr';
 
 /**
  * Upload a file via backend API (server handles Firebase Storage)
@@ -58,94 +58,16 @@ export async function handleGenerateNotes(formData: FormData): Promise<{ objecti
 }
 
 /**
- * Create payout item for a booking
+ * Lock the PCR. The server then creates the payout line itself (tier fee, GST on the fee, TDS) when the payment, the
+ * start code and the lock are all in place, and says so in its reply.
  */
 export async function createPayoutItemForBooking(bookingId: number): Promise<{ success: boolean; message: string; payoutItemId?: string; }> {
-  console.log(`Triggered payout item creation for bookingId: ${bookingId}`);
-
-  // This should ideally be a transaction, but for simplicity we'll do it step-by-step.
-  // Idempotency Check
-  const existingItem = await getPayoutItemBySourceId(bookingId);
-  if (existingItem) {
-    console.log(`Payout item for booking ${bookingId} already exists. Skipping.`);
-    return { success: true, message: 'Payout item already exists.' };
+  const res = await updatePcrDetailed(bookingId, { status: 'locked', pcrStatus: 'locked' } as any);
+  if (!res.ok) return { success: false, message: res.error || 'The report could not be locked.' };
+  if (res.payout && res.payout.created === false) {
+    return { success: true, message: `Report locked. No payout line was made yet: ${res.payout.reason || 'a condition is missing'}.` };
   }
-
-  // 1. Fetch related documents
-  const appointment = await getAppointmentById(bookingId);
-  if (!appointment) {
-    throw new Error(`Appointment ${bookingId} not found.`);
-  }
-
-  const therapist = await getTherapistProfileById(appointment.therapistId);
-  if (!therapist) {
-    throw new Error(`Therapist ${appointment.therapistId} not found.`);
-  }
-
-  // 2. Validate conditions for payout
-  if (appointment.paymentStatus !== 'Paid') {
-    await updatePcr(bookingId, { status: 'in_progress' }); // Revert lock status
-    return { success: false, message: `Payment not confirmed for booking ${bookingId}. PCR has been unlocked.` };
-  }
-
-  // 3. Compute payout details (0% platform fee, 0% GST, 0% TDS - No deductions currently)
-  const grossAmount = appointment.serviceAmount || 0;
-  const membershipPlanSnapshot = therapist.membershipPlan || 'standard';
-  const platformFeePct = 0;
-  const platformFeeAmount = 0;
-  const gstOnPlatformFee = 0;
-  const preTdsPayable = grossAmount;
-  const tdsDeducted = 0;
-  const netAmount = grossAmount;
-
-  const bookingDate = new Date(appointment.date as any);
-  const weekStart = startOfWeek(bookingDate, { weekStartsOn: 1 }).toISOString();
-
-  // 4. Create the payoutItems document
-  const newPayoutItem: Omit<PayoutItem, 'id'> = {
-    type: 'service',
-    sourceId: bookingId,
-    therapistId: appointment.therapistId,
-    patientId: appointment.patientId,
-    serviceTypeId: appointment.serviceTypeId,
-    grossAmount,
-    platformFeePct,
-    platformFeeAmount,
-    gstOnPlatformFee,
-    preTdsPayable,
-    tdsDeducted,
-    netAmount,
-    currency: 'INR',
-    state: 'onHold', // Default state, to be picked up by weekly batch job
-    weekStart,
-    createdAt: new Date(),
-    membershipPlanSnapshot,
-  };
-
-  const createdItem = await addPayoutItem(newPayoutItem);
-
-  // 5. Create the audit log entry
-  const auditLog: AuditLog = {
-    actorId: 'system',
-    action: 'payout.item.created',
-    entityType: 'booking',
-    entityId: bookingId,
-    timestamp: new Date(),
-    details: {
-      payoutItemId: createdItem.id,
-      netAmount: netAmount,
-      therapistId: therapist.id,
-    }
-  };
-  await addAuditLog(auditLog);
-  
-  // 6. Finalize the PCR status to 'locked' atomically
-  await updatePcr(bookingId, { 
-    status: 'locked', 
-    pcrStatus: 'locked' 
-  });
-
-  return { success: true, message: 'Payout item created and PCR locked successfully.', payoutItemId: createdItem.id };
+  return { success: true, message: 'Report locked and the payout was scheduled.' };
 }
 
 /**
