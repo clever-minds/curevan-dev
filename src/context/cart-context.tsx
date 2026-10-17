@@ -320,10 +320,10 @@ const updateQuantity = async (
       return total;
     }, 0);
 
-    const goodsValue = taxableAmount + gstToPay;                                  // what the customer pays for the products
-    const shippingCost = cart.length === 0 || goodsValue >= shopRules.freeShippingThresholdInr ? 0 : shopRules.flatShippingFeeInr;
-    const freeShippingGap = shippingCost > 0 ? Math.max(0, Math.round((shopRules.freeShippingThresholdInr - goodsValue) * 100) / 100) : 0;
-    const totalWithTax = goodsValue + shippingCost;
+    // pack P19: the threshold is checked on the subtotal after discounts
+    const shippingCost = cart.length === 0 || taxableAmount >= shopRules.freeShippingThresholdInr ? 0 : shopRules.flatShippingFeeInr;
+    const freeShippingGap = shippingCost > 0 ? Math.max(0, Math.round((shopRules.freeShippingThresholdInr - taxableAmount) * 100) / 100) : 0;
+    const totalWithTax = taxableAmount + gstToPay + shippingCost;
 
     return { 
       subtotal, 
