@@ -77,8 +77,13 @@ export interface Therapist {
   user_id: number;
   name: string;
   specialty: string;
-  registrationNo: string,
-  bankAccountNo: string,
+  registrationNo: string;
+  registration_no?: string;
+  council?: string;
+  registration_valid_until?: string | Date;
+  quality_status?: string;
+  quality_note?: string;
+  bankAccountNo: string;
   bankIfscCode: string,
   line1: string;
   line2?: string;

@@ -46,6 +46,13 @@ import { listPayoutItems } from "@/lib/repos/payouts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getSafeDate } from "@/lib/utils";
 import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
+import { ReassignDrawer } from '@/components/therapy-admin/ReassignDrawer';
+import { QualityQueue } from '@/components/therapy-admin/QualityQueue';
+import { CredentialQueue } from '@/components/therapy-admin/CredentialQueue';
+import { FollowUpQueue } from '@/components/therapy-admin/FollowUpQueue';
+import { StalledProgressQueue } from '@/components/therapy-admin/StalledProgressQueue';
+import { OutcomeSummary } from '@/components/therapy-admin/OutcomeSummary';
+import { getTherapyAdminOverview, getEmergencyReassignQueue } from '@/lib/repos/therapyAdmin';
 
 const KpiCard = ({ title, value, icon: Icon, description, loading, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, isCurrency?: boolean }) => (
     <Card className="avoid-break">
@@ -82,29 +89,37 @@ export default function TherapyAdminDashboardPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [payoutItems, setPayoutItems] = useState<PayoutItem[]>([]);
     const [stats, setStats] = useState<Awaited<ReturnType<typeof getPublicStats>> | null>(null);
+    const [overview, setOverview] = useState<any>(null);
+    const [reassignQueue, setReassignQueue] = useState<any[]>([]);
+    const [reassignDrawerOpen, setReassignDrawerOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [requests, appointmentsData, payoutsData, statsData, overviewData, reassignData] = await Promise.all([
+                listProfileChangeRequests(),
+                listAppointments(filters),
+                listPayoutItems(filters),
+                getPublicStats(),
+                getTherapyAdminOverview(),
+                getEmergencyReassignQueue()
+            ]);
+            setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
+            setAppointments(appointmentsData);
+            setPayoutItems(payoutsData);
+            setStats(statsData);
+            setOverview(overviewData);
+            setReassignQueue(reassignData);
+        } catch (err) {
+            console.error("Fetch Data Error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const [requests, appointmentsData, payoutsData, statsData] = await Promise.all([
-                    listProfileChangeRequests(),
-                    listAppointments(filters),
-                    listPayoutItems(filters),
-                    getPublicStats()
-                ]);
-                setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
-                setAppointments(appointmentsData);
-                setPayoutItems(payoutsData);
-                setStats(statsData);
-            } catch (err) {
-                console.error("Fetch Data Error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, [filters]);
 
@@ -268,6 +283,48 @@ export default function TherapyAdminDashboardPage() {
                         </TableRow>
                     ))}
                 </ActionableTable>
+            {/* Emergency Reassignment Banner */}
+            {reassignQueue.length > 0 && (
+                <div className="bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-3.5 rounded-xl flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div>
+                            <p className="font-semibold text-sm">
+                                Emergency: {reassignQueue.length} {reassignQueue.length === 1 ? 'appointment needs' : 'appointments need'} reassignment
+                            </p>
+                            <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                                Therapist leaves for today or tomorrow overlap with confirmed bookings.
+                            </p>
+                        </div>
+                    </div>
+                    <Button size="sm" onClick={() => setReassignDrawerOpen(true)} className="bg-amber-600 hover:bg-amber-700 text-white shrink-0">
+                        Review Candidates ({reassignQueue.length})
+                    </Button>
+                </div>
+            )}
+
+            {/* Clinical Outcome Summary (90 days real data) */}
+            <OutcomeSummary />
+
+            {/* Quality & Rating Queue */}
+            <QualityQueue />
+
+            {/* Credential & Council Registration Queue */}
+            <CredentialQueue />
+
+            {/* Overdue Follow-ups Queue */}
+            <FollowUpQueue />
+
+            {/* Stalled Progress Queue */}
+            <StalledProgressQueue />
+
+            {/* Emergency Reassignment Drawer */}
+            <ReassignDrawer
+                open={reassignDrawerOpen}
+                onOpenChange={setReassignDrawerOpen}
+                items={reassignQueue}
+                onReassigned={fetchData}
+            />
             </section>
         </div>
     );
