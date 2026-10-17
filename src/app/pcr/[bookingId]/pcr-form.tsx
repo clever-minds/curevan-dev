@@ -86,8 +86,10 @@ type PcrFormValues = z.infer<typeof pcrFormSchema>;
  * DB stores bp/hr/rr/temp at the top level; the form nests them under vitalSigns.
  */
 function dbToForm(pcrData: any): Partial<PcrFormValues> {
+  // a new PCR comes back with null for every empty field, but the form's text fields only accept strings
+  const noNulls = Object.fromEntries(Object.entries(pcrData ?? {}).map(([k, v]) => [k, v === null ? '' : v]));
   return {
-    ...pcrData,
+    ...noNulls,
     vitalSigns: {
       bp: pcrData.bp ?? pcrData.vitalSigns?.bp ?? '',
       hr: pcrData.hr ?? pcrData.vitalSigns?.hr ?? '',

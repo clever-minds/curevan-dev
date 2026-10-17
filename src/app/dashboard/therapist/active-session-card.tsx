@@ -74,9 +74,13 @@ export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVer
     return true;
   };
 
-  const handleStartTravel = () => run('therapist_on_the_way', () => {
-    if (mapsUrl) window.open(mapsUrl, '_blank', 'noopener');
-  });
+  const handleStartTravel = async () => {
+    // open the tab inside the click itself: browsers block a window opened after a network call
+    const tab = mapsUrl ? window.open('', '_blank') : null;
+    if (tab) tab.opener = null;
+    const ok = await run('therapist_on_the_way');
+    if (tab) { if (ok && mapsUrl) tab.location.href = mapsUrl; else tab.close(); }
+  };
 
   const handleCompleteSession = () => run('pcr_pending', () => {
     toast({ title: 'Session complete', description: 'Submit the PCR to finish this session and unlock your payout.' });
