@@ -114,3 +114,48 @@ export async function downloadPayoutStatement(batchId: number): Promise<Blob | n
     return res.data as Blob;
   } catch { return null; }
 }
+
+/** Approve a scheduled payout batch (Super Admin). */
+export async function approvePayoutBatch(batchId: number): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to approve batch' };
+  }
+}
+
+/** Put a payout batch on hold with a reason (Super Admin). */
+export async function holdPayoutBatch(batchId: number, reason: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/hold`, { reason }, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to hold batch' };
+  }
+}
+
+/** Release a held batch back to scheduled (Super Admin). */
+export async function releasePayoutBatch(batchId: number): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/release`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to release batch' };
+  }
+}
+
+/** Mark an approved batch as paid with bank reference UTR (Super Admin). */
+export async function markPayoutBatchPaid(batchId: number, data: { utr: string; paidAt?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/mark-paid`, data, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to mark batch paid' };
+  }
+}
+

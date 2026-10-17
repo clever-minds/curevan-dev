@@ -19,9 +19,10 @@ import { DollarSign, ShoppingBag, RotateCcw, Package, Percent, Truck, FileDown, 
 import { useState, useEffect, useMemo } from "react";
 import { Price } from "@/components/money/price";
 import { FilterBar } from "@/components/admin/FilterBar";
-import type { ProductCategory, Order, Product } from '@/lib/types';
+import type { ProductCategory, Order, Product, InventoryForecastItem, PaymentExceptionsData } from '@/lib/types';
 import { listProductCategories, listProducts } from "@/lib/repos/products";
 import { listOrders } from "@/lib/repos/orders";
+import { getInventoryForecast, getPaymentExceptions } from "@/lib/repos/admin";
 import { getSafeDate } from "@/lib/utils";
 
 const KpiCard = ({ title, value, icon: Icon, description, loading, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, isCurrency?: boolean }) => (
@@ -62,6 +63,8 @@ export default function EcomAdminDashboardPage() {
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [forecast, setForecast] = useState<InventoryForecastItem[]>([]);
+    const [exceptions, setExceptions] = useState<PaymentExceptionsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
 
@@ -69,15 +72,19 @@ export default function EcomAdminDashboardPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [categoriesData, ordersData, productsData] = await Promise.all([
+                const [categoriesData, ordersData, productsData, forecastData, exceptionsData] = await Promise.all([
                     listProductCategories(),
                     listOrders(filters),
                     listProducts(),
+                    getInventoryForecast(),
+                    getPaymentExceptions(),
                 ]);
                 setProductCategories(categoriesData);
                 setRecentOrders((ordersData ?? []).slice(0, 5));
                 setProducts(productsData);
                 setOrders(ordersData ?? []);
+                setForecast(forecastData);
+                setExceptions(exceptionsData);
             } catch (err) {
                 console.error("Fetch Data Error:", err);
             } finally {
@@ -88,10 +95,8 @@ export default function EcomAdminDashboardPage() {
     }, [filters]);
 
     const lowStockData = useMemo(() => {
-        return products.filter(p => p.stock < p.reorderPoint).map(p => ({
-            sku: p.sku || `${p.id}-M`, product: p.name, stock: p.stock, sold30d: Math.floor(Math.random() * 50) + 10, daysCover: Math.floor(p.stock / ((Math.floor(Math.random() * 50) + 10) / 30))
-        }))
-    }, [products]);
+        return forecast.filter(item => item.isLowStock || item.stock < item.reorderPoint);
+    }, [forecast]);
 
     const revenueRefundsData = useMemo(() => {
         const dataMap = new Map<string, { revenue: number, refunds: number, time: number }>();
@@ -244,18 +249,76 @@ export default function EcomAdminDashboardPage() {
                         )
                     })}
                 </ActionableTable>
-                <ActionableTable title="Low-Stock SKUs" headers={['SKU', 'Product', 'Stock', 'Sold (30d)', 'Days Left', 'Actions']}>
+
+                {/* Real Low-Stock SKUs Forecasting (P23) */}
+                <ActionableTable title="Low-Stock SKUs & Inventory Forecast" headers={['SKU', 'Product', 'Stock', 'Reorder Pt', 'Sold (30d)', 'Days Left', 'Actions']}>
                     {lowStockData.map(item => (
                         <TableRow key={item.sku}>
-                            <TableCell>{item.sku}</TableCell>
-                            <TableCell>{item.product}</TableCell>
+                            <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                            <TableCell className="font-medium text-xs">{item.productName}</TableCell>
                             <TableCell><Badge variant="destructive">{item.stock}</Badge></TableCell>
-                            <TableCell>{item.sold30d}</TableCell>
-                            <TableCell>{item.daysCover}</TableCell>
-                            <TableCell><Button variant="outline" size="sm">View Product</Button></TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{item.reorderPoint}</TableCell>
+                            <TableCell className="text-xs">{item.sold30d}</TableCell>
+                            <TableCell className="text-xs font-semibold">
+                                {item.daysCover > 90 ? '>90d' : `${item.daysCover}d`}
+                            </TableCell>
+                            <TableCell><Button variant="outline" size="sm" className="h-7 text-xs">View Product</Button></TableCell>
                         </TableRow>
                     ))}
+                    {lowStockData.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={7} className="text-center py-4 text-xs text-muted-foreground">
+                                No low-stock SKUs detected. All inventory levels are above reorder points.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </ActionableTable>
+
+                {/* Payment Exceptions Tables (P23) */}
+                <div className="space-y-6">
+                    <ActionableTable
+                        title="Payment Exceptions • Pending Orders (>30 min)"
+                        headers={['Order #', 'Customer', 'Phone', 'Amount', 'Status', 'Created', 'Actions']}
+                    >
+                        {(exceptions?.pendingOrders ?? []).map(order => {
+                            const createdAt = getSafeDate(order.createdAt);
+                            return (
+                                <TableRow key={order.id}>
+                                    <TableCell className="font-mono text-xs font-bold">{order.orderNumber}</TableCell>
+                                    <TableCell className="text-xs">{order.customerName}</TableCell>
+                                    <TableCell className="text-xs font-mono">{order.customerPhone || '—'}</TableCell>
+                                    <TableCell><Price amount={order.total} showDecimals /></TableCell>
+                                    <TableCell><Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">{order.status}</Badge></TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">{createdAt ? createdAt.toLocaleString() : 'N/A'}</TableCell>
+                                    <TableCell><Button variant="outline" size="sm" className="h-7 text-xs">Investigate</Button></TableCell>
+                                </TableRow>
+                            );
+                        })}
+                        {(exceptions?.pendingOrders ?? []).length === 0 && (
+                            <TableRow><TableCell colSpan={7} className="text-center py-4 text-xs text-muted-foreground">No abandoned/pending payment orders older than 30 minutes.</TableCell></TableRow>
+                        )}
+                    </ActionableTable>
+
+                    <ActionableTable
+                        title="Payment Exceptions • Failed Webhook Events"
+                        headers={['Event ID', 'Event Type', 'Received At', 'Error Details']}
+                    >
+                        {(exceptions?.failedWebhooks ?? []).map(evt => {
+                            const receivedAt = getSafeDate(evt.receivedAt);
+                            return (
+                                <TableRow key={evt.id}>
+                                    <TableCell className="font-mono text-xs">{evt.eventId}</TableCell>
+                                    <TableCell><Badge variant="outline" className="text-xs font-mono">{evt.event}</Badge></TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">{receivedAt ? receivedAt.toLocaleString() : 'N/A'}</TableCell>
+                                    <TableCell className="text-xs text-destructive max-w-md truncate" title={evt.error}>{evt.error}</TableCell>
+                                </TableRow>
+                            );
+                        })}
+                        {(exceptions?.failedWebhooks ?? []).length === 0 && (
+                            <TableRow><TableCell colSpan={4} className="text-center py-4 text-xs text-muted-foreground">No failed webhook events logged.</TableCell></TableRow>
+                        )}
+                    </ActionableTable>
+                </div>
             </section>
         </div>
     );

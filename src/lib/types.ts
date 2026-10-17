@@ -890,3 +890,86 @@ export interface PayoutBatchRow {
   status: 'scheduled' | 'approved' | 'on_hold' | 'paid';
   approvedBy?: number | null; approvedAt?: string | null; utr?: string | null; paidAt?: string | null; holdReason?: string | null; itemCount: number;
 }
+
+// --- P23: Admin reconciliation, forecast, and payment exceptions ---
+export interface ReconciliationMismatch {
+  type: 'amount_mismatch' | 'missing_in_curevan' | 'missing_in_razorpay';
+  paymentId?: string | null;
+  orderId?: string | null;
+  curevanId?: number | null;
+  curevanType?: 'order' | 'booking' | null;
+  reference: string;
+  curevanAmount: number;
+  razorpayAmount: number;
+  description: string;
+  link?: string | null;
+}
+
+export interface ReconciliationMatched {
+  paymentId: string;
+  orderId?: string | null;
+  curevanId: number;
+  type: 'order' | 'booking';
+  reference: string;
+  amount: number;
+  paidAt?: string | null;
+}
+
+export interface ReconciliationSummary {
+  curevanTotal: number;
+  curevanCount: number;
+  razorpayTotal: number;
+  razorpayCount: number;
+  matchedCount: number;
+  matchedTotal: number;
+  mismatchCount: number;
+  difference: number;
+}
+
+export interface ReconciliationData {
+  date: string;
+  summary: ReconciliationSummary;
+  mismatches: ReconciliationMismatch[];
+  matched: ReconciliationMatched[];
+}
+
+export interface InventoryForecastItem {
+  productId: number;
+  productName: string;
+  sku: string;
+  onHand: number;
+  reserved: number;
+  stock: number;
+  reorderPoint: number;
+  sold30d: number;
+  runRate: number;
+  daysCover: number;
+  isLowStock: boolean;
+}
+
+export interface PendingOrderException {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  customerPhone?: string | null;
+  total: number;
+  status: string;
+  paymentStatus: string;
+  createdAt: string;
+}
+
+export interface FailedWebhookException {
+  id: number;
+  eventId: string;
+  event: string;
+  payload?: any;
+  error: string;
+  receivedAt: string;
+  processedAt?: string | null;
+}
+
+export interface PaymentExceptionsData {
+  pendingOrders: PendingOrderException[];
+  failedWebhooks: FailedWebhookException[];
+}
+

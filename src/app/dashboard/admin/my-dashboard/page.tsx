@@ -26,6 +26,8 @@ import { useEffect, useMemo, useState } from "react";
 import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
 import { FilterBar } from "@/components/admin/FilterBar";
+import { PayoutReleasePanel } from "@/components/admin/PayoutReleasePanel";
+import { ReconciliationCard } from "@/components/admin/ReconciliationCard";
 import type { KnowledgeBase, ProfileChangeRequest, Appointment, Order, PayoutItem, SupportTicket, SOSAlert } from "@/lib/types";
 import { listDocumentation, listProfileChangeRequests, listTrainings } from "@/lib/repos/content";
 import { getPublicStats } from "@/lib/repos/stats";
@@ -297,6 +299,33 @@ export default function AdminDashboardPage() {
                         <DashboardCard title="Top 10 Services by Revenue (90d)" type="bar" data={topServicesData} categoryKey="name" valueKey="revenue" loading={loading} isCurrency={true} />
                         <DashboardCard title="Payout Pipeline (Last 4 Weeks)" type="bar" data={payoutPipelineData} categoryKey="week" valueKey="paid" loading={loading} isCurrency={true} />
                     </div>
+                </div>
+
+                {/* Friday Payout Release & Payment Reconciliation (P23) */}
+                <div className="space-y-6 w-full">
+                    <PayoutReleasePanel />
+                    <ReconciliationCard />
+
+                    {/* AI Escalations Placeholder (available after P26) */}
+                    <Card className="shadow-sm border-dashed">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-base font-headline flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-primary" />
+                                    AI Escalations
+                                </CardTitle>
+                                <CardDescription className="text-xs">
+                                    Automated incident and clinical dispute escalation queue
+                                </CardDescription>
+                            </div>
+                            <Badge variant="outline" className="text-xs">Phase 5 (P26)</Badge>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="py-6 text-center text-sm text-muted-foreground font-medium">
+                                AI escalations – available after P26
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6 w-full">
