@@ -1,5 +1,6 @@
 'use client';
 
+import { ReferralCard } from '@/components/affiliate/ReferralCard';
 import {
   Card,
   CardContent,
@@ -121,16 +122,6 @@ export default function EarningsPage() {
   }, [filterType, earningsData]);
   
 
-  const handleCopyCode = () => {
-    const referralCode = therapist?.referralCode;
-    if (!referralCode) return;
-    navigator.clipboard.writeText(referralCode);
-    toast({
-        title: "Code Copied!",
-        description: `Your referral code ${referralCode} is ready to be shared.`
-    })
-  }
-
   if (isLoading) {
       return (
           <div className="flex justify-center items-center h-96">
@@ -213,23 +204,7 @@ export default function EarningsPage() {
         <h2 className="text-2xl font-bold font-headline mb-4">Overview</h2>
         <div className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-             <Card>
-              <CardHeader>
-                <CardTitle>Share Your Code</CardTitle>
-                <CardDescription>Patients get 5% off products, you get 10% commission.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                 <div className="flex items-center justify-between p-4 pt-0 border rounded-md">
-                    <span className="font-mono text-lg font-bold">{therapist?.referralCode || "N/A"}</span>
-                    <div className="flex items-center">
-                        <Button size="icon" variant="ghost" onClick={handleCopyCode}><Copy className="w-4 h-4"/></Button>
-                        <Button size="icon" variant="ghost"><Share2 className="w-4 h-4"/></Button>
-                        <Button size="icon" variant="ghost"><QrCode className="w-4 h-4"/></Button>
-                    </div>
-                </div>
-                <Button className="w-full" asChild><Link href={`/ecommerce?ref=${therapist?.referralCode}`}>Open Shop</Link></Button>
-              </CardContent>
-            </Card>
+             <ReferralCard title="Share Your Code" />
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Service Earnings</CardTitle></CardHeader>
               <CardContent><div className="text-2xl font-bold"><Price amount={earningsData?.summary?.totalServices || 0} /></div></CardContent>

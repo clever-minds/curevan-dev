@@ -93,6 +93,7 @@ const allNavItems: Record<'patient' | 'therapist', NavEntry[]> = {
     { href: '/dashboard/therapist/bookings', label: 'All Bookings', icon: Calendar },
     { href: '/dashboard/therapist/pcr', label: 'PCRs', icon: ClipboardPen },
     { href: '/dashboard/earnings', label: 'My Earnings', icon: Wallet },
+    { href: '/dashboard/therapist/affiliate', label: 'Referral Code', icon: HandCoins },
     { href: '/dashboard/therapist/shipments', label: 'My Shipments', icon: Truck },
     { type: 'header', label: 'Journal' },
     { href: '/dashboard/journal/new', label: 'New Entry', icon: FilePlus },

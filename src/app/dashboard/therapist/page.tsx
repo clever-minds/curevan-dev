@@ -1,6 +1,7 @@
 
 'use client';
 
+import { ReferralCard } from '@/components/affiliate/ReferralCard';
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { PlayCircle, Clock, FilePlus, Share2, TrendingUp, Users, Percent, Wallet, Star, FileDown, Edit, GitBranch, AlertCircle, CheckCircle, Hourglass } from "lucide-react";
+import { PlayCircle, Clock, FilePlus, TrendingUp, Users, Percent, Wallet, Star, FileDown, Edit, GitBranch, AlertCircle, CheckCircle, Hourglass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import type { Appointment, Therapist } from "@/lib/types";
@@ -187,14 +188,6 @@ export default function TherapistDashboard() {
     router.push(`/pcr/${activeSession?.id}`);
   };
 
-  const handleShareCode = () => {
-    const shareUrl = `https://curevan.com/ecommerce?ref=${therapist?.referralCode}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-      title: "Link Copied!",
-      description: "Your referral link is ready to be shared.",
-    });
-  };
   
   if (!user || user.role !== 'therapist' || loading) {
     return <Skeleton className="w-full h-screen" />;
@@ -498,24 +491,7 @@ export default function TherapistDashboard() {
             </DashboardSection>
 
             <DashboardSection id="referral" title="Referral Program">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Grow Your Earnings</CardTitle>
-                        <CardDescription>Share your permanent code with patients. They get 5% off products, and you earn a 10% commission on every sale.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-lg bg-muted border">
-                            <div className="text-center sm:text-left">
-                            <p className="text-sm text-muted-foreground">Your Referral Code</p>
-                            <p className="text-2xl font-bold font-mono tracking-widest">{therapist?.referralCode}</p>
-                            </div>
-                            <Button onClick={handleShareCode}>
-                            <Share2 className="mr-2"/>
-                            Share Code
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                 <ReferralCard />
             </DashboardSection>
 
         </div>

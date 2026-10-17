@@ -81,7 +81,7 @@ export async function generateMissingTherapistCodes(): Promise<Coupon[]> {
         Authorization: `Bearer ${token}`,
       },
     });
-    return data ?? [];
+    return data?.data ?? [];
   } catch (error: any) {
     console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return [];

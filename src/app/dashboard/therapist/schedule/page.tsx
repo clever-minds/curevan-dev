@@ -1,5 +1,6 @@
 'use client';
 
+import { referralText, useAffiliateRules } from '@/components/affiliate/ReferralCard';
 import {
   Table,
   TableBody,
@@ -54,6 +55,7 @@ const GrowthCTA = ({title, description, button1Text, button1Href, button2Text, b
 );
 
 export default function TherapistSchedulePage() {
+  const affiliateRules = useAffiliateRules();
   const [activeSession, setActiveSession] = useState<Appointment | null>(null);
   const [verifyingAppointment, setVerifyingAppointment] = useState<Appointment | null>(null);
   const { user } = useAuth();
@@ -225,7 +227,7 @@ export default function TherapistSchedulePage() {
             />
             <GrowthCTA 
                 title="Earn with Your Referral Code" 
-                description="Share your code: patients get 5% off, you earn 10% commission on every purchase. Simple, recurring income."
+                description={`Share your code. ${referralText(affiliateRules)}`}
                 icon={HandCoins}
                 button1Text="Share Code"
                 button1Href="#"

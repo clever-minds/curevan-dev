@@ -1,5 +1,6 @@
 'use client';
 
+import { PENDING_COUPON_KEY } from '@/components/affiliate/CouponParamCapture';
 import { useCart } from "@/context/cart-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Price } from "@/components/money/price";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tag, X, Loader2 } from "lucide-react";
 import { imageUrl } from '@/lib/image';
@@ -65,6 +66,18 @@ export function OrderSummary() {
       setCouponLoading(false);
     }
   }, [applyCoupon, subtotal, toast]);
+
+  // a code that came in with /shop?coupon=CODE is applied once the cart has items
+  useEffect(() => {
+    if (appliedCoupon || subtotal <= 0) return;
+    try {
+      const pending = localStorage.getItem(PENDING_COUPON_KEY);
+      if (!pending) return;
+      localStorage.removeItem(PENDING_COUPON_KEY);
+      setCouponCode(pending);
+      handleApplyCoupon(pending);
+    } catch { /* storage blocked: the customer types the code */ }
+  }, [appliedCoupon, subtotal, handleApplyCoupon]);
 
   return (
     <Card>

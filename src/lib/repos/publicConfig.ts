@@ -13,3 +13,15 @@ export async function getShopRules(): Promise<ShopRules> {
     return DEFAULT_SHOP_RULES;
   }
 }
+
+export interface AffiliateRules { patientDiscountPct: number; therapistCommissionPct: number; eligibleAfterDeliveryDays: number }
+export const DEFAULT_AFFILIATE_RULES: AffiliateRules = { patientDiscountPct: 10, therapistCommissionPct: 5, eligibleAfterDeliveryDays: 7 };
+
+export async function getAffiliateRules(): Promise<AffiliateRules> {
+  try {
+    const { data } = await clientApi.get('/api/config/public');
+    return { ...DEFAULT_AFFILIATE_RULES, ...(data?.data?.affiliate ?? {}) };
+  } catch {
+    return DEFAULT_AFFILIATE_RULES;
+  }
+}
