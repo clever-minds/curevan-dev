@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Appointment } from "@/lib/types";
-import { Clock, User, MapPin, CheckCircle, Navigation, PlayCircle, Map, FileText } from "lucide-react";
+import { Clock, User, MapPin, CheckCircle, Navigation, PlayCircle, Map, FileText, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SosButton } from "@/components/sos-button";
 import { useToast } from "@/hooks/use-toast";
@@ -113,6 +113,7 @@ export function ActiveSessionCard({ session, onEndSession, onStatusUpdate, onVer
                 <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
                     <span className="font-semibold">{session.patientName}</span>
+                    <Link href={`/dashboard/therapist/patients/${session.patientId}/progress`} className="inline-flex items-center gap-1 text-xs text-primary underline"><LineChart className="w-3 h-3" />Progress</Link>
                 </div>
                 <div className="flex items-start gap-2">
                     <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground" />

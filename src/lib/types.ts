@@ -838,3 +838,39 @@ export interface ApplyCouponResponse {
   final_amount: number;
 }
 // types/journal.ts
+
+
+// --- Treatment plans & outcomes (P16) ---
+export interface OutcomeMeasure {
+  id: number; code: string; name: string; specialty?: string | null; domain?: string | null; scale_type: string;
+  min_value: number | string | null; max_value: number | string | null; unit?: string | null; higher_is_better: boolean;
+  per_side: boolean; frequency: 'every_session' | 'review' | 'baseline_discharge'; instructions?: string | null; licence_note?: string | null; active: boolean;
+}
+
+export interface DueMeasure {
+  planMeasureId: number; measureId: number; code: string; name: string; side?: string | null; item?: string | null; scaleType: string;
+  min: number | null; max: number | null; unit?: string | null; instructions?: string | null; lastValue: number | null;
+}
+
+export interface TreatmentPlanSummary {
+  id: number; patient_id: number; condition: string; affected_side?: string | null; planned_sessions?: number | null; frequency_per_week?: number | null;
+  review_every_sessions?: number | null; status: 'active' | 'on_hold' | 'discharged' | 'cancelled'; stalled?: boolean; sessionsDone?: number;
+  adherence?: { attended: number; plannedToDate: number; ratio: number | null };
+}
+
+export interface MeasureSeriesPoint { date: string; sessionNumber: number | null; value: number; side?: string | null; item?: string | null; point: string }
+export interface PlanMeasureProgress {
+  planMeasureId: number; measureId: number; code: string; name: string; unit?: string | null; side?: string | null; item?: string | null;
+  higherIsBetter: boolean; perSide: boolean; series: MeasureSeriesPoint[]; baseline: number | null; latest: number | null; target: number | null;
+  absoluteChange: number | null; percentTowardTarget: number | null; status: 'improving' | 'no change' | 'worsening';
+}
+export interface PlanGoalProgress {
+  id: number; description: string; status: string; measureCode?: string | null; measureName?: string | null; baseline: number | null;
+  latest: number | null; target: number | null; targetDate?: string | null; percentTowardTarget: number | null;
+}
+export interface PlanProgress {
+  plan: TreatmentPlanSummary & { discharge_reason?: string | null }; goals: PlanGoalProgress[]; measures: PlanMeasureProgress[];
+  stalled?: boolean; sessionsDone: number; plannedSessions?: number | null; adherence: { attended: number; plannedToDate: number; ratio: number | null };
+}
+export interface ProgressReportRow { id: number; reportType: 'review' | 'discharge'; sessionNumber: number | null; createdAt: string; sharedAt?: string | null }
+export interface CaregiverLink { id: number; relation?: string | null; createdAt: string; activatedAt?: string | null; revokedAt?: string | null; phone?: string | null }

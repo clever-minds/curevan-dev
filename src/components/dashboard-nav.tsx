@@ -77,6 +77,7 @@ const allNavItems: Record<'patient' | 'therapist', NavEntry[]> = {
   patient: [
     { href: '/dashboard/patient/my-dashboard', label: 'My Dashboard', icon: AreaChart, exact: true },
     { href: '/dashboard/patient/bookings', label: 'My Bookings', icon: CalendarDays },
+    { href: '/dashboard/patient/progress', label: 'My Progress', icon: HeartPulse },
     { href: '/dashboard/patient/health-records', label: 'Health Records', icon: FileText },
     { href: '/dashboard/patient/invoices', label: 'Invoices', icon: Receipt },
     { href: '/dashboard/patient/orders', label: 'Shop Orders', icon: Package },
@@ -135,6 +136,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
         { href: '/dashboard/admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
         { href: '/dashboard/admin/service-types', label: 'Service Types', icon: ClipboardCheck },
         { href: '/dashboard/admin/pcrs', label: 'All PCRs', icon: ClipboardCheck },
+        { href: '/dashboard/admin/outcome-measures', label: 'Outcome Measures', icon: HeartPulse },
         { href: '/dashboard/admin/payouts', label: 'Payouts', icon: HandCoins },
     ]},
     { type: 'group', label: 'Reports', icon: FileText, items: [

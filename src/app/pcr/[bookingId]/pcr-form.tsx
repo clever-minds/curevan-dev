@@ -23,7 +23,7 @@ import { AIRichText } from '@/components/ai/ai-rich-text';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { createPayoutItemForBooking } from '@/lib/actions';
 import Link from 'next/link';
@@ -31,7 +31,9 @@ import { getTherapyCategories } from '@/lib/repos/categories';
 import { getPcrById, updatePcr, updatePcrDetailed } from '@/lib/repos/pcr';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import type { PCR } from '@/lib/types';
+import type { PCR, DueMeasure } from '@/lib/types';
+import { OutcomeMeasureInput, outcomeKey, type OutcomeEntry } from '@/components/clinical/OutcomeMeasureInput';
+import { TreatmentPlanForm } from '@/components/clinical/TreatmentPlanForm';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
 
@@ -141,6 +143,50 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   const { user } = useAuth();
   const router = useRouter();
   const [therapyCategories, setTherapyCategories] = useState<string[]>([]);
+  const searchParams = useSearchParams();
+
+  // P16: visit type, the treatment plan, the outcome measures due today
+  const [sessionType, setSessionType] = useState<string>(searchParams.get('type') || 'follow_up');
+  const [plan, setPlan] = useState<{ id: number; condition: string; planned_sessions?: number | null } | null>(null);
+  const [sessionNumber, setSessionNumber] = useState<number | null>(null);
+  const [due, setDue] = useState<DueMeasure[]>([]);
+  const [entries, setEntries] = useState<Record<string, OutcomeEntry>>({});
+  const [progressSummary, setProgressSummary] = useState('');
+  const [dischargeReason, setDischargeReason] = useState('');
+  const [patientRef, setPatientRef] = useState<{ patientId: number; serviceTypeId: number | null }>({ patientId: 0, serviceTypeId: null });
+
+  const applyMeta = (pcrData: any) => {
+    setPlan(pcrData?.treatmentPlan ?? null);
+    setSessionNumber(pcrData?.sessionNumber ?? null);
+    setDue(pcrData?.dueMeasures ?? []);
+    setPatientRef({ patientId: Number(pcrData?.patient_id ?? 0), serviceTypeId: pcrData?.service_type_id ?? null });
+    // the server-stored type wins unless the page was opened with ?type=...
+    if (!searchParams.get('type') && pcrData?.sessionType) {
+      const stored = pcrData.sessionType as string;
+      setSessionType(!pcrData?.treatmentPlan && stored === 'follow_up' ? 'initial_assessment' : stored);
+    }
+  };
+
+  const outcomePayload = () => ({
+    sessionType,
+    outcomeValues: due.map((m) => {
+      const e = entries[outcomeKey(m)] ?? { value: '', couldNotAssess: false, reason: '' };
+      return { measureId: m.measureId, side: m.side ?? undefined, item: m.item ?? undefined, value: e.value === '' ? undefined : Number(e.value), couldNotAssess: e.couldNotAssess, reason: e.reason };
+    }),
+    progressSummary: progressSummary.trim() || undefined,
+    dischargeReason: dischargeReason.trim() || undefined,
+  });
+
+  async function reloadMeta() {
+    const fresh = await getPcrById(bookingId);
+    if (fresh) applyMeta(fresh);
+  }
+
+  async function changeSessionType(next: string) {
+    setSessionType(next);
+    const res = await updatePcrDetailed(bookingId, { ...formToDb(form.getValues()), status: 'in_progress', pcrStatus: 'in_progress', sessionType: next } as any);
+    if (res.ok) await reloadMeta();
+  }
 
   const form = useForm<PcrFormValues>({
     resolver: zodResolver(pcrFormSchema),
@@ -163,6 +209,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       if (pcrData) {
         // ✅ FIX: map flat DB fields into nested form shape before reset
         form.reset(dbToForm(pcrData) as any);
+        applyMeta(pcrData);
       }
       setTherapyCategories(cats);
       setIsLoading(false);
@@ -175,6 +222,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
     // ✅ FIX: flatten vitalSigns + sync pcrStatus to appointment list
     const saved = await updatePcrDetailed(bookingId, {
       ...formToDb(data),
+      ...outcomePayload(),
       status: 'in_progress',
       pcrStatus: 'in_progress'
     } as any);
@@ -248,6 +296,13 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
     if (!String(values.hep ?? '').replace(/<[^>]*>/g, '').trim()) missing.push('home exercise programme');
     const vs = values.vitalSigns;
     if (!vs?.bp || !vs?.hr || !vs?.rr || !vs?.temp) missing.push('all four vital signs');
+    for (const m of due) {
+      const e = entries[outcomeKey(m)];
+      if (!e || !((e.value !== '' && !e.couldNotAssess) || (e.couldNotAssess && e.reason.trim().length >= 3))) missing.push(`${m.name}${m.side ? ` (${m.side})` : ''}`);
+    }
+    if (sessionType === 'initial_assessment' && !plan) missing.push('treatment plan');
+    if ((sessionType === 'review' || sessionType === 'discharge') && progressSummary.trim().length < 10) missing.push('progress summary');
+    if (sessionType === 'discharge' && dischargeReason.trim().length < 3) missing.push('discharge reason');
     if (missing.length) {
       toast({ variant: 'destructive', title: 'Please complete the report', description: `Missing: ${missing.join(', ')}.` });
       return;
@@ -258,6 +313,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       const data = form.getValues();
       const saved = await updatePcrDetailed(bookingId, { 
         ...formToDb(data), 
+        ...outcomePayload(),
         status: 'submitted',
         pcrStatus: 'submitted',
       } as any);
@@ -487,6 +543,56 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                 <FormField control={form.control} name="vitalSigns.rr" render={({ field }) => (<FormItem><FormLabel>Resp. Rate</FormLabel><FormControl><Input placeholder="16" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="vitalSigns.temp" render={({ field }) => (<FormItem><FormLabel>Temp</FormLabel><FormControl><Input placeholder="98.6°F" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Visit type, treatment plan and outcome measures (P16) */}
+            <div className="space-y-4" data-testid="plan-section">
+              <h3 className="text-lg font-medium font-headline">Treatment plan & outcome measures</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="session-type">Session type</label>
+                  <Select value={sessionType} onValueChange={changeSessionType} disabled={isReadOnly}>
+                    <SelectTrigger id="session-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[['initial_assessment', 'Initial assessment'], ['follow_up', 'Follow-up'], ['review', 'Review'], ['discharge', 'Discharge']].map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 text-sm">
+                  {plan ? (
+                    <p><span className="font-medium">Plan:</span> {plan.condition}{sessionNumber ? ` - visit ${sessionNumber}${plan.planned_sessions ? ` of ${plan.planned_sessions}` : ''}` : ''}</p>
+                  ) : (
+                    <p className="text-muted-foreground">No treatment plan yet for this patient.</p>
+                  )}
+                  {!plan && !isReadOnly && patientRef.patientId > 0 && (
+                    <TreatmentPlanForm
+                      patientId={patientRef.patientId} serviceTypeId={patientRef.serviceTypeId ? Number(patientRef.serviceTypeId) : undefined}
+                      serviceTypeName={therapyCategories[0] ?? ''} appointmentId={bookingId} onCreated={reloadMeta}
+                      trigger={<Button type="button" variant="outline" size="sm">Start new plan</Button>}
+                    />
+                  )}
+                </div>
+              </div>
+              {plan && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Outcome measures due today</p>
+                  <OutcomeMeasureInput due={due} entries={entries} disabled={isReadOnly} onChange={(k, e) => setEntries((x) => ({ ...x, [k]: e }))} />
+                </div>
+              )}
+              {(sessionType === 'review' || sessionType === 'discharge') && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="progress-summary">Progress summary and next plan</label>
+                  <Textarea id="progress-summary" value={progressSummary} onChange={(e) => setProgressSummary(e.target.value)} disabled={isReadOnly} maxLength={2000} placeholder="How the patient has progressed, and what happens next" />
+                </div>
+              )}
+              {sessionType === 'discharge' && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="discharge-reason">Reason for discharge</label>
+                  <Input id="discharge-reason" value={dischargeReason} onChange={(e) => setDischargeReason(e.target.value)} disabled={isReadOnly} maxLength={200} placeholder="e.g. Goals achieved" />
+                </div>
+              )}
             </div>
 
             <Separator />

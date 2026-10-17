@@ -48,6 +48,7 @@ const therapyNavItems = (activeAlertCount: number, openTicketCount: number, pend
         { href: '/dashboard/therapy-admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
         { href: '/dashboard/admin/service-types', label: 'Service Types', icon: ClipboardCheck },
         { href: '/dashboard/admin/pcrs', label: 'All PCRs', icon: ClipboardCheck },
+        { href: '/dashboard/therapy-admin/outcome-measures', label: 'Outcome Measures', icon: ClipboardCheck },
         { href: '/dashboard/therapy-admin/payouts', label: 'Payouts', icon: HandCoins },
     ]},
     { type: 'group', label: 'Team & Governance', icon: Users, items: [

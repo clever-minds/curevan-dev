@@ -29,6 +29,7 @@ import {
   LifeBuoy,
   Banknote,
   ShieldAlert,
+  HeartPulse,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -48,6 +49,7 @@ const patientNav = [
   { href: '/dashboard/patient/my-dashboard', label: 'Home', icon: Home },
   { href: '/book', label: 'Book', icon: MapPinned },
   { href: '/dashboard/patient/bookings', label: 'Bookings', icon: CalendarDays },
+  { href: '/dashboard/patient/progress', label: 'Progress', icon: HeartPulse },
   { href: '/dashboard/patient/orders', label: 'Orders', icon: Package },
   { href: '/dashboard/patient/notifications', label: 'Alerts', icon: Bell, badgeCount: 2 },
 ];
