@@ -28,7 +28,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { createPayoutItemForBooking } from '@/lib/actions';
 import Link from 'next/link';
 import { getTherapyCategories } from '@/lib/repos/categories';
-import { getPcrById, updatePcr } from '@/lib/repos/pcr';
+import { getPcrById, updatePcr, updatePcrDetailed } from '@/lib/repos/pcr';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import type { PCR } from '@/lib/types';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
@@ -66,6 +68,14 @@ const pcrFormSchema = z.object({
   status: z.enum(['not_started', 'in_progress', 'submitted', 'locked', 'returned']),
   therapistName: z.string().min(1, 'Your name is required'),
   signatureConfirmation: z.boolean(),
+
+  // Outcome scores and home exercises (P15). Required to submit; checked in handleSubmit, so a draft can still be saved.
+  functionalScore: z.union([z.number(), z.string()]).nullable().optional(),
+  painVas: z.union([z.number(), z.string()]).nullable().optional(),
+  functionalMeasure: z.string().nullable().optional(),
+  hep: z.string().nullable().optional(),
+  baseline: z.any().optional(),
+  historyLocked: z.boolean().optional(),
 }).refine(data => {
   if (data.status === 'locked') {
     return data.signatureConfirmation === true;
@@ -163,11 +173,15 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   async function handleSaveDraft() {
     const data = form.getValues();
     // ✅ FIX: flatten vitalSigns + sync pcrStatus to appointment list
-    await updatePcr(bookingId, { 
-      ...formToDb(data), 
+    const saved = await updatePcrDetailed(bookingId, {
+      ...formToDb(data),
       status: 'in_progress',
-      pcrStatus: 'in_progress' 
+      pcrStatus: 'in_progress'
     } as any);
+    if (!saved.ok) {
+      toast({ variant: 'destructive', title: 'Draft not saved', description: saved.error });
+      return;
+    }
     toast({ title: 'PCR Draft Saved' });
   }
 
@@ -226,16 +240,29 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       return;
     }
 
+    const values = form.getValues();
+    const missing: string[] = [];
+    const fs = Number(values.functionalScore), pv = Number(values.painVas);
+    if (values.functionalScore === null || values.functionalScore === undefined || values.functionalScore === '' || !(fs >= 1 && fs <= 10)) missing.push('functional score (1-10)');
+    if (values.painVas === null || values.painVas === undefined || values.painVas === '' || !(pv >= 0 && pv <= 10)) missing.push('pain score (0-10)');
+    if (!String(values.hep ?? '').replace(/<[^>]*>/g, '').trim()) missing.push('home exercise programme');
+    const vs = values.vitalSigns;
+    if (!vs?.bp || !vs?.hr || !vs?.rr || !vs?.temp) missing.push('all four vital signs');
+    if (missing.length) {
+      toast({ variant: 'destructive', title: 'Please complete the report', description: `Missing: ${missing.join(', ')}.` });
+      return;
+    }
+
     setIsFinalizing(true);
     try {
       const data = form.getValues();
-      const saved = await updatePcr(bookingId, { 
+      const saved = await updatePcrDetailed(bookingId, { 
         ...formToDb(data), 
         status: 'submitted',
         pcrStatus: 'submitted',
       } as any);
-      if (!saved) {
-        throw new Error('The report was not saved. If the session is still running, tap "Complete session" first, then submit the PCR.');
+      if (!saved.ok) {
+        throw new Error(saved.error || 'The report was not saved.');
       }
       toast({ title: 'PCR Submitted', description: 'Your report is submitted and the session is now completed.' });
       form.reset({ ...data, status: 'submitted' });
@@ -250,8 +277,17 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
     setIsFinalizing(false);
   }
 
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [unlockReason, setUnlockReason] = useState('');
+
   async function handleUnlock() {
-    await updatePcr(bookingId, { status: 'returned', pcrStatus: 'returned' });
+    const res = await updatePcrDetailed(bookingId, { status: 'returned', pcrStatus: 'returned', reason: unlockReason.trim() } as any);
+    if (!res.ok) {
+      toast({ variant: 'destructive', title: 'Could not unlock', description: res.error });
+      return;
+    }
+    setUnlockOpen(false);
+    setUnlockReason('');
     form.reset({ ...form.getValues(), status: 'returned' });
     toast({ title: 'PCR Unlocked', description: 'The PCR is now available for editing by the therapist.' });
   }
@@ -303,6 +339,19 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               </AlertDescription>
             </Alert>
           )}
+          <Dialog open={unlockOpen} onOpenChange={setUnlockOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Unlock this report?</DialogTitle>
+                <DialogDescription>The therapist will be able to edit it again. Please say why; the reason is kept in the access log.</DialogDescription>
+              </DialogHeader>
+              <Textarea value={unlockReason} onChange={(e) => setUnlockReason(e.target.value)} placeholder="Reason" maxLength={300} />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setUnlockOpen(false)}>Cancel</Button>
+                <Button variant="destructive" disabled={unlockReason.trim().length < 3} onClick={handleUnlock}>Unlock</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -331,7 +380,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
 
                 {/* Unlock: ONLY for Therapy-admin/Super-admin if locked or submitted */}
                 {isFinal && canUnlock && (
-                  <Button type="button" variant="destructive" onClick={handleUnlock}>
+                  <Button type="button" variant="destructive" onClick={() => setUnlockOpen(true)}>
                     <Edit className="mr-2 h-4 w-4" />Unlock for Edit
                   </Button>
                 )}
@@ -438,6 +487,46 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
                 <FormField control={form.control} name="vitalSigns.rr" render={({ field }) => (<FormItem><FormLabel>Resp. Rate</FormLabel><FormControl><Input placeholder="16" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="vitalSigns.temp" render={({ field }) => (<FormItem><FormLabel>Temp</FormLabel><FormControl><Input placeholder="98.6°F" {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Outcome scores & home exercises (P15) */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium font-headline">Outcome scores & Home Exercises</h3>
+              {form.watch('historyLocked') && (
+                <p className="text-sm text-muted-foreground">Earlier history for this patient opens 4 hours before the session.</p>
+              )}
+              {form.watch('baseline') && (
+                <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1" data-testid="baseline-card">
+                  <p className="font-medium">Baseline from previous sessions</p>
+                  {([['chiefComplaint', 'Chief complaint'], ['diagnosis', 'Diagnosis'], ['medicalHistory', 'Medical history'], ['allergies', 'Allergies'], ['longTermGoal', 'Long-term goal']] as const).map(([k, label]) => {
+                    const val = (form.watch('baseline') as any)?.[k];
+                    return val ? <p key={k}><span className="text-muted-foreground">{label}: </span><span>{String(val).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}</span></p> : null;
+                  })}
+                </div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <FormField control={form.control} name="functionalScore" render={({ field }) => (
+                  <FormItem><FormLabel>Functional score (1-10)</FormLabel><FormControl><Input type="number" min={1} max={10} {...field} value={field.value ?? ''} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="functionalMeasure" render={({ field }) => (
+                  <FormItem><FormLabel>What the score measures</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isReadOnly}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {['Range of motion', 'Muscle power', 'Activities of daily living', 'Balance / gait', 'Articulation / speech', 'Other'].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  <FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="painVas" render={({ field }) => (
+                  <FormItem><FormLabel>Pain (0-10)</FormLabel><FormControl><Input type="number" min={0} max={10} {...field} value={field.value ?? ''} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={form.control} name="hep" render={({ field }) => (
+                <FormItem><FormLabel>Home exercise programme (HEP)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Exercises the patient should do between sessions: what, how many, how often..." context={{ entityType: 'pcr', field: 'hep' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+              )} />
             </div>
 
             <Separator />

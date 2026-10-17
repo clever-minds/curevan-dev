@@ -72,3 +72,24 @@ export async function updatePcr(id: number, data: Partial<PCR>): Promise<boolean
     return false;
   }
 }
+/** Like updatePcr, but tells the caller why the server refused (missing fields, not started yet, reason needed...). */
+export async function updatePcrDetailed(id: number, data: Partial<PCR> & Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const token = await getToken();
+  try {
+    await serverApi.patch(`/api/appointments/pcr/${id}`, data, { headers: { Authorization: `Bearer ${token}` } });
+    return { ok: true };
+  } catch (error: any) {
+    return { ok: false, error: error?.response?.data?.error || error?.message || 'The report could not be saved.' };
+  }
+}
+
+/** The finalised care-summary PDF of a booking's PCR (fetched with the login token, so it comes back as a blob). */
+export async function downloadPcrPdf(bookingId: number): Promise<Blob | null> {
+  const token = await getToken();
+  try {
+    const res = await serverApi.get(`/api/pcr/appointment/${bookingId}/pdf`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+    return res.data as Blob;
+  } catch {
+    return null;
+  }
+}

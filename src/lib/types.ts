@@ -512,6 +512,12 @@ export interface PCR { // Patient Care Report
   attachment?: number[]; // array of attachment IDs
   therapistName?: string;
   signatureConfirmation?: boolean;
+  functionalScore?: number | null;   // 1-10
+  painVas?: number | null;           // 0-10
+  functionalMeasure?: string | null;
+  hep?: string | null;               // home exercise programme
+  baseline?: { chiefComplaint?: string; diagnosis?: string; medicalHistory?: string; allergies?: string; longTermGoal?: string } | null;
+  historyLocked?: boolean;           // earlier history opens 4 h before the session
 }
 
 export interface Session {
