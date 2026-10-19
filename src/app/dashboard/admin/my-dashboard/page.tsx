@@ -194,9 +194,9 @@ export default function AdminDashboardPage() {
             const week = `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
             if (!statusMap.has(week)) statusMap.set(week, { onHold: 0, inBatch: 0, paid: 0 });
             const entry = statusMap.get(week)!;
-            if (item.state === 'onHold') entry.onHold += item.netAmount;
-            if (item.state === 'inBatch') entry.inBatch += item.netAmount;
-            if (item.state === 'paid') entry.paid += item.netAmount;
+            if (item.state === 'onHold') entry.onHold += Number(item.netAmount || 0);
+            if (item.state === 'inBatch') entry.inBatch += Number(item.netAmount || 0);
+            if (item.state === 'paid') entry.paid += Number(item.netAmount || 0);
         });
         console.log("statusMap", statusMap);
 

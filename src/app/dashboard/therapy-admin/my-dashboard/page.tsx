@@ -166,11 +166,11 @@ export default function TherapyAdminDashboardPage() {
     const topServicesData = useMemo(() => {
         const serviceMap = new Map<string, number>();
         appointments.forEach(appt => {
-            const revenue = appt.totalAmount || 0;
+            const revenue = Number(appt.totalAmount || 0); // API sends money as a string; adding strings joined them
             serviceMap.set(appt.therapyType, (serviceMap.get(appt.therapyType) || 0) + revenue);
         });
         return Array.from(serviceMap.entries())
-            .map(([name, revenue]) => ({ name, revenue: revenue / 100 }))
+            .map(([name, revenue]) => ({ name, revenue }))
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 10);
     }, [appointments]);
@@ -183,9 +183,9 @@ export default function TherapyAdminDashboardPage() {
             const week = `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
             if (!statusMap.has(week)) statusMap.set(week, { onHold: 0, inBatch: 0, paid: 0 });
             const entry = statusMap.get(week)!;
-            if(item.state === 'onHold') entry.onHold += item.netAmount;
-            if(item.state === 'inBatch') entry.inBatch += item.netAmount;
-            if(item.state === 'paid') entry.paid += item.netAmount;
+            if(item.state === 'onHold') entry.onHold += Number(item.netAmount || 0);
+            if(item.state === 'inBatch') entry.inBatch += Number(item.netAmount || 0);
+            if(item.state === 'paid') entry.paid += Number(item.netAmount || 0);
         });
         return Array.from(statusMap.entries()).map(([week, values]) => ({ week, ...values }));
     }, [payoutItems]);
