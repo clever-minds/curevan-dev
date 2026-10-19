@@ -1,38 +1,17 @@
-
 import { test as setup, expect } from '@playwright/test';
+import { API, PASSWORD, USERS } from './users';
 
-const superAdminFile = 'playwright/.auth/super-admin.json';
-const ecomAdminFile = 'playwright/.auth/ecom-admin.json';
-const therapyAdminFile = 'playwright/.auth/therapy-admin.json';
-const therapistFile = 'playwright/.auth/therapist.json';
-const patientFile = 'playwright/.auth/patient.json';
-
-// Function to perform login and save state
-async function loginAndSave(page: any, email: string, password: any, file: string) {
-    await page.goto('/auth/signin');
-    await page.getByLabel('Email Address').fill(email);
-    await page.getByLabel('Password').fill(password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL('**/dashboard/**');
-    await page.context().storageState({ path: file });
+// Sign-in goes through Firebase in production; the test stack has none, so log in through the API (POST /api/auth/login)
+// and give the browser the same `token` cookie + localStorage entry the sign-in form sets.
+for (const [name, email] of Object.entries(USERS)) {
+  setup(`authenticate as ${name}`, async ({ page, request, baseURL }) => {
+    const r = await request.post(`${API}/api/auth/login`, { data: { email, password: PASSWORD } });
+    expect(r.ok(), `login ${email}: ${r.status()}`).toBeTruthy();
+    const { token } = await r.json();
+    expect(token).toBeTruthy();
+    await page.context().addCookies([{ name: 'token', value: token, url: baseURL! }]);
+    await page.goto('/');
+    await page.evaluate((t) => localStorage.setItem('token', t), token);
+    await page.context().storageState({ path: `playwright/.auth/${name}.json` });
+  });
 }
-
-setup('authenticate as Super Admin', async ({ page }) => {
-    await loginAndSave(page, 'admin@curevan.com', process.env.TEST_USER_PASSWORD, superAdminFile);
-});
-
-setup('authenticate as E-com Admin', async ({ page }) => {
-    await loginAndSave(page, 'ecom@curevan.com', process.env.TEST_USER_PASSWORD, ecomAdminFile);
-});
-
-setup('authenticate as Therapy Admin', async ({ page }) => {
-    await loginAndSave(page, 'therapy@curevan.com', process.env.TEST_USER_PASSWORD, therapyAdminFile);
-});
-
-setup('authenticate as Therapist', async ({ page }) => {
-    await loginAndSave(page, 'therapist@curevan.com', process.env.TEST_USER_PASSWORD, therapistFile);
-});
-
-setup('authenticate as Patient', async ({ page }) => {
-    await loginAndSave(page, 'patient@curevan.com', process.env.TEST_USER_PASSWORD, patientFile);
-});

@@ -98,6 +98,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.3.8",
     "genkit-cli": "^1.44.1",
     "handlebars": "^4.7.8",
     "jsdom": "^29.1.1",
