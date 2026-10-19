@@ -7,7 +7,7 @@ import serverApi from "@/lib/repos/axios.server";
 import { getToken } from "@/lib/auth";
 // Who issues the invoices: the company settings (GET /api/config/legal-entity). Empty fields stay empty and the invoice shows a warning.
 async function getSupplierDetails() {
-  const empty = { legalName: "", tradeName: "Curevan", address: { line1: "", city: "", state: "", pin: "", country: "India" }, gstin: "", cin: "", pan: "", phone: "", email: "" };
+  const empty = { legalName: "", tradeName: "Curevan", address: { line1: "", city: "", state: "", pin: "", country: "India" }, gstin: "", cin: "", pan: "", phone: "", email: "", bank: { name: "", branch: "", accountNumber: "", ifsc: "" } };
   try {
     const { data } = await serverApi.get("/api/config/legal-entity");
     const e = data?.data ?? {};
@@ -16,6 +16,7 @@ async function getSupplierDetails() {
       tradeName: e.tradeName || empty.tradeName,
       address: { line1: e.addressLine1 || "", city: e.city || "", state: e.state || "", pin: e.pin || "", country: "India" },
       gstin: e.gstin || "", cin: e.cin || "", pan: e.pan || "", phone: e.phone || "", email: e.email || "",
+      bank: { name: e.bankName || "", branch: e.bankBranch || "", accountNumber: e.bankAccountNumber || "", ifsc: e.bankIfsc || "" },
     };
   } catch {
     return empty;

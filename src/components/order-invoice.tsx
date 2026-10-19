@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { InvoiceData } from "@/services/invoice-service";
 import Logo from "./logo";
 import { Price } from "./money/price";
-import { GstinWarning, SupplierDetails } from "./invoice-supplier";
+import { BankDetails, GstinWarning, SupplierDetails } from "./invoice-supplier";
 import React from 'react';
 import { BundleComponentsList } from "./ecommerce/bundle-components-list";
 
@@ -312,9 +312,7 @@ export function OrderInvoice({ invoice }: { invoice: InvoiceData }) {
                                 <div className="text-[10px] space-y-1 leading-tight">
                                     <p className="font-black uppercase leading-none mb-1 text-black">{invoice.supplier.legalName}</p>
                                     {invoice.supplier.pan && <p><span className="font-bold">PAN -</span> {invoice.supplier.pan}</p>}
-                                    <p><span className="font-bold text-gray-900 underline decoration-primary underline-offset-1">HDFC BANK LTD</span>, BARODA</p>
-                                    <p><span className="font-bold">A/c No -</span> 5020006094XXXX</p>
-                                    <p><span className="font-bold">IFSC -</span> HDFC0000033</p>
+                                    <BankDetails supplier={invoice.supplier} />
                                 </div>
                             </div>
                             <div className="flex flex-col items-center justify-center border border-gray-200 rounded p-2 bg-gray-50/50 shadow-sm">

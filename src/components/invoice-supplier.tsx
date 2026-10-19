@@ -2,6 +2,7 @@ import React from 'react';
 
 type Supplier = {
   legalName: string; tradeName?: string; gstin?: string; cin?: string; pan?: string; phone?: string; email?: string;
+  bank?: { name?: string; branch?: string; accountNumber?: string; ifsc?: string };
   address: { line1?: string; city?: string; state?: string; pin?: string };
 };
 
@@ -35,5 +36,17 @@ export function GstinWarning({ supplier }: { supplier: Supplier }) {
     <div role="alert" className="m-4 border-2 border-red-600 bg-red-50 p-2 text-center text-[11px] font-bold text-red-700 print:m-0">
       The supplier GSTIN is not set in the company settings. This invoice is not valid for GST purposes until it is added.
     </div>
+  );
+}
+
+/** Bank lines of "Payment Details", from the company settings; nothing is printed for a field that is not set. */
+export function BankDetails({ supplier }: { supplier: Supplier }) {
+  const b = supplier.bank || {};
+  return (
+    <>
+      {b.name && <p><span className="font-bold text-gray-900 underline decoration-primary underline-offset-1">{b.name}</span>{b.branch ? `, ${b.branch}` : ''}</p>}
+      {b.accountNumber && <p><span className="font-bold">A/c No -</span> {b.accountNumber}</p>}
+      {b.ifsc && <p><span className="font-bold">IFSC -</span> {b.ifsc}</p>}
+    </>
   );
 }
