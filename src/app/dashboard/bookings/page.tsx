@@ -11,6 +11,9 @@ import { useAuth } from "@/context/auth-context";
 import { listAppointmentsForUser } from "@/lib/repos/appointments";
 import { downloadCsv, getSafeDate } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
+import { StartCodeCard } from "@/components/patient/start-code-card";
+import { ConfirmNextSessionCard } from "@/components/patient/ConfirmNextSessionCard";
+import { UPCOMING_STATUSES } from "@/lib/appointment-status";
 
 
 export default function PatientBookingsPage() {
@@ -37,9 +40,10 @@ export default function PatientBookingsPage() {
     ];
 
     const reportData = appointments.map((appt) => {
-      let displayDate = appt.date;
-      if (appt.date && appt.date.length >= 10 && appt.date.includes("-")) {
-        const parts = appt.date.substring(0, 10).split("-");
+      const rawDate = appt.date as unknown as string;
+      let displayDate: string = rawDate;
+      if (rawDate && rawDate.length >= 10 && rawDate.includes("-")) {
+        const parts = rawDate.substring(0, 10).split("-");
         if (parts.length === 3) {
           const [y, m, d] = parts.map(Number);
           const localDate = new Date(y, m - 1, d);
@@ -49,9 +53,9 @@ export default function PatientBookingsPage() {
         }
       } else {
         try {
-          displayDate = appt.date ? format(parseISO(appt.date), "MM/dd/yyyy") : "N/A";
+          displayDate = rawDate ? format(parseISO(rawDate), "MM/dd/yyyy") : "N/A";
         } catch (e) {
-          displayDate = appt.date || "N/A";
+          displayDate = rawDate || "N/A";
         }
       }
 
@@ -106,6 +110,14 @@ export default function PatientBookingsPage() {
         showSearch={true}
         showTherapyFilters={true}
       />
+      <ConfirmNextSessionCard />
+      {appointments.filter((a) => (UPCOMING_STATUSES as string[]).includes(a.status)).length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 no-print">
+          {appointments.filter((a) => (UPCOMING_STATUSES as string[]).includes(a.status)).map((a) => (
+            <StartCodeCard key={a.id} appointment={a} />
+          ))}
+        </div>
+      )}
       <AppointmentsTable scope="patient" />
     </div>
   );

@@ -13,12 +13,13 @@ import { useAuth } from './auth-context';
 import { getCart, saveCart, clearCart as clearFirestoreCart, removeCartItemByProductId, validateCartStock } from '@/lib/repos/cart';
 
 import { calculateProductPrice, Offer, PricingResult } from '@/lib/pricing';
+import { DEFAULT_SHOP_RULES, getShopRules, type ShopRules } from '@/lib/repos/publicConfig';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number) => Promise<void>;
+  addToCart: (product: Product, quantity?: number, variantId?: number, variantAttributes?: Record<string, string>) => Promise<void>;
   removeFromCart: (productId: number) => Promise<void>;
-  updateQuantity: (productId: number, quantity: number) => Promise<void>;
+  updateQuantity: (productId: number, quantity: number, variantId?: number) => Promise<void>;
   clearCart: () => Promise<void>;
   getCartTotal: () => { 
     subtotal: number; 
@@ -28,6 +29,7 @@ interface CartContextType {
     totalGst: number; 
     gstToPay: number; 
     shippingCost: number;
+    freeShippingGap: number;      // how much more to add for free delivery (0 when already free)
     total: number; 
     totalWithTax: number;
     message: string;
@@ -45,7 +47,6 @@ interface CartContextType {
   validateStock: () => Promise<any>;
   isCartLoaded: boolean;
   shippingCost: number;
-  setShippingCost: (cost: number) => void;
   offers: Offer[];
 }
 
@@ -58,7 +59,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
   const [offers, setOffers] = useState<Offer[]>([]);
-  const [shippingCost, setShippingCost] = useState<number>(0);
+  // the server decides the free-shipping threshold and the flat fee (owner decision D3); the order total is checked again there
+  const [shopRules, setShopRules] = useState<ShopRules>(DEFAULT_SHOP_RULES);
+  useEffect(() => { getShopRules().then(setShopRules); }, []);
 
 
   // -------------------------------
@@ -317,6 +320,9 @@ const updateQuantity = async (
       return total;
     }, 0);
 
+    // pack P19: the threshold is checked on the subtotal after discounts
+    const shippingCost = cart.length === 0 || taxableAmount >= shopRules.freeShippingThresholdInr ? 0 : shopRules.flatShippingFeeInr;
+    const freeShippingGap = shippingCost > 0 ? Math.max(0, Math.round((shopRules.freeShippingThresholdInr - taxableAmount) * 100) / 100) : 0;
     const totalWithTax = taxableAmount + gstToPay + shippingCost;
 
     return { 
@@ -327,11 +333,12 @@ const updateQuantity = async (
       totalGst, 
       gstToPay,
       shippingCost,
+      freeShippingGap,
       total: totalWithTax, 
       totalWithTax,
       message
     };
-  }, [cart, offers, appliedCoupon, user, shippingCost]);
+  }, [cart, offers, appliedCoupon, user, shopRules]);
 
   // -------------------------------
   // Commission
@@ -353,7 +360,7 @@ const updateQuantity = async (
   return (
    
           <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, 
-            isCartOpen, setIsCartOpen, appliedCoupon, applyCoupon, removeCoupon, commissionInfo ,isCartLoaded, validateStock, offers, shippingCost, setShippingCost}}>
+            isCartOpen, setIsCartOpen, appliedCoupon, applyCoupon, removeCoupon, commissionInfo ,isCartLoaded, validateStock, offers, shippingCost: getCartTotal().shippingCost}}>
 
       {children}
     </CartContext.Provider>

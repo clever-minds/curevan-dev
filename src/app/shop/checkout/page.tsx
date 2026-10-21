@@ -16,7 +16,7 @@ import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CheckoutPage() {
-    const { cart, validateStock } = useCart();
+    const { cart, validateStock, isCartLoaded } = useCart();
     const { user, isLoading } = useAuth();
     const router = useRouter();
 
@@ -24,10 +24,10 @@ export default function CheckoutPage() {
         if (!isLoading && !user) {
             router.push('/auth/signin?redirectUrl=/shop/checkout');
         }
-        if (!isLoading && cart.length === 0) {
+        if (!isLoading && isCartLoaded && user && cart.length === 0) {
             router.push('/shop');
         }
-    }, [user, isLoading, cart.length, router]);
+    }, [user, isLoading, isCartLoaded, cart.length, router]);
 
     useEffect(() => {
         const checkStock = async () => {

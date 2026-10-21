@@ -139,7 +139,7 @@ export default function TrainingCoursesPage() {
                         </Link>
                         <CardContent className="p-4 flex-1">
                              <div className="flex flex-wrap gap-1 mb-2">
-                                {training.categories.split(',').map(cat => (
+                                {(Array.isArray(training.categories) ? training.categories : String(training.categories ?? '').split(',')).map((cat: string) => (
                                     <Badge key={cat} variant="secondary">{cat}</Badge>
                                 ))}
                             </div>

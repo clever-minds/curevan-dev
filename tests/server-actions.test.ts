@@ -8,7 +8,7 @@ const mockGetUser = vi.fn();
 
 async function unlockPcrAction(pcrId: string) {
     const user = await mockGetUser();
-    if (!user || (!user.roles.includes('therapy-admin') && !user.roles.includes('super-admin'))) {
+    if (!user || (!user.roles.includes('admin.therapy') && !user.roles.includes('admin.super'))) {
         throw new Error('ACCESS_DENIED: You do not have permission to unlock this report.');
     }
     //... unlock logic

@@ -130,12 +130,6 @@ images: z
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
-const createProductAction = async (data: ProductFormValues) => {
-    console.log("Server Action: Creating product...", data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, productId: `PROD-${Math.floor(Math.random() * 9000) + 1000}` };
-}
-
 const allTagsOptions = [
     { value: 'recovery', label: 'Recovery' },
     { value: 'fitness', label: 'Fitness' },

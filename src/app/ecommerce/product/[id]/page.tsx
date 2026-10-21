@@ -266,7 +266,7 @@ export default function ProductDetailsPage() {
     }
 
     // Require variant selection if product has variants
-    if (product.variants?.length > 0 && !selectedVariant) {
+    if ((product.variants?.length ?? 0) > 0 && !selectedVariant) {
       toast({
         variant: 'destructive',
         title: "Please Select Options",
@@ -502,7 +502,7 @@ export default function ProductDetailsPage() {
                     variant="outline"
                     size="icon"
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-md shadow-md border-primary/10 hover:bg-white z-30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setActiveImageIndex(prev => (prev > 0 ? prev - 1 : product.images.length - 1))}
+                    onClick={() => setActiveImageIndex(prev => (prev > 0 ? prev - 1 : (product.images?.length ?? 1) - 1))}
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
@@ -510,7 +510,7 @@ export default function ProductDetailsPage() {
                     variant="outline"
                     size="icon"
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-md shadow-md border-primary/10 hover:bg-white z-30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setActiveImageIndex(prev => (prev < product.images.length - 1 ? prev + 1 : 0))}
+                    onClick={() => setActiveImageIndex(prev => (prev < (product.images?.length ?? 1) - 1 ? prev + 1 : 0))}
                   >
                     <ChevronRight className="w-5 h-5" />
                   </Button>
@@ -714,7 +714,7 @@ export default function ProductDetailsPage() {
 
 
               {/* Bundle Items UI */}
-              {(product.productType === 'Bundle' || product.product_type === 'Bundle') && product.bundleItems && product.bundleItems.length > 0 && (
+              {(product.productType === 'Bundle' || (product as any).product_type === 'Bundle') && product.bundleItems && product.bundleItems.length > 0 && (
                 <div className="space-y-4 border-y py-6 my-2">
                   <div className="flex items-center gap-3 mb-2">
                     <Package className="w-5 h-5 text-primary" />

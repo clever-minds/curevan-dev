@@ -45,6 +45,14 @@ import { listAppointments } from "@/lib/repos/appointments";
 import { listPayoutItems } from "@/lib/repos/payouts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getSafeDate } from "@/lib/utils";
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
+import { ReassignDrawer } from '@/components/therapy-admin/ReassignDrawer';
+import { QualityQueue } from '@/components/therapy-admin/QualityQueue';
+import { CredentialQueue } from '@/components/therapy-admin/CredentialQueue';
+import { FollowUpQueue } from '@/components/therapy-admin/FollowUpQueue';
+import { StalledProgressQueue } from '@/components/therapy-admin/StalledProgressQueue';
+import { OutcomeSummary } from '@/components/therapy-admin/OutcomeSummary';
+import { getTherapyAdminOverview, getEmergencyReassignQueue } from '@/lib/repos/therapyAdmin';
 
 const KpiCard = ({ title, value, icon: Icon, description, loading, isCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading?: boolean, isCurrency?: boolean }) => (
     <Card className="avoid-break">
@@ -81,38 +89,46 @@ export default function TherapyAdminDashboardPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [payoutItems, setPayoutItems] = useState<PayoutItem[]>([]);
     const [stats, setStats] = useState<Awaited<ReturnType<typeof getPublicStats>> | null>(null);
+    const [overview, setOverview] = useState<any>(null);
+    const [reassignQueue, setReassignQueue] = useState<any[]>([]);
+    const [reassignDrawerOpen, setReassignDrawerOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [requests, appointmentsData, payoutsData, statsData, overviewData, reassignData] = await Promise.all([
+                listProfileChangeRequests(),
+                listAppointments(filters),
+                listPayoutItems(filters),
+                getPublicStats(),
+                getTherapyAdminOverview(),
+                getEmergencyReassignQueue()
+            ]);
+            setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
+            setAppointments(appointmentsData);
+            setPayoutItems(payoutsData);
+            setStats(statsData);
+            setOverview(overviewData);
+            setReassignQueue(reassignData);
+        } catch (err) {
+            console.error("Fetch Data Error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const [requests, appointmentsData, payoutsData, statsData] = await Promise.all([
-                    listProfileChangeRequests(),
-                    listAppointments(filters),
-                    listPayoutItems(filters),
-                    getPublicStats()
-                ]);
-                setProfileChangeRequests(requests.filter(r => r.status === 'pending' && r.role === 'therapist'));
-                setAppointments(appointmentsData);
-                setPayoutItems(payoutsData);
-                setStats(statsData);
-            } catch (err) {
-                console.error("Fetch Data Error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, [filters]);
 
     const kpis = useMemo(() => {
-        const completedSessions = appointments.filter(a => a.status === 'Completed').length;
-        const totalPcrs = appointments.filter(a => a.status === 'Completed' || a.status === 'Confirmed').length;
+        const completedSessions = appointments.filter(a => a.status === 'completed').length;
+        const totalPcrs = appointments.filter(a => a.status === 'completed' || a.status === 'pcr_pending').length;
         const lockedPcrs = appointments.filter(a => a.pcrStatus === 'locked').length;
         const pcrLockRate = totalPcrs > 0 ? (lockedPcrs / totalPcrs) * 100 : 0;
-        const noShowCount = appointments.filter(a => a.status === 'No-Show').length;
+        const noShowCount = appointments.filter(a => a.status === 'no_show').length;
         const noShowRate = appointments.length > 0 ? (noShowCount / appointments.length) * 100 : 0;
 
         return {
@@ -129,7 +145,7 @@ export default function TherapyAdminDashboardPage() {
             if (!date) return;
             if (!dataMap.has(date)) dataMap.set(date, { sessionCount: 0, cancelled: 0 });
             const entry = dataMap.get(date)!;
-            if (appt.status === 'Cancelled') {
+            if (isCancelled(appt.status)) {
                 entry.cancelled += 1;
             } else {
                 entry.sessionCount += 1;
@@ -150,11 +166,11 @@ export default function TherapyAdminDashboardPage() {
     const topServicesData = useMemo(() => {
         const serviceMap = new Map<string, number>();
         appointments.forEach(appt => {
-            const revenue = appt.totalAmount || 0;
+            const revenue = Number(appt.totalAmount || 0); // API sends money as a string; adding strings joined them
             serviceMap.set(appt.therapyType, (serviceMap.get(appt.therapyType) || 0) + revenue);
         });
         return Array.from(serviceMap.entries())
-            .map(([name, revenue]) => ({ name, revenue: revenue / 100 }))
+            .map(([name, revenue]) => ({ name, revenue }))
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 10);
     }, [appointments]);
@@ -167,15 +183,15 @@ export default function TherapyAdminDashboardPage() {
             const week = `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
             if (!statusMap.has(week)) statusMap.set(week, { onHold: 0, inBatch: 0, paid: 0 });
             const entry = statusMap.get(week)!;
-            if(item.state === 'onHold') entry.onHold += item.netAmount;
-            if(item.state === 'inBatch') entry.inBatch += item.netAmount;
-            if(item.state === 'paid') entry.paid += item.netAmount;
+            if(item.state === 'onHold') entry.onHold += Number(item.netAmount || 0);
+            if(item.state === 'inBatch') entry.inBatch += Number(item.netAmount || 0);
+            if(item.state === 'paid') entry.paid += Number(item.netAmount || 0);
         });
         return Array.from(statusMap.entries()).map(([week, values]) => ({ week, ...values }));
     }, [payoutItems]);
 
     const unlockedPcrs = useMemo(() => {
-        return appointments.filter(a => a.pcrStatus !== 'locked' && a.status === 'Completed').slice(0, 3);
+        return appointments.filter(a => a.pcrStatus !== 'locked' && a.status === 'completed').slice(0, 3);
     }, [appointments]);
 
     return (
@@ -267,6 +283,48 @@ export default function TherapyAdminDashboardPage() {
                         </TableRow>
                     ))}
                 </ActionableTable>
+            {/* Emergency Reassignment Banner */}
+            {reassignQueue.length > 0 && (
+                <div className="bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-3.5 rounded-xl flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div>
+                            <p className="font-semibold text-sm">
+                                Emergency: {reassignQueue.length} {reassignQueue.length === 1 ? 'appointment needs' : 'appointments need'} reassignment
+                            </p>
+                            <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                                Therapist leaves for today or tomorrow overlap with confirmed bookings.
+                            </p>
+                        </div>
+                    </div>
+                    <Button size="sm" onClick={() => setReassignDrawerOpen(true)} className="bg-amber-600 hover:bg-amber-700 text-white shrink-0">
+                        Review Candidates ({reassignQueue.length})
+                    </Button>
+                </div>
+            )}
+
+            {/* Clinical Outcome Summary (90 days real data) */}
+            <OutcomeSummary />
+
+            {/* Quality & Rating Queue */}
+            <QualityQueue />
+
+            {/* Credential & Council Registration Queue */}
+            <CredentialQueue />
+
+            {/* Overdue Follow-ups Queue */}
+            <FollowUpQueue />
+
+            {/* Stalled Progress Queue */}
+            <StalledProgressQueue />
+
+            {/* Emergency Reassignment Drawer */}
+            <ReassignDrawer
+                open={reassignDrawerOpen}
+                onOpenChange={setReassignDrawerOpen}
+                items={reassignQueue}
+                onReassigned={fetchData}
+            />
             </section>
         </div>
     );

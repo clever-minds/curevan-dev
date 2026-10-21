@@ -23,13 +23,18 @@ import { AIRichText } from '@/components/ai/ai-rich-text';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { createPayoutItemForBooking } from '@/lib/actions';
 import Link from 'next/link';
 import { getTherapyCategories } from '@/lib/repos/categories';
-import { getPcrById, updatePcr } from '@/lib/repos/pcr';
-import type { PCR } from '@/lib/types';
+import { getPcrById, updatePcr, updatePcrDetailed } from '@/lib/repos/pcr';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import type { PCR, DueMeasure } from '@/lib/types';
+import { OutcomeMeasureInput, outcomeKey, type OutcomeEntry } from '@/components/clinical/OutcomeMeasureInput';
+import { TreatmentPlanForm } from '@/components/clinical/TreatmentPlanForm';
+import { NextSessionPlanner, nextPlanProblem, type NextSessionPlan } from '@/components/clinical/NextSessionPlanner';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
 
@@ -66,6 +71,14 @@ const pcrFormSchema = z.object({
   status: z.enum(['not_started', 'in_progress', 'submitted', 'locked', 'returned']),
   therapistName: z.string().min(1, 'Your name is required'),
   signatureConfirmation: z.boolean(),
+
+  // Outcome scores and home exercises (P15). Required to submit; checked in handleSubmit, so a draft can still be saved.
+  functionalScore: z.union([z.number(), z.string()]).nullable().optional(),
+  painVas: z.union([z.number(), z.string()]).nullable().optional(),
+  functionalMeasure: z.string().nullable().optional(),
+  hep: z.string().nullable().optional(),
+  baseline: z.any().optional(),
+  historyLocked: z.boolean().optional(),
 }).refine(data => {
   if (data.status === 'locked') {
     return data.signatureConfirmation === true;
@@ -86,8 +99,10 @@ type PcrFormValues = z.infer<typeof pcrFormSchema>;
  * DB stores bp/hr/rr/temp at the top level; the form nests them under vitalSigns.
  */
 function dbToForm(pcrData: any): Partial<PcrFormValues> {
+  // a new PCR comes back with null for every empty field, but the form's text fields only accept strings
+  const noNulls = Object.fromEntries(Object.entries(pcrData ?? {}).map(([k, v]) => [k, v === null ? '' : v]));
   return {
-    ...pcrData,
+    ...noNulls,
     vitalSigns: {
       bp: pcrData.bp ?? pcrData.vitalSigns?.bp ?? '',
       hr: pcrData.hr ?? pcrData.vitalSigns?.hr ?? '',
@@ -129,6 +144,55 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   const { user } = useAuth();
   const router = useRouter();
   const [therapyCategories, setTherapyCategories] = useState<string[]>([]);
+  const searchParams = useSearchParams();
+
+  // P16: visit type, the treatment plan, the outcome measures due today
+  const [sessionType, setSessionType] = useState<string>(searchParams.get('type') || 'follow_up');
+  const [plan, setPlan] = useState<{ id: number; condition: string; planned_sessions?: number | null; frequency_per_week?: number | null } | null>(null);
+  const [nextPlan, setNextPlan] = useState<NextSessionPlan>({ mode: 'single' });
+  const [therapistUserId, setTherapistUserId] = useState(0);
+  const [sessionNumber, setSessionNumber] = useState<number | null>(null);
+  const [due, setDue] = useState<DueMeasure[]>([]);
+  const [entries, setEntries] = useState<Record<string, OutcomeEntry>>({});
+  const [progressSummary, setProgressSummary] = useState('');
+  const [dischargeReason, setDischargeReason] = useState('');
+  const [patientRef, setPatientRef] = useState<{ patientId: number; serviceTypeId: number | null }>({ patientId: 0, serviceTypeId: null });
+
+  const applyMeta = (pcrData: any) => {
+    setPlan(pcrData?.treatmentPlan ?? null);
+    setSessionNumber(pcrData?.sessionNumber ?? null);
+    setTherapistUserId(Number(pcrData?.therapist_id ?? 0));
+    if (pcrData?.next_session_plan?.mode) setNextPlan(pcrData.next_session_plan);
+    setDue(pcrData?.dueMeasures ?? []);
+    setPatientRef({ patientId: Number(pcrData?.patient_id ?? 0), serviceTypeId: pcrData?.service_type_id ?? null });
+    // the server-stored type wins unless the page was opened with ?type=...
+    if (!searchParams.get('type') && pcrData?.sessionType) {
+      const stored = pcrData.sessionType as string;
+      setSessionType(!pcrData?.treatmentPlan && stored === 'follow_up' ? 'initial_assessment' : stored);
+    }
+  };
+
+  const outcomePayload = () => ({
+    sessionType,
+    outcomeValues: due.map((m) => {
+      const e = entries[outcomeKey(m)] ?? { value: '', couldNotAssess: false, reason: '' };
+      return { measureId: m.measureId, side: m.side ?? undefined, item: m.item ?? undefined, value: e.value === '' ? undefined : Number(e.value), couldNotAssess: e.couldNotAssess, reason: e.reason };
+    }),
+    nextSessionPlan: sessionType === 'discharge' && nextPlan.mode !== 'single' && nextPlan.mode !== 'series' ? { mode: 'none' } : nextPlan,
+    progressSummary: progressSummary.trim() || undefined,
+    dischargeReason: dischargeReason.trim() || undefined,
+  });
+
+  async function reloadMeta() {
+    const fresh = await getPcrById(bookingId);
+    if (fresh) applyMeta(fresh);
+  }
+
+  async function changeSessionType(next: string) {
+    setSessionType(next);
+    const res = await updatePcrDetailed(bookingId, { ...formToDb(form.getValues()), status: 'in_progress', pcrStatus: 'in_progress', sessionType: next } as any);
+    if (res.ok) await reloadMeta();
+  }
 
   const form = useForm<PcrFormValues>({
     resolver: zodResolver(pcrFormSchema),
@@ -151,6 +215,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       if (pcrData) {
         // ✅ FIX: map flat DB fields into nested form shape before reset
         form.reset(dbToForm(pcrData) as any);
+        applyMeta(pcrData);
       }
       setTherapyCategories(cats);
       setIsLoading(false);
@@ -161,11 +226,16 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   async function handleSaveDraft() {
     const data = form.getValues();
     // ✅ FIX: flatten vitalSigns + sync pcrStatus to appointment list
-    await updatePcr(bookingId, { 
-      ...formToDb(data), 
+    const saved = await updatePcrDetailed(bookingId, {
+      ...formToDb(data),
+      ...outcomePayload(),
       status: 'in_progress',
-      pcrStatus: 'in_progress' 
+      pcrStatus: 'in_progress'
     } as any);
+    if (!saved.ok) {
+      toast({ variant: 'destructive', title: 'Draft not saved', description: saved.error });
+      return;
+    }
     toast({ title: 'PCR Draft Saved' });
   }
 
@@ -224,15 +294,41 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
       return;
     }
 
+    const values = form.getValues();
+    const missing: string[] = [];
+    const fs = Number(values.functionalScore), pv = Number(values.painVas);
+    if (values.functionalScore === null || values.functionalScore === undefined || values.functionalScore === '' || !(fs >= 1 && fs <= 10)) missing.push('functional score (1-10)');
+    if (values.painVas === null || values.painVas === undefined || values.painVas === '' || !(pv >= 0 && pv <= 10)) missing.push('pain score (0-10)');
+    if (!String(values.hep ?? '').replace(/<[^>]*>/g, '').trim()) missing.push('home exercise programme');
+    const vs = values.vitalSigns;
+    if (!vs?.bp || !vs?.hr || !vs?.rr || !vs?.temp) missing.push('all four vital signs');
+    for (const m of due) {
+      const e = entries[outcomeKey(m)];
+      if (!e || !((e.value !== '' && !e.couldNotAssess) || (e.couldNotAssess && e.reason.trim().length >= 3))) missing.push(`${m.name}${m.side ? ` (${m.side})` : ''}`);
+    }
+    if (sessionType === 'initial_assessment' && !plan) missing.push('treatment plan');
+    const nextProblem = nextPlanProblem(nextPlan, sessionType);
+    if (nextProblem) missing.push(nextProblem);
+    if ((sessionType === 'review' || sessionType === 'discharge') && progressSummary.trim().length < 10) missing.push('progress summary');
+    if (sessionType === 'discharge' && dischargeReason.trim().length < 3) missing.push('discharge reason');
+    if (missing.length) {
+      toast({ variant: 'destructive', title: 'Please complete the report', description: `Missing: ${missing.join(', ')}.` });
+      return;
+    }
+
     setIsFinalizing(true);
     try {
       const data = form.getValues();
-      await updatePcr(bookingId, { 
+      const saved = await updatePcrDetailed(bookingId, { 
         ...formToDb(data), 
+        ...outcomePayload(),
         status: 'submitted',
         pcrStatus: 'submitted',
       } as any);
-      toast({ title: 'PCR Submitted', description: 'Your report has been submitted for review and is now locked.' });
+      if (!saved.ok) {
+        throw new Error(saved.error || 'The report was not saved.');
+      }
+      toast({ title: 'PCR Submitted', description: 'Your report is submitted and the session is now completed.' });
       form.reset({ ...data, status: 'submitted' });
     } catch (error: any) {
       console.error("Submission error:", error);
@@ -245,8 +341,17 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
     setIsFinalizing(false);
   }
 
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [unlockReason, setUnlockReason] = useState('');
+
   async function handleUnlock() {
-    await updatePcr(bookingId, { status: 'returned', pcrStatus: 'returned' });
+    const res = await updatePcrDetailed(bookingId, { status: 'returned', pcrStatus: 'returned', reason: unlockReason.trim() } as any);
+    if (!res.ok) {
+      toast({ variant: 'destructive', title: 'Could not unlock', description: res.error });
+      return;
+    }
+    setUnlockOpen(false);
+    setUnlockReason('');
     form.reset({ ...form.getValues(), status: 'returned' });
     toast({ title: 'PCR Unlocked', description: 'The PCR is now available for editing by the therapist.' });
   }
@@ -298,6 +403,19 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               </AlertDescription>
             </Alert>
           )}
+          <Dialog open={unlockOpen} onOpenChange={setUnlockOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Unlock this report?</DialogTitle>
+                <DialogDescription>The therapist will be able to edit it again. Please say why; the reason is kept in the access log.</DialogDescription>
+              </DialogHeader>
+              <Textarea value={unlockReason} onChange={(e) => setUnlockReason(e.target.value)} placeholder="Reason" maxLength={300} />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setUnlockOpen(false)}>Cancel</Button>
+                <Button variant="destructive" disabled={unlockReason.trim().length < 3} onClick={handleUnlock}>Unlock</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -326,7 +444,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
 
                 {/* Unlock: ONLY for Therapy-admin/Super-admin if locked or submitted */}
                 {isFinal && canUnlock && (
-                  <Button type="button" variant="destructive" onClick={handleUnlock}>
+                  <Button type="button" variant="destructive" onClick={() => setUnlockOpen(true)}>
                     <Edit className="mr-2 h-4 w-4" />Unlock for Edit
                   </Button>
                 )}
@@ -437,6 +555,96 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
 
             <Separator />
 
+            {/* Visit type, treatment plan and outcome measures (P16) */}
+            <div className="space-y-4" data-testid="plan-section">
+              <h3 className="text-lg font-medium font-headline">Treatment plan & outcome measures</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="session-type">Session type</label>
+                  <Select value={sessionType} onValueChange={changeSessionType} disabled={isReadOnly}>
+                    <SelectTrigger id="session-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[['initial_assessment', 'Initial assessment'], ['follow_up', 'Follow-up'], ['review', 'Review'], ['discharge', 'Discharge']].map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 text-sm">
+                  {plan ? (
+                    <p><span className="font-medium">Plan:</span> {plan.condition}{sessionNumber ? ` - visit ${sessionNumber}${plan.planned_sessions ? ` of ${plan.planned_sessions}` : ''}` : ''}</p>
+                  ) : (
+                    <p className="text-muted-foreground">No treatment plan yet for this patient.</p>
+                  )}
+                  {!plan && !isReadOnly && patientRef.patientId > 0 && (
+                    <TreatmentPlanForm
+                      patientId={patientRef.patientId} serviceTypeId={patientRef.serviceTypeId ? Number(patientRef.serviceTypeId) : undefined}
+                      serviceTypeName={therapyCategories[0] ?? ''} appointmentId={bookingId} onCreated={reloadMeta}
+                      trigger={<Button type="button" variant="outline" size="sm">Start new plan</Button>}
+                    />
+                  )}
+                </div>
+              </div>
+              {plan && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Outcome measures due today</p>
+                  <OutcomeMeasureInput due={due} entries={entries} disabled={isReadOnly} onChange={(k, e) => setEntries((x) => ({ ...x, [k]: e }))} />
+                </div>
+              )}
+              {(sessionType === 'review' || sessionType === 'discharge') && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="progress-summary">Progress summary and next plan</label>
+                  <Textarea id="progress-summary" value={progressSummary} onChange={(e) => setProgressSummary(e.target.value)} disabled={isReadOnly} maxLength={2000} placeholder="How the patient has progressed, and what happens next" />
+                </div>
+              )}
+              {sessionType === 'discharge' && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="discharge-reason">Reason for discharge</label>
+                  <Input id="discharge-reason" value={dischargeReason} onChange={(e) => setDischargeReason(e.target.value)} disabled={isReadOnly} maxLength={200} placeholder="e.g. Goals achieved" />
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Outcome scores & home exercises (P15) */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium font-headline">Outcome scores & Home Exercises</h3>
+              {form.watch('historyLocked') && (
+                <p className="text-sm text-muted-foreground">Earlier history for this patient opens 4 hours before the session.</p>
+              )}
+              {form.watch('baseline') && (
+                <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1" data-testid="baseline-card">
+                  <p className="font-medium">Baseline from previous sessions</p>
+                  {([['chiefComplaint', 'Chief complaint'], ['diagnosis', 'Diagnosis'], ['medicalHistory', 'Medical history'], ['allergies', 'Allergies'], ['longTermGoal', 'Long-term goal']] as const).map(([k, label]) => {
+                    const val = (form.watch('baseline') as any)?.[k];
+                    return val ? <p key={k}><span className="text-muted-foreground">{label}: </span><span>{String(val).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}</span></p> : null;
+                  })}
+                </div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <FormField control={form.control} name="functionalScore" render={({ field }) => (
+                  <FormItem><FormLabel>Functional score (1-10)</FormLabel><FormControl><Input type="number" min={1} max={10} {...field} value={field.value ?? ''} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="functionalMeasure" render={({ field }) => (
+                  <FormItem><FormLabel>What the score measures</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isReadOnly}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {['Range of motion', 'Muscle power', 'Activities of daily living', 'Balance / gait', 'Articulation / speech', 'Other'].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  <FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="painVas" render={({ field }) => (
+                  <FormItem><FormLabel>Pain (0-10)</FormLabel><FormControl><Input type="number" min={0} max={10} {...field} value={field.value ?? ''} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={form.control} name="hep" render={({ field }) => (
+                <FormItem><FormLabel>Home exercise programme (HEP)</FormLabel><FormControl><AIRichText value={field.value ?? ''} onChange={field.onChange} placeholder="Exercises the patient should do between sessions: what, how many, how often..." context={{ entityType: 'pcr', field: 'hep' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+
+            <Separator />
+
             {/* Treatment & Plan */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Treatment & Plan</h3>
@@ -446,9 +654,11 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               <FormField control={form.control} name="planOfCare" render={({ field }) => (
                 <FormItem><FormLabel>Plan of Care</FormLabel><FormControl><AIRichText value={field.value} onChange={field.onChange} placeholder="Recommended next steps, exercises, or future treatment plan..." context={{ entityType: 'pcr', field: 'planOfCare' }} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="nextTreatmentDate" render={({ field }) => (
-                <FormItem><FormLabel>Next Treatment Date (Optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <NextSessionPlanner
+                therapistUserId={therapistUserId} sessionType={sessionType} frequencyPerWeek={plan?.frequency_per_week}
+                remainingSessions={plan?.planned_sessions && sessionNumber ? Math.max(1, plan.planned_sessions - sessionNumber) : null}
+                value={nextPlan} onChange={setNextPlan} disabled={isReadOnly}
+              />
             </div>
 
             <Separator />

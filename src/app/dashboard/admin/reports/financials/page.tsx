@@ -30,7 +30,8 @@ import {
   DollarSign, 
   Users,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CheckCircle2,
 } from "lucide-react";
 import { getSafeDate, downloadCsv } from "@/lib/utils";
 import { ManualPaymentDialog } from "@/components/admin/ManualPaymentDialog";

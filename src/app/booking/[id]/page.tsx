@@ -24,7 +24,7 @@ export default function BookingPage() {
   useEffect(() => {
     async function fetchTherapist() {
       try {
-        const t = await getTherapistById(id);
+        const t = await getTherapistById(Number(id));
         if (!t) {
             notFound();
         }
@@ -105,7 +105,7 @@ export default function BookingPage() {
                     </div>
                 </div>
                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                    <MapPin className="w-3 h-3"/> {therapist.address.line1}
+                    <MapPin className="w-3 h-3"/> {[therapist.city || therapist.address?.city, therapist.state || therapist.address?.state].filter(Boolean).join(', ') || 'Serves your area'}
                 </p>
             </div>
           </div>

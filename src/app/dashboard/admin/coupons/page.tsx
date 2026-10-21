@@ -39,7 +39,7 @@ export default function AdminCouponsPage() {
         // This state update is for UI reflection.
         // In a real app with a DB, you'd likely refetch the list.
         const formattedNewCoupons = newCoupons.map(c => ({...c, status: 'Active', usageLimit: null}))
-       // setCouponList(prev => [...prev, ...formattedNewCoupons]);
+        setCouponList(await listCoupons());
         toast({
           title: "Codes Generated!",
           description: `Successfully generated ${newCoupons.length} new referral codes for therapists.`,

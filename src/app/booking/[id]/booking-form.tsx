@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Loader2,
   Navigation,
+  Package,
 } from "lucide-react";
 import {
   Form,
@@ -43,16 +44,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { GuardianFields } from "@/components/booking/GuardianFields";
+import { consentPayload, guardianIssues } from "@/lib/booking-consent";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useTransition } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import useRazorpay from "@/hooks/use-razorpay";
-import { isSameDay, isPast, set, format } from "date-fns";
+import { isSameDay, addDays, startOfDay, format } from "date-fns";
 import { Price } from "@/components/money/price";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { getTherapistSlots } from "@/lib/repos/appointments";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
-import { createBookingAndInvoice } from "@/lib/actions/booking";
+import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
+import { getMyCarePacks, type CarePack } from "@/lib/repos/carePacks";
 import {
   createAddress,
   deleteAddress,
@@ -60,6 +64,7 @@ import {
   updateAddress,
 } from "@/lib/repos/address";
 import { getIndianStates } from "@/lib/repos/meta";
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reverse Geocoding helper (OpenStreetMap Nominatim — free, no key needed)
@@ -665,6 +670,13 @@ const bookingFormSchema = z
     consent_refund: z.boolean().refine((val) => val === true, {
       message: "You must agree to the Refund, Cancellation & Return Policy.",
     }),
+    guardianName: z.string().optional(),
+    guardianRelation: z.string().optional(),
+    guardianPhone: z.string().optional(),
+    guardianConsent: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    for (const i of guardianIssues(data)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: i.message, path: i.path });
   })
   .refine(
     (data) => {
@@ -691,9 +703,12 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const [isPending, startTransition] = useTransition();
   const { openPayment, isLoaded } = useRazorpay();
 
-  const [therapistAppointments, setTherapistAppointments] = useState<
-    Appointment[]
-  >([]);
+  // open times for the chosen date, as decided by the server
+  const [serverSlots, setServerSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [leadHours, setLeadHours] = useState(4);
+  const [advanceDays, setAdvanceDays] = useState(30);
   const [therapyCategories, setTherapyCategories] = useState<
     { id: number; name: string }[]
   >([]);
@@ -706,14 +721,39 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const [showAddressFormModal, setShowAddressFormModal] = useState(false);
   const [showAddressPickerModal, setShowAddressPickerModal] = useState(false);
 
+  // Care Pack state (P28)
+  const [myPacks, setMyPacks] = useState<CarePack[]>([]);
+  const [usePack, setUsePack] = useState(false);
+  const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    getMyCarePacks()
+      .then((packs) => {
+        const active = (packs || []).filter(
+          (p) => p.status === "active" && p.sessions_total - p.sessions_used > 0
+        );
+        setMyPacks(active);
+        const paramId = searchParams.get("carePackId");
+        if (paramId) {
+          const match = active.find((p) => String(p.id) === paramId);
+          if (match) {
+            setSelectedPackId(match.id);
+            setUsePack(true);
+          }
+        } else if (active.length > 0) {
+          setSelectedPackId(active[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [user, searchParams]);
+
   useEffect(() => {
     const fetchData = async () => {
-      const [apps, cats, states] = await Promise.all([
-        listAppointmentsForUser(therapist.id, "therapist"),
+      const [cats, states] = await Promise.all([
         getTherapyCategoriesWithIds(),
         getIndianStates(),
       ]);
-      setTherapistAppointments(apps);
       setTherapyCategories(cats || []);
       setIndianStates(states);
     };
@@ -797,6 +837,10 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       consent_medical: false,
       consent_privacy: false,
       consent_refund: false,
+      guardianName: "",
+      guardianRelation: "",
+      guardianPhone: "",
+      guardianConsent: false,
       addressId: "",
     },
   });
@@ -819,70 +863,43 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     [addresses, selectedAddressId],
   );
 
-  const getSlotsForDate = (date: Date) => {
-    if (!therapist.availability) return [];
-    const availabilityData =
-      therapist.availability.windows || therapist.availability;
-    if (!availabilityData) return [];
-
-    const day = date
-      .toLocaleString("en-US", { weekday: "short" })
-      .toLowerCase() as keyof typeof availabilityData;
+  // Does the therapist work on this weekday at all? (only a hint for the calendar; the server decides the real slots)
+  const worksOnDay = (date: Date) => {
+    const availabilityData = therapist.availability?.windows || therapist.availability;
+    if (!availabilityData) return false;
+    const day = date.toLocaleString("en-US", { weekday: "short" }).toLowerCase() as keyof typeof availabilityData;
     const avail = availabilityData[day];
+    const isFalsy = (val: any) => val === false || val === "false" || val === 0 || val === "0" || val === null;
+    return !!avail && !isFalsy(avail.enabled);
+  };
 
-    const isFalsy = (val: any) =>
-      val === false ||
-      val === "false" ||
-      val === 0 ||
-      val === "0" ||
-      val === null;
-
-    // If day is missing or explicitly disabled, return no slots
-    if (!avail || isFalsy(avail.enabled)) return [];
-
-    const slots: string[] = [];
-    const addSlots = (period: any) => {
-      // Assume enabled if not explicitly false
-      if (!period || isFalsy(period.enabled) || !period.start || !period.end)
-        return;
-      for (let i = parseInt(period.start); i < parseInt(period.end); i++) {
-        slots.push(`${i.toString().padStart(2, "0")}:00`);
+  useEffect(() => {
+    if (!selectedDate) {
+      setServerSlots([]);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    setSlotsError(null);
+    getTherapistSlots(therapist.user_id ?? therapist.id, format(selectedDate, "yyyy-MM-dd")).then((res) => {
+      if (cancelled) return;
+      setServerSlots(res.slots);
+      setLeadHours(res.minLeadHours);
+      setAdvanceDays(res.maxAdvanceDays);
+      setSlotsError(res.error ?? null);
+      setSlotsLoading(false);
+      // a time chosen earlier may no longer be offered
+      if (form.getValues("scheduledTime") && !res.slots.includes(form.getValues("scheduledTime"))) {
+        form.setValue("scheduledTime", "");
       }
+    });
+    return () => {
+      cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, therapist.id]);
 
-    addSlots(avail.morning);
-    addSlots(avail.evening);
-    return slots;
-  };
-
-  const timeSlots = useMemo(() => {
-    if (!selectedDate) return [];
-    return getSlotsForDate(selectedDate);
-  }, [selectedDate, therapist.availability]);
-
-  const isTimeSlotAvailable = (time: string): boolean => {
-    if (!selectedDate) return false;
-    const [h, m] = time.split(":").map(Number);
-    if (isPast(set(selectedDate, { hours: h, minutes: m }))) return false;
-    const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
-    return !therapistAppointments.some(
-      (a) =>
-        String(a.date).startsWith(selectedDateStr) &&
-        a.time === time &&
-        a.status !== "Cancelled",
-    );
-  };
-
-  const isDateFullyBooked = (date: Date) => {
-    const slots = getSlotsForDate(date);
-    if (slots.length === 0) return true; // Disabled if no slots available
-
-    const dateStr = format(date, "yyyy-MM-dd");
-    const bookedCount = therapistAppointments.filter(
-      (a) => String(a.date).startsWith(dateStr) && a.status !== "Cancelled",
-    ).length;
-    return bookedCount >= slots.length;
-  };
+  const timeSlots = serverSlots;
 
   // ── Address handlers ──────────────────────────────────────────────────────
 
@@ -979,7 +996,15 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       return;
     }
 
-    const serviceAmount = therapist.hourlyRate ?? 500;
+    // The price is set and charged by the server. Nothing is guessed in the browser.
+    if (!therapist.hourlyRate) {
+      toast({
+        variant: "destructive",
+        title: "Price not available",
+        description: "This therapist has not set a session price yet.",
+      });
+      return;
+    }
 
     // Convert reports to base64 if provided
     let reportsBase64: any = null;
@@ -1015,12 +1040,13 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             patientId: user!.id,
             patientName: data.patientFullName || user!.name || "N/A",
             dateofBirth: data.dob,
-            therapistId: therapist.id,
+            ...consentPayload(data),
+            therapistId: therapist.user_id ?? therapist.id,   // bookings, leave and slots are all keyed by the therapist's USER id
             therapist: therapist.name,
             serviceTypeId: serviceTypeId,
             therapyType: data.serviceType,
-            serviceAmount,
-            totalAmount: serviceAmount,
+            serviceAmount: 0, // ignored: the server decides the price
+            totalAmount: 0,
             date: format(data.scheduledDate, "yyyy-MM-dd") as unknown as Date,
             time: data.scheduledTime,
             mode: data.sessionMode,
@@ -1028,13 +1054,52 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             reports: processedReports,
             addressId:
               data.sessionMode === "home" ? Number(data.addressId) : undefined,
-            status: "Pending Approval", // Initially pending approval by therapist
+            status: "pending_payment", // server decides the real status (pack P07: Pending until paid)
             verificationStatus: "Not Verified",
-          },
-          { paymentId: "pending", gateway: "none" },
-        ); // No payment yet
+            payWith: usePack ? "pack" : undefined,
+            carePackId: usePack && selectedPackId ? selectedPackId : undefined,
+          } as any,
+        );
 
-        if (result.success) {
+        if (result.success && result.paidWith === "pack") {
+          toast({
+            title: "Booking Confirmed!",
+            description: `Session booked using your Care Package. ${result.sessionsRemaining ?? ""} sessions left.`,
+          });
+          router.push("/dashboard/bookings");
+          return;
+        }
+
+        if (result.success && result.razorpayOrderId && result.amountPaise) {
+          // Pay-immediately mode: open Razorpay for the amount the server calculated,
+          // then let the server verify the signature before the booking counts as paid.
+          openPayment({
+            amount: result.amountPaise,
+            currency: "INR",
+            receipt: `appt-${result.appointmentId}`,
+            orderId: result.razorpayOrderId,
+            keyId: result.keyId,
+            productName: "Curevan session",
+            productDescription: `${data.serviceType} session with ${therapist.name}`,
+            prefill: { name: data.patientFullName || user!.name || "" },
+            onSuccess: async (paymentResponse) => {
+              const verified = await verifyBookingPayment({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              });
+              if (verified.success) {
+                toast({ title: "Booking confirmed!", description: "Your payment was received." });
+                router.push("/dashboard/bookings");
+              } else {
+                toast({ variant: "destructive", title: "Payment not confirmed", description: verified.error || "We could not confirm your payment." });
+              }
+            },
+            onFailure: (err) => {
+              toast({ variant: "destructive", title: "Payment Failed", description: err.reason || "Please try again." });
+            },
+          });
+        } else if (result.success) {
           toast({
             title: "Booking Requested!",
             description:
@@ -1161,6 +1226,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               </FormItem>
             )}
           />
+          <GuardianFields />
 
           {/* Session Mode */}
           <FormField
@@ -1280,10 +1346,9 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) =>
-                        date <
-                          new Date(
-                            new Date().setDate(new Date().getDate() - 1),
-                          ) || isDateFullyBooked(date)
+                        date < startOfDay(new Date()) ||
+                        date > addDays(new Date(), advanceDays) ||
+                        !worksOnDay(date)
                       }
                       initialFocus
                       className="rounded-md border p-0"
@@ -1313,7 +1378,6 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                               "bg-primary text-primary-foreground",
                           )}
                           onClick={() => field.onChange(time)}
-                          disabled={!isTimeSlotAvailable(time)}
                         >
                           {time}
                         </Button>
@@ -1325,6 +1389,18 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                       Please select a date first.
                     </FormDescription>
                   )}
+                  {selectedDate && slotsLoading && (
+                    <FormDescription>Loading available times...</FormDescription>
+                  )}
+                  {selectedDate && !slotsLoading && slotsError && (
+                    <FormDescription className="text-destructive">{slotsError}</FormDescription>
+                  )}
+                  {selectedDate && !slotsLoading && !slotsError && timeSlots.length === 0 && (
+                    <FormDescription>No times are open on this date. Please try another day.</FormDescription>
+                  )}
+                  <FormDescription>
+                    Earliest booking is {leadHours} hours from now; you can book up to {advanceDays} days ahead.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -1453,12 +1529,63 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             ))}
           </div>
 
+          {/* Care Package Option (P28) */}
+          {myPacks.length > 0 && (
+            <div className="p-4 rounded-xl border border-primary/40 bg-primary/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm">Pay with Care Package</span>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-primary">
+                  <input
+                    type="checkbox"
+                    checked={usePack}
+                    onChange={(e) => setUsePack(e.target.checked)}
+                    className="h-4 w-4 rounded accent-primary cursor-pointer"
+                  />
+                  Use Package
+                </label>
+              </div>
+
+              {usePack && (
+                <div className="space-y-2 pt-2 border-t border-primary/20">
+                  <label className="text-xs text-muted-foreground block">Select Active Package:</label>
+                  <select
+                    value={selectedPackId || ""}
+                    onChange={(e) => setSelectedPackId(Number(e.target.value))}
+                    className="w-full text-xs rounded-lg border bg-background p-2.5 font-medium"
+                  >
+                    {myPacks.map((p) => {
+                      const left = p.sessions_total - p.sessions_used;
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.plan_name} — {left} sessions remaining
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-emerald-600 font-medium">
+                    ✓ 1 session will be redeemed from your package. No online payment required.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Price */}
           <div className="p-4 rounded-lg bg-muted/50 text-center">
             <p className="text-muted-foreground">Service Fee</p>
-            <p className="text-2xl font-bold">
-              <Price amount={therapist?.hourlyRate ?? 1500} showDecimals />
-            </p>
+            {usePack ? (
+              <div className="space-y-0.5">
+                <p className="text-2xl font-bold text-emerald-600">₹0</p>
+                <p className="text-xs text-muted-foreground font-medium">Covered by active Care Package</p>
+              </div>
+            ) : (
+              <p className="text-2xl font-bold">
+                {therapist?.hourlyRate ? <Price amount={therapist.hourlyRate} showDecimals /> : <span className="text-sm text-muted-foreground">Price not set</span>}
+              </p>
+            )}
           </div>
 
           {/* Submit */}

@@ -13,8 +13,8 @@ export async function addProductCategory(
   try {
     // Call backend API to create the category
     const token = await getToken();
-    const { data: newCategory } = await serverApi.post(
-      "/api/product-categories/add",
+    const { data: created } = await serverApi.post(
+      "/api/category/add",
       categoryData,
       {
         headers: {
@@ -23,7 +23,7 @@ export async function addProductCategory(
       }
     );
 
-    console.log("New product category added via API:", newCategory);
+    const newCategory = created?.data ?? created;
 
     // Revalidate paths where categories are displayed
     revalidatePath("/dashboard/admin/products/categories");

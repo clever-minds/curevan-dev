@@ -27,6 +27,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { addDays, isBefore } from 'date-fns';
+import { ReturnRequestForm, type ReturnPayload } from '@/components/shop/ReturnRequestForm';
+import { hasPaidInvoice, isDelivered, isInShipment, orderStatusClass, orderStatusLabel } from '@/lib/order-status';
+import { DEFAULT_SHOP_RULES, getShopRules } from '@/lib/repos/publicConfig';
 import Link from 'next/link';
 import { listOrders, cancelOrder } from '@/lib/repos/orders';
 import { createShipment } from '@/lib/actions/shipment';
@@ -43,26 +46,7 @@ interface OrdersTableProps {
   filters?: any;
 }
 
-const getStatusBadgeVariant = (status?: Order['status']) => {
-  switch (status) {
-    case 'Paid':
-    case 'Packed':
-      return 'bg-blue-100 text-blue-800';
-    case 'Shipped':
-    case 'Delivered':
-      return 'bg-green-100 text-green-800';
-    case 'Placed':
-    case 'Pending':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'Returned':
-      return 'bg-orange-100 text-orange-800';
-    case 'Cancelled':
-    case 'Refunded':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'secondary';
-  }
-};
+const getStatusBadgeVariant = (status?: Order['status']) => orderStatusClass(status);
 
 const getSafeDate = (date: any): Date | null => {
   if (!date) return null;
@@ -78,7 +62,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
   const { toast } = useToast();
   const isAdmin = scope === 'admin' || scope === 'ecom-admin';
   const isPatient = scope === 'patient';
-  const hasInvoice = (order.paymentStatus === 'Paid' || order.status === 'Paid' || order.status === 'Packed' || order.status === 'Shipped' || order.status === 'Delivered');
+  const hasInvoice = order.paymentStatus === 'Paid' || hasPaidInvoice(order.status);
   const invoiceLink = `/dashboard/invoices?id=${order.invoiceId || order.id}`;
   const [isCreatingShipment, setIsCreatingShipment] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
@@ -86,7 +70,8 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
   const [isRefunded, setIsRefunded] = React.useState(false);
   const [showReturnDialog, setShowReturnDialog] = React.useState(false);
   const [isReturnedLocally, setIsReturnedLocally] = React.useState(false);
-  const [returnReason, setReturnReason] = React.useState('');
+  const [returnWindowDays, setReturnWindowDays] = React.useState(DEFAULT_SHOP_RULES.returnWindowDays);
+  React.useEffect(() => { getShopRules().then((r) => setReturnWindowDays(r.returnWindowDays)); }, []);
 
   const addressIncomplete = !isAddressComplete(order.shippingAddress);
 
@@ -117,18 +102,13 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
     setIsCreatingShipment(false);
   }
 
-  const handleReturnOrder = async () => {
-    if (!returnReason.trim()) {
-      toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for the return.' });
-      return;
-    }
+  const handleReturnOrder = async (payload: ReturnPayload) => {
     setIsReturning(true);
-    const result = await requestReturnAction(order.id, { reason: returnReason });
+    const result = await requestReturnAction(order.id, payload);
     if (result.success) {
       toast({ title: 'Return Requested', description: result.message || `Your return request for order #${order.id} has been submitted.` });
       setShowReturnDialog(false);
       setIsReturnedLocally(true);
-      setReturnReason('');
       if (onRefresh) onRefresh();
     } else {
       toast({ variant: 'destructive', title: 'Return Failed', description: result.message || 'Could not submit return request.' });
@@ -144,7 +124,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
     setIsRefunded(true);
     const result = await initiateRefundAction({ orderId: order.id, amount: parseFloat(amount), reason: reason || undefined });
     if (result.success) {
-      toast({ title: 'Refund Initiated', description: result.message || `Refund for order #${order.id} has been processed.` });
+      toast({ title: 'Refund Initiated', description: result.message || `Refund for order #${order.id} was sent to Razorpay. It shows as processed once Razorpay confirms.` });
       if (onRefresh) onRefresh();
     } else {
       toast({ variant: 'destructive', title: 'Refund Failed', description: result.message || 'Could not process refund.' });
@@ -160,21 +140,21 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
 
   const isReturnable = () => {
     // Hide button if already Returned/Refunded/Cancelled or if it's not Delivered
-    if (order.status !== 'Delivered') return false;
+    if (!isDelivered(order.status)) return false;
 
     // Check if a return already exists for this order (either locally or on the server)
     if (isReturnedLocally) return false;
     const hasExistingReturn = (existingReturns || []).some(r => r.orderId.toString() === order.id.toString());
     if (hasExistingReturn) return false;
 
-    // If deliveredAt exists, enforce the 10-day window.
+    // The window comes from the server rules (7 days from delivery).
     // Otherwise, allow return since the order is marked as Delivered.
     if (!order.deliveredAt) return true;
 
     const deliveredAtDate = getSafeDate(order.deliveredAt);
     if (!deliveredAtDate) return true;
 
-    const returnDeadline = addDays(deliveredAtDate, 10);
+    const returnDeadline = addDays(deliveredAtDate, returnWindowDays);
     return isBefore(new Date(), returnDeadline);
   };
 
@@ -200,11 +180,11 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
         </DropdownMenuItem>
       )}
 
-      {(order.status === 'Shipped' || order.status === 'Delivered') && (
-        <DropdownMenuItem><Truck className="mr-2 h-4 w-4" />Track Shipment</DropdownMenuItem>
+      {isInShipment(order.status) && order.awb && (
+        <DropdownMenuItem asChild><a href={`https://shiprocket.co/tracking/${encodeURIComponent(order.awb)}`} target="_blank" rel="noopener noreferrer"><Truck className="mr-2 h-4 w-4" />Track Shipment</a></DropdownMenuItem>
       )}
 
-      {isPatient && order.status === 'Delivered' && (
+      {isPatient && isDelivered(order.status) && (
         <Dialog>
           <DialogTrigger asChild>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
@@ -236,32 +216,10 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
             <DialogHeader>
               <DialogTitle>Return/Replace Items</DialogTitle>
               <DialogDescription>
-                Please provide a reason for returning or replacing items in order #{order.id}.
+                Choose the items and the reason for order #{order.id}. You can return within {returnWindowDays} days of delivery.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="return-reason">Reason for Return</Label>
-                <Textarea 
-                  id="return-reason" 
-                  placeholder="Tell us why you want to return these items..."
-                  value={returnReason}
-                  onChange={(e) => setReturnReason(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowReturnDialog(false)}>Cancel</Button>
-              <Button 
-                onClick={handleReturnOrder} 
-                className="bg-teal-600 hover:bg-teal-700 text-white"
-                disabled={isReturning || !returnReason.trim()}
-              >
-                {isReturning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Return Request
-              </Button>
-            </DialogFooter>
+            <ReturnRequestForm order={order} busy={isReturning} onSubmit={handleReturnOrder} onCancel={() => setShowReturnDialog(false)} />
           </DialogContent>
         </Dialog>
       )}
@@ -273,11 +231,11 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
           <DropdownMenuItem className="cursor-pointer"><Printer className="mr-2 h-4 w-4" />Print Packing Slip</DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleCreateShipment}
-            disabled={order.status === 'Shipped' || order.status === 'Delivered' || isCreatingShipment || addressIncomplete}
+            disabled={isInShipment(order.status) || isCreatingShipment || addressIncomplete || !hasInvoice}
             className="cursor-pointer"
           >
             {isCreatingShipment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
-            {addressIncomplete ? "Create Shipment (Fix Address First)" : "Create Shipment"}
+            {addressIncomplete ? "Create Shipment (Fix Address First)" : "Generate AWB"}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -323,32 +281,10 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
                   <DialogHeader>
                     <DialogTitle>Return/Replace Items</DialogTitle>
                     <DialogDescription>
-                      Please provide a reason for returning or replacing items in order #{order.id}.
+                      Choose the items and the reason for order #{order.id}. You can return within {returnWindowDays} days of delivery.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="return-reason-mobile">Reason for Return</Label>
-                      <Textarea 
-                        id="return-reason-mobile" 
-                        placeholder="Tell us why you want to return these items..."
-                        value={returnReason}
-                        onChange={(e) => setReturnReason(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowReturnDialog(false)}>Cancel</Button>
-                    <Button 
-                      onClick={handleReturnOrder} 
-                      className="bg-teal-600 hover:bg-teal-700 text-white"
-                      disabled={isReturning || !returnReason.trim()}
-                    >
-                      {isReturning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Submit Return Request
-                    </Button>
-                  </DialogFooter>
+                  <ReturnRequestForm order={order} busy={isReturning} onSubmit={handleReturnOrder} onCancel={() => setShowReturnDialog(false)} />
                 </DialogContent>
               </Dialog>
             )}
@@ -391,7 +327,7 @@ const OrderCard = ({ order, scope, existingReturns = [] }: { order: Order, scope
             <p className="font-bold">#{order.id}</p>
             <p className="text-sm text-muted-foreground">{createdAt ? createdAt.toLocaleDateString() : 'N/A'}</p>
           </div>
-          <Badge className={cn(getStatusBadgeVariant(order.status))} variant="secondary">{order.status}</Badge>
+          <Badge className={cn(getStatusBadgeVariant(order.status))} variant="secondary">{orderStatusLabel(order.status)}</Badge>
         </div>
         <div className="mt-4 space-y-1 text-sm">
           {scope !== 'patient' && <p><strong>Customer:</strong> {order.customerName}</p>}
@@ -506,7 +442,7 @@ getSafeDate(o.deliveredAt)?.toISOString()
                     <TableCell className="text-center">{order.items?.length || 0}</TableCell>
                     <TableCell className="text-right"><Price amount={order.total} showDecimals={false} /></TableCell>
                     <TableCell><Badge variant="secondary">{order.paymentStatus}</Badge></TableCell>
-                    <TableCell><Badge className={cn(getStatusBadgeVariant(order.status))} variant="secondary">{order.status}</Badge></TableCell>
+                    <TableCell><Badge className={cn(getStatusBadgeVariant(order.status))} variant="secondary">{orderStatusLabel(order.status)}</Badge></TableCell>
                     <TableCell>{order.couponCode ? <Badge variant="outline">{order.couponCode}</Badge> : '-'}</TableCell>
                     {scope !== 'patient' && (
                        <TableCell>

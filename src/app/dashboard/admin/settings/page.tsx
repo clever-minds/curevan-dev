@@ -55,17 +55,17 @@ const dataExportItems = [
     )},
     { name: "Therapist Profiles", description: "Detailed profiles for all therapists.", exportFunc: async () => downloadCsv(
         ["id", "name", "specialty", "experience", "rating", "reviews", "membershipPlan", "pan", "address", "bio"],
-        (await listTherapists()).map(t => [t.id, t.name, t.specialty, t.experience, t.rating, t.reviews, t.membershipPlan, t.tax?.pan, `${t.address.city}, ${t.address.state}`, t.bio]),
+        ((await listTherapists()) ?? []).map(t => [t.id, t.name, t.specialty, t.experience, t.rating, t.reviews, t.membershipPlan, t.tax?.pan, `${t.address?.city ?? ""}, ${t.address?.state ?? ""}`, t.bio]),
         "therapists.csv"
     )},
     { name: "Appointments", description: "All service bookings.", exportFunc: async () => downloadCsv(
         ["id", "date", "time", "therapistId", "patientId", "status", "paymentStatus", "pcrStatus"],
-        (await listAppointments()).map(a => [a.id, a.date, a.time, a.therapistId, a.patientId, a.status, a.paymentStatus, a.pcrStatus]),
+        ((await listAppointments()) ?? []).map(a => [a.id, a.date, a.time, a.therapistId, a.patientId, a.status, a.paymentStatus, a.pcrStatus]),
         "appointments.csv"
     )},
     { name: "Orders", description: "All e-commerce product orders.", exportFunc: async () => downloadCsv(
         ["id", "createdAt", "userId", "customerName", "total", "status", "paymentStatus"],
-        (await listOrders()).map(o => [o.id, getSafeDate(o.createdAt)?.toISOString(), o.userId, o.customerName, o.total, o.status, o.paymentStatus]),
+        ((await listOrders()) ?? []).map(o => [o.id, getSafeDate(o.createdAt)?.toISOString(), o.userId, o.customerName, o.total, o.status, o.paymentStatus]),
         "orders.csv"
     )},
      { name: "Invoices", description: "All generated invoices for services and products.", exportFunc: async () => downloadCsv(

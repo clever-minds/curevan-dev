@@ -51,6 +51,7 @@ export interface UserProfile {
 
 
 export interface PatientProfile {
+  userId?: number;
   number: string;
   mrn: string; // Medical Record Number
   dob: Date;
@@ -70,12 +71,19 @@ export interface TherapistReview {
 }
 
 export interface Therapist {
+  address?: any;
+  experience?: number | string;
   id: number; // This is the user UID
   user_id: number;
   name: string;
   specialty: string;
-  registrationNo: string,
-  bankAccountNo: string,
+  registrationNo: string;
+  registration_no?: string;
+  council?: string;
+  registration_valid_until?: string | Date;
+  quality_status?: string;
+  quality_note?: string;
+  bankAccountNo: string;
   bankIfscCode: string,
   line1: string;
   line2?: string;
@@ -105,7 +113,7 @@ export interface Therapist {
   referralActive?: boolean;
   availability?: any;
   hourlyRate?: number;
-  membershipPlan?: 'basic' | 'standard' | 'premium';
+  membershipPlan?: 'standard' | 'premium';
   platformFeePct?: number;
   isHighlighted?: boolean;
   distance?: number;
@@ -166,7 +174,7 @@ export interface Appointment {
   date: Date;
   time: string;
   mode: 'home' | 'online' | 'clinic';
-  status: 'Pending Approval' | 'Pending' | 'Payment Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'No-Show' | 'Searching' | 'Searching Therapist' | 'Assigned' | 'Accept' | 'Accepted' | 'Navigating' | 'On The Way' | 'Arrived' | 'In Progress' | 'Session Started';
+  status: import('./appointment-status').AppointmentStatus;
   cancellationReason?: string | null;
   notes?: string;
   reports?: any;
@@ -175,6 +183,11 @@ export interface Appointment {
   longitude?: number;
   createdAt: Date;
   serviceAddress?: Address;
+  serviceAddressDetail?: { fullAddress?: string; city?: string; state?: string; pincode?: string; lat?: number | string | null; lng?: number | string | null } | null;
+  sessionStartedAt?: string | null;
+  travelStartedAt?: string | null;
+  arrivedAt?: string | null;
+  completedAt?: string | null;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';
   pcrStatus: 'not_started' | 'in_progress' | 'submitted' | 'locked' | 'returned' | 'Draft';
   verificationStatus: 'Verified' | 'Not Verified';
@@ -322,6 +335,7 @@ export interface Order {
   customerName: string;
   customerPhone?: string;
   items: {
+    id?: number;
     sku: string;
     name: string;
     qty: number;
@@ -343,7 +357,8 @@ export interface Order {
   igst?: number;
   totalTax?: number;
   total: number;
-  status: 'Placed' | 'Pending' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'Refunded';
+  status: 'Placed' | 'Pending' | 'Paid' | 'Packed' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'Refunded' | 'awb_generated' | 'picked_up' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'rto' | 'Return Approved';
+  awb?: string | null;
   createdAt: Date;
   deliveredAt?: string | null;
   paymentStatus: 'Paid' | 'Pending' | 'Refunded' | 'Failed';
@@ -422,7 +437,7 @@ export interface PayoutItem {
   state: 'onHold' | 'inBatch' | 'paid' | 'disputed';
   weekStart: string; // ISO string of the Monday of the week
   createdAt: Date;
-  membershipPlanSnapshot: 'basic' | 'standard' | 'premium';
+  membershipPlanSnapshot: 'standard' | 'premium';
   therapistName?: string; // Added for easier reporting
   therapistPan?: string; // Added for easier reporting
 }
@@ -440,6 +455,7 @@ export interface PayoutBatch {
 }
 
 export interface Invoice {
+  userId?: number;
   id: string;
   invoiceNumber: string;
   status: 'issued' | 'draft' | 'cancelled';
@@ -450,6 +466,7 @@ export interface Invoice {
 }
 
 export interface CreditNote {
+  userId?: number;
   id: string;
   creditNoteNumber: string;
   referenceInvoiceId: string;
@@ -502,6 +519,12 @@ export interface PCR { // Patient Care Report
   attachment?: number[]; // array of attachment IDs
   therapistName?: string;
   signatureConfirmation?: boolean;
+  functionalScore?: number | null;   // 1-10
+  painVas?: number | null;           // 0-10
+  functionalMeasure?: string | null;
+  hep?: string | null;               // home exercise programme
+  baseline?: { chiefComplaint?: string; diagnosis?: string; medicalHistory?: string; allergies?: string; longTermGoal?: string } | null;
+  historyLocked?: boolean;           // earlier history opens 4 h before the session
 }
 
 export interface Session {
@@ -554,6 +577,7 @@ export interface Notification {
 }
 
 export interface SOSAlert {
+  type?: string;
   id: string;
   therapistId: string;
   bookingId: string;
@@ -589,6 +613,7 @@ export interface SupportTicket {
 }
 
 export interface PaymentTransaction {
+  userId?: number;
   id: string;
   ref: string;
   number: string;
@@ -612,6 +637,7 @@ export interface AuditLog {
 }
 
 export interface AIFeedback {
+  userId?: number;
   id: string;
   timestamp: Date;
   number: string;
@@ -691,6 +717,9 @@ export interface ProfileChangeRequest {
 
 // --- Content Types ---
 export interface KnowledgeBase {
+  coverImageUrl?: string;
+  categoryIds?: number[];
+  attachments?: any[];
   id: string;
   title: string;
   slug: string;
@@ -790,11 +819,14 @@ export interface Address {
 }
 
 export interface GeoPoint {
+  _latitude?: number;
+  _longitude?: number;
   lat: number;
   lng: number;
 }
 export interface ApiResponse<T = any> {
   success?: boolean;
+  error?: string;
   message?: string;
   data?: T | null;
 }
@@ -813,3 +845,132 @@ export interface ApplyCouponResponse {
   final_amount: number;
 }
 // types/journal.ts
+
+
+// --- Treatment plans & outcomes (P16) ---
+export interface OutcomeMeasure {
+  id: number; code: string; name: string; specialty?: string | null; domain?: string | null; scale_type: string;
+  min_value: number | string | null; max_value: number | string | null; unit?: string | null; higher_is_better: boolean;
+  per_side: boolean; frequency: 'every_session' | 'review' | 'baseline_discharge'; instructions?: string | null; licence_note?: string | null; active: boolean;
+}
+
+export interface DueMeasure {
+  planMeasureId: number; measureId: number; code: string; name: string; side?: string | null; item?: string | null; scaleType: string;
+  min: number | null; max: number | null; unit?: string | null; instructions?: string | null; lastValue: number | null;
+}
+
+export interface TreatmentPlanSummary {
+  id: number; patient_id: number; condition: string; affected_side?: string | null; planned_sessions?: number | null; frequency_per_week?: number | null;
+  review_every_sessions?: number | null; status: 'active' | 'on_hold' | 'discharged' | 'cancelled'; stalled?: boolean; sessionsDone?: number;
+  adherence?: { attended: number; plannedToDate: number; ratio: number | null };
+}
+
+export interface MeasureSeriesPoint { date: string; sessionNumber: number | null; value: number; side?: string | null; item?: string | null; point: string }
+export interface PlanMeasureProgress {
+  planMeasureId: number; measureId: number; code: string; name: string; unit?: string | null; side?: string | null; item?: string | null;
+  higherIsBetter: boolean; perSide: boolean; series: MeasureSeriesPoint[]; baseline: number | null; latest: number | null; target: number | null;
+  absoluteChange: number | null; percentTowardTarget: number | null; status: 'improving' | 'no change' | 'worsening';
+}
+export interface PlanGoalProgress {
+  id: number; description: string; status: string; measureCode?: string | null; measureName?: string | null; baseline: number | null;
+  latest: number | null; target: number | null; targetDate?: string | null; percentTowardTarget: number | null;
+}
+export interface PlanProgress {
+  plan: TreatmentPlanSummary & { discharge_reason?: string | null }; goals: PlanGoalProgress[]; measures: PlanMeasureProgress[];
+  stalled?: boolean; sessionsDone: number; plannedSessions?: number | null; adherence: { attended: number; plannedToDate: number; ratio: number | null };
+}
+export interface ProgressReportRow { id: number; reportType: 'review' | 'discharge'; sessionNumber: number | null; createdAt: string; sharedAt?: string | null }
+export interface CaregiverLink { id: number; relation?: string | null; createdAt: string; activatedAt?: string | null; revokedAt?: string | null; phone?: string | null }
+
+
+// --- Payout batches as the backend returns them (P18) ---
+export interface PayoutBatchRow {
+  id: number; therapistId: number; therapistName: string; weekStart: string; weekEnd: string;
+  gross: number; platformFee: number; gstOnFee: number; tds: number; adjustments: number; net: number;
+  status: 'scheduled' | 'approved' | 'on_hold' | 'paid';
+  approvedBy?: number | null; approvedAt?: string | null; utr?: string | null; paidAt?: string | null; holdReason?: string | null; itemCount: number;
+}
+
+// --- P23: Admin reconciliation, forecast, and payment exceptions ---
+export interface ReconciliationMismatch {
+  type: 'amount_mismatch' | 'missing_in_curevan' | 'missing_in_razorpay';
+  paymentId?: string | null;
+  orderId?: string | null;
+  curevanId?: number | null;
+  curevanType?: 'order' | 'booking' | null;
+  reference: string;
+  curevanAmount: number;
+  razorpayAmount: number;
+  description: string;
+  link?: string | null;
+}
+
+export interface ReconciliationMatched {
+  paymentId: string;
+  orderId?: string | null;
+  curevanId: number;
+  type: 'order' | 'booking';
+  reference: string;
+  amount: number;
+  paidAt?: string | null;
+}
+
+export interface ReconciliationSummary {
+  curevanTotal: number;
+  curevanCount: number;
+  razorpayTotal: number;
+  razorpayCount: number;
+  matchedCount: number;
+  matchedTotal: number;
+  mismatchCount: number;
+  difference: number;
+}
+
+export interface ReconciliationData {
+  date: string;
+  summary: ReconciliationSummary;
+  mismatches: ReconciliationMismatch[];
+  matched: ReconciliationMatched[];
+}
+
+export interface InventoryForecastItem {
+  productId: number;
+  productName: string;
+  sku: string;
+  onHand: number;
+  reserved: number;
+  stock: number;
+  reorderPoint: number;
+  updatedAt?: string | null;
+  sold30d: number;
+  runRate: number;
+  daysCover: number;
+  isLowStock: boolean;
+}
+
+export interface PendingOrderException {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  customerPhone?: string | null;
+  total: number;
+  status: string;
+  paymentStatus: string;
+  createdAt: string;
+}
+
+export interface FailedWebhookException {
+  id: number;
+  eventId: string;
+  event: string;
+  payload?: any;
+  error: string;
+  receivedAt: string;
+  processedAt?: string | null;
+}
+
+export interface PaymentExceptionsData {
+  pendingOrders: PendingOrderException[];
+  failedWebhooks: FailedWebhookException[];
+}
+

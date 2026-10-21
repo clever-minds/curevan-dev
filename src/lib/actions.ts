@@ -16,7 +16,7 @@ import { addPayoutItem, getPayoutItemBySourceId } from '@/lib/repos/payouts';
 import { addAuditLog } from '@/lib/repos/logs';
 import { getTherapistProfileById } from './repos/therapistProfiles';
 import { getCurrentUser, getToken } from '@/lib/auth';
-import { updatePcr } from './repos/pcr';
+import { updatePcr, updatePcrDetailed } from './repos/pcr';
 
 /**
  * Upload a file via backend API (server handles Firebase Storage)
@@ -24,10 +24,12 @@ import { updatePcr } from './repos/pcr';
 export async function uploadFile(formData: FormData): Promise<{ fileUrl?: string; error?: string }> {
   const token = await getToken();
   try {
-    const { data } = await serverApi.post('/api/files/upload', formData, {
+    // files go to the media library; the backend answers { data: [{ file_path, ... }] }
+    const { data } = await serverApi.post('/api/media/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
     });
-    return data;
+    const first = Array.isArray(data?.data) ? data.data[0] : null;
+    return first ? { fileUrl: first.file_path } : { error: 'Failed to upload file.' };
   } catch (error: any) {
     console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return { error: 'Failed to upload file.' };
@@ -38,107 +40,34 @@ export async function uploadFile(formData: FormData): Promise<{ fileUrl?: string
  * Generate objective notes via AI backend endpoint
  */
 export async function handleGenerateNotes(formData: FormData): Promise<{ objectiveNotes?: string; error?: string }> {
-  const token = await getToken();
+  // only a logged-in user may use the AI; the flow runs here on the server
+  const user = await getCurrentUser();
+  if (!user) return { error: 'Please sign in to use this feature.' };
+
+  const patientDescription = String(formData.get('patientDescription') ?? formData.get('description') ?? '').trim();
+  if (patientDescription.length < 10) return { error: 'Please describe the problem in a little more detail.' };
+
   try {
-    const { data } = await serverApi.post('/api/ai/objective-notes', formData, {
-      headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
-    });
-    return data;
+    const { generateObjectiveNotes } = await import('@/ai/flows/generate-objective-notes');
+    const result = await generateObjectiveNotes({ patientDescription });
+    return { objectiveNotes: result.objectiveNotes };
   } catch (error: any) {
-    console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
+    console.error('Error generating objective notes:', error?.message);
     return { error: 'Failed to generate notes.' };
   }
 }
 
 /**
- * Create payout item for a booking
+ * Lock the PCR. The server then creates the payout line itself (tier fee, GST on the fee, TDS) when the payment, the
+ * start code and the lock are all in place, and says so in its reply.
  */
 export async function createPayoutItemForBooking(bookingId: number): Promise<{ success: boolean; message: string; payoutItemId?: string; }> {
-  console.log(`Triggered payout item creation for bookingId: ${bookingId}`);
-
-  // This should ideally be a transaction, but for simplicity we'll do it step-by-step.
-  // Idempotency Check
-  const existingItem = await getPayoutItemBySourceId(bookingId);
-  if (existingItem) {
-    console.log(`Payout item for booking ${bookingId} already exists. Skipping.`);
-    return { success: true, message: 'Payout item already exists.' };
+  const res = await updatePcrDetailed(bookingId, { status: 'locked', pcrStatus: 'locked' } as any);
+  if (!res.ok) return { success: false, message: res.error || 'The report could not be locked.' };
+  if (res.payout && res.payout.created === false) {
+    return { success: true, message: `Report locked. No payout line was made yet: ${res.payout.reason || 'a condition is missing'}.` };
   }
-
-  // 1. Fetch related documents
-  const appointment = await getAppointmentById(bookingId);
-  if (!appointment) {
-    throw new Error(`Appointment ${bookingId} not found.`);
-  }
-
-  const therapist = await getTherapistProfileById(appointment.therapistId);
-  if (!therapist) {
-    throw new Error(`Therapist ${appointment.therapistId} not found.`);
-  }
-
-  // 2. Validate conditions for payout
-  if (appointment.paymentStatus !== 'Paid') {
-    await updatePcr(bookingId, { status: 'in_progress' }); // Revert lock status
-    return { success: false, message: `Payment not confirmed for booking ${bookingId}. PCR has been unlocked.` };
-  }
-
-  // 3. Compute payout details (0% platform fee, 0% GST, 0% TDS - No deductions currently)
-  const grossAmount = appointment.serviceAmount || 0;
-  const membershipPlanSnapshot = therapist.membershipPlan || 'standard';
-  const platformFeePct = 0;
-  const platformFeeAmount = 0;
-  const gstOnPlatformFee = 0;
-  const preTdsPayable = grossAmount;
-  const tdsDeducted = 0;
-  const netAmount = grossAmount;
-
-  const bookingDate = new Date(appointment.date as any);
-  const weekStart = startOfWeek(bookingDate, { weekStartsOn: 1 }).toISOString();
-
-  // 4. Create the payoutItems document
-  const newPayoutItem: Omit<PayoutItem, 'id'> = {
-    type: 'service',
-    sourceId: bookingId,
-    therapistId: appointment.therapistId,
-    patientId: appointment.patientId,
-    serviceTypeId: appointment.serviceTypeId,
-    grossAmount,
-    platformFeePct,
-    platformFeeAmount,
-    gstOnPlatformFee,
-    preTdsPayable,
-    tdsDeducted,
-    netAmount,
-    currency: 'INR',
-    state: 'onHold', // Default state, to be picked up by weekly batch job
-    weekStart,
-    createdAt: new Date(),
-    membershipPlanSnapshot,
-  };
-
-  const createdItem = await addPayoutItem(newPayoutItem);
-
-  // 5. Create the audit log entry
-  const auditLog: AuditLog = {
-    actorId: 'system',
-    action: 'payout.item.created',
-    entityType: 'booking',
-    entityId: bookingId,
-    timestamp: new Date(),
-    details: {
-      payoutItemId: createdItem.id,
-      netAmount: netAmount,
-      therapistId: therapist.id,
-    }
-  };
-  await addAuditLog(auditLog);
-  
-  // 6. Finalize the PCR status to 'locked' atomically
-  await updatePcr(bookingId, { 
-    status: 'locked', 
-    pcrStatus: 'locked' 
-  });
-
-  return { success: true, message: 'Payout item created and PCR locked successfully.', payoutItemId: createdItem.id };
+  return { success: true, message: 'Report locked and the payout was scheduled.' };
 }
 
 /**
@@ -152,7 +81,7 @@ export async function generateMissingTherapistCodes(): Promise<Coupon[]> {
         Authorization: `Bearer ${token}`,
       },
     });
-    return data ?? [];
+    return data?.data ?? [];
   } catch (error: any) {
     console.error(`Error marking notification  as read via API:`, error?.response?.status, error?.response?.data, error?.message);
     return [];
@@ -365,7 +294,7 @@ export async function deleteJournal(
 }
 
 
-import { requestReturn, approveReturn, listReturns } from './repos/returns';
+import { requestReturn, approveReturn, listReturns, returnStep } from './repos/returns';
 import { listRefunds, getMyRefunds, initiateRefund } from './repos/refunds';
 
 /**
@@ -392,6 +321,17 @@ export async function approveReturnAction(returnId: string | number) {
   return res;
 }
 
+/** Reject, receive or inspect a return (Admin) */
+export async function returnStepAction(returnId: string | number, step: 'reject' | 'receive' | 'inspect', body: Record<string, unknown> = {}) {
+  const res = await returnStep(returnId, step, body);
+  if (res.success) {
+    revalidatePath('/dashboard/admin/returns');
+    revalidatePath('/dashboard/ecom-admin/returns');
+    revalidatePath('/dashboard/patient/orders');
+  }
+  return res;
+}
+
 /**
  * Initiate a refund (Admin)
  */
@@ -399,7 +339,7 @@ export async function initiateRefundAction(data: { orderId: string | number; amo
   const res = await initiateRefund(data);
   if (res.success) {
     revalidatePath('/dashboard/admin/orders');
-    revalidatePath('/dashboard/admin/refunds');
+    revalidatePath('/dashboard/admin/returns');
   }
   return res;
 }
@@ -431,7 +371,7 @@ export async function listReturnsAction(filters?: any) {
 export async function submitTherapistReviewAction(appointmentId: string | number, data: { rating: number, review: string }) {
   const token = await getToken();
   try {
-    const response = await serverApi.put(`/api/appointments/${appointmentId}/review`, data, {
+    const response = await serverApi.post(`/api/appointments/${appointmentId}/review`, data, {
       headers: {
         Authorization: `Bearer ${token}`
       }

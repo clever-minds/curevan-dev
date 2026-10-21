@@ -15,7 +15,7 @@ export default function LegacyTherapistProfileRedirect() {
   useEffect(() => {
     const redirect = async () => {
       // Find the therapist to get their name for the slug
-      const therapist = await getTherapistById(id);
+      const therapist = await getTherapistById(Number(id));
       if (therapist) {
           const slug = therapist.name.toLowerCase().replace(/ /g, '-');
           router.replace(`/therapists/${slug}`);

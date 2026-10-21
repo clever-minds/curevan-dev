@@ -92,7 +92,9 @@ export const therapistOnboardingSchema = z.object({
     message: "Mobile number should only contain numbers",
   }),
   qualification: z.string().min(1, 'Qualifications are required.'),
+  council: z.string().optional(),
   registrationNo: z.string().min(1, 'Registration number is required.'),
+  registrationValidUntil: z.string().optional(),
   specialty: z.array(z.string())
     .min(1, "Select at least one specialty"),
   kycIdProof: z.any().optional(),
@@ -102,7 +104,7 @@ export const therapistOnboardingSchema = z.object({
   // Availability & Pricing
   experience_years: z.coerce.number().min(0, 'Experience must be a positive number.'),
   hourlyRate: z.coerce.number().min(1, "Rate is required"),
-  membershipPlan: z.enum(['basic', 'standard', 'premium']),
+  membershipPlan: z.enum(['standard', 'premium']),
   availability: z.object({
     mon: availabilitySchema, tue: availabilitySchema, wed: availabilitySchema,
     thu: availabilitySchema, fri: availabilitySchema, sat: availabilitySchema,
@@ -148,7 +150,9 @@ const fieldPolicies = {
   email: { policy: "locked", label: "Email Address" },
   mobile: { policy: "locked", label: "Mobile Number" },
   qualification: { policy: "needsApproval", label: "Qualification(s)" },
+  council: { policy: "needsApproval", label: "Professional Council" },
   registrationNo: { policy: "needsApproval", label: "Registration Number" },
+  registrationValidUntil: { policy: "needsApproval", label: "Registration Valid Until" },
   kycIdProof: { policy: "needsApproval", label: "ID Proof" },
   kycLicense: { policy: "needsApproval", label: "License Document" },
   experience_years: { policy: "needsApproval", label: "Years of Experience" },
@@ -256,7 +260,9 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
       lat: 0,
       lng: 0,
       qualification: '',
+      council: '',
       registrationNo: '',
+      registrationValidUntil: '',
       kycIdProof: null,
       kycLicense: null,
       profileImageId: null,
@@ -652,7 +658,48 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                     )}
                   />
                 </FormFieldWrapper>
+                <FormFieldWrapper fieldName="council">
+                  <FormField
+                    name="council"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Professional Council</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select council (NCAHP, State allied council, RCI, Other)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="NCAHP/State allied council">NCAHP/State allied council</SelectItem>
+                            <SelectItem value="RCI">RCI (Rehabilitation Council of India)</SelectItem>
+                            <SelectItem value="Nursing council">Nursing council</SelectItem>
+                            <SelectItem value="Other">Other Allied Health Council</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FormFieldWrapper>
                 <FormFieldWrapper fieldName="registrationNo"><FormField name="registrationNo" control={form.control} render={({ field }) => (<FormItem><FormLabel>Registration Number</FormLabel><FormControl><Input placeholder="Your medical board registration #" {...field} /></FormControl><FormMessage /></FormItem>)} /></FormFieldWrapper>
+                <FormFieldWrapper fieldName="registrationValidUntil">
+                  <FormField
+                    name="registrationValidUntil"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Registration Valid Until</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormDescription>License validity / renewal date</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FormFieldWrapper>
                 <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6">
                   <FormFieldWrapper fieldName="kycIdProof">
                     <FormField
@@ -729,7 +776,7 @@ export function TherapistOnboardingForm({ isEditing = false }: { isEditing?: boo
                   <FormItem><FormControl>
                     <RadioGroup onValueChange={field.onChange} value={field.value} className="grid md:grid-cols-2 gap-4">
                       <FormItem><Label htmlFor="plan-standard" className="block w-full p-4 border rounded-lg cursor-pointer has-[:checked]:bg-primary/5 has-[:checked]:border-primary"><div className="flex items-center justify-between"><span className="font-bold">Standard</span><RadioGroupItem value="standard" id="plan-standard" /></div><p className="text-sm text-muted-foreground mt-1">0% platform fee. Basic profile and visibility.</p></Label></FormItem>
-                      <FormItem><Label htmlFor="plan-premium" className="block w-full p-4 border rounded-lg cursor-pointer has-[:checked]:bg-primary/5 has-[:checked]:border-primary"><div className="flex items-center justify-between"><span className="font-bold">Premium</span><RadioGroupItem value="premium" id="plan-premium" /></div><p className="text-sm text-muted-foreground mt-1">10% platform fee on services. Higher visibility, advanced tools, and dedicated support.</p></Label></FormItem>
+                      <FormItem><Label htmlFor="plan-premium" className="block w-full p-4 border rounded-lg cursor-pointer has-[:checked]:bg-primary/5 has-[:checked]:border-primary"><div className="flex items-center justify-between"><span className="font-bold">Premium</span><RadioGroupItem value="premium" id="plan-premium" /></div><p className="text-sm text-muted-foreground mt-1">10% platform fee on services (plus 18% GST on that fee). Higher visibility, advanced tools, and dedicated support. Premium is a request: our team approves it after you join.</p></Label></FormItem>
                     </RadioGroup>
                   </FormControl><FormMessage /></FormItem>
                 )} />

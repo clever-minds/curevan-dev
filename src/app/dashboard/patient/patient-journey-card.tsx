@@ -4,19 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { Appointment } from "@/lib/types";
 import { Clock, User, MapPin, CheckCircle, Navigation, PlayCircle, Map, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { isFinished, statusLabel } from "@/lib/appointment-status";
 
 export function PatientJourneyCard({ session }: { session: Appointment }) {
-  const currentStatus = session.status || 'Pending';
-  
-  const isPending = currentStatus === 'Pending' || currentStatus === 'Searching Therapist';
-  const isAssigned = currentStatus === 'Assigned' || currentStatus === 'Accepted' || currentStatus === 'Confirmed';
-  const isNavigating = currentStatus === 'Navigating' || currentStatus === 'On The Way';
-  const isArrived = currentStatus === 'Arrived';
-  const isInProgress = currentStatus === 'In Progress' || currentStatus === 'Session Started';
-  const isCompleted = currentStatus === 'Completed';
+  const currentStatus = session.status;
+
+  const isPending = currentStatus === 'pending_payment' || currentStatus === 'searching_therapist' || currentStatus === 'accepted_unpaid';
+  const isAssigned = currentStatus === 'confirmed';
+  const isNavigating = currentStatus === 'therapist_on_the_way';
+  const isArrived = currentStatus === 'arrived';
+  const isInProgress = currentStatus === 'in_progress' || currentStatus === 'pcr_pending';
+  const isCompleted = currentStatus === 'completed';
 
   // We don't render the card if it's completed or cancelled. We only show active journey.
-  if (isCompleted || currentStatus === 'Cancelled') return null;
+  if (isCompleted || isFinished(currentStatus)) return null;
 
   return (
     <Card className="border-purple-200 bg-purple-50/50 shadow-md">
@@ -27,7 +28,7 @@ export function PatientJourneyCard({ session }: { session: Appointment }) {
             Active Session Tracker
           </span>
           <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
-            {currentStatus}
+            {statusLabel(currentStatus)}
           </Badge>
         </CardTitle>
         <CardDescription>

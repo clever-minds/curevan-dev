@@ -32,7 +32,7 @@ export default function EcomFinancialsPage() {
         const fetchData = async () => {
             setLoading(true);
             const ordersData = await listOrders(filters);
-            setOrders(ordersData);
+            setOrders(ordersData ?? []);
             setLoading(false);
         }
         fetchData();
@@ -52,7 +52,7 @@ export default function EcomFinancialsPage() {
             "Delivered At"
         ];
         
-        const data = allOrders.map(order => [
+        const data = (allOrders ?? []).map(order => [
             order.id,
             order.userId,
             getSafeDate(order.createdAt)?.toISOString() || '',

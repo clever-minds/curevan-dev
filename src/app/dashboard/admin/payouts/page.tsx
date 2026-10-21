@@ -1,224 +1,153 @@
-
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FilterBar } from "@/components/admin/FilterBar";
-import { Price } from "@/components/money/price";
-import { useState, useEffect, useTransition } from "react";
-import type { PayoutBatch, Therapist } from "@/lib/types";
-import { listPayoutBatches } from "@/lib/repos/payouts";
-import { listTherapists } from "@/lib/repos/therapists";
-import { MoreHorizontal, FileDown, User, PauseCircle, PlayCircle, Banknote, AlertCircle, RefreshCw } from "lucide-react";
-import { getSafeDate, downloadCsv } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { updatePayoutBatchStatus } from "@/lib/actions/payouts";
+import { useCallback, useEffect, useState } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Price } from '@/components/money/price';
+import { Banknote, CheckCircle2, FileDown, MoreHorizontal, PauseCircle, PlayCircle, Receipt } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/auth-context';
+import { cn } from '@/lib/utils';
+import type { PayoutBatchRow } from '@/lib/types';
+import { downloadPayoutStatement, exportPayoutCsv, listPayoutBatches } from '@/lib/repos/payouts';
+import { approvePayoutBatch, holdPayoutBatch, markPayoutBatchPaid, releasePayoutBatch } from '@/lib/actions/payouts';
 
-const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-        case 'paid':
-            return 'bg-green-100 text-green-800';
-        case 'processing':
-            return 'bg-blue-100 text-blue-800';
-        case 'draft':
-            return 'bg-gray-200 text-gray-800';
-        case 'onHold':
-            return 'bg-yellow-100 text-yellow-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-}
+const STATUS_CLASS: Record<string, string> = {
+  scheduled: 'bg-blue-100 text-blue-800', approved: 'bg-indigo-100 text-indigo-800', paid: 'bg-green-100 text-green-800', on_hold: 'bg-yellow-100 text-yellow-800',
+};
+const STATUS_LABEL: Record<string, string> = { scheduled: 'Scheduled', approved: 'Approved', paid: 'Paid', on_hold: 'On hold' };
 
-const ActionsMenu = ({ payout, therapistName, onStatusChange }: { payout: PayoutBatch, therapistName: string, onStatusChange: () => void }) => {
-    const { toast } = useToast();
-    const [isPending, startTransition] = useTransition();
+const saveBlob = (blob: Blob, name: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+};
 
-    const handleStatusUpdate = (newStatus: 'onHold' | 'processing') => {
-        startTransition(async () => {
-            const result = await updatePayoutBatchStatus(payout.id, newStatus);
-            if (result.success) {
-                toast({ title: "Status Updated", description: `Payout batch ${payout.id} has been ${newStatus === 'onHold' ? 'put on hold' : 'released for processing'}.` });
-                onStatusChange(); // Trigger a refetch
-            } else {
-                toast({ variant: 'destructive', title: "Update Failed", description: result.error });
-            }
-        });
-    }
-    
-    // Determine button disabled states based on status
-    const canHold = payout.status === 'processing' || payout.status === 'draft';
-    const canRelease = payout.status === 'onHold';
-    const isActionable = canHold || canRelease;
-
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={isPending}><MoreHorizontal /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                    <Link href={`/therapists/${therapistName.toLowerCase().replace(/ /g, '-')}`}><User className="mr-2"/>View Therapist</Link>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem onClick={() => handleStatusUpdate('onHold')} disabled={!canHold || isPending}>
-                    <PauseCircle className="mr-2"/>Hold Payment
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => handleStatusUpdate('processing')} disabled={!canRelease || isPending}>
-                    <PlayCircle className="mr-2"/>Release Payment
-                </DropdownMenuItem>
-
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
-}
-
+/** Weekly payouts: the Sunday job makes the batches; the Super Admin approves and records the bank transfer (UTR). */
 export default function AdminPayoutsPage() {
-    const [payouts, setPayouts] = useState<PayoutBatch[]>([]);
-    const [therapists, setTherapists] = useState<Therapist[]>([]);
-    const [filters, setFilters] = useState({});
-    const [loading, setLoading] = useState(true);
-    const { toast } = useToast();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isSuper = (user?.roles ?? []).includes('admin.super');
+  const [rows, setRows] = useState<PayoutBatchRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [week, setWeek] = useState('');
+  const [hold, setHold] = useState<{ id: number; reason: string } | null>(null);
+  const [pay, setPay] = useState<{ id: number; utr: string } | null>(null);
 
-    const fetchPayouts = async () => {
-        setLoading(true);
-        const payoutData = await listPayoutBatches(filters);
-        setPayouts(payoutData);
-        setLoading(false);
-    };
+  const load = useCallback(async () => { setLoading(true); setRows(await listPayoutBatches()); setLoading(false); }, []);
+  useEffect(() => { load(); }, [load]);
 
-    useEffect(() => {
-        const fetchTherapists = async () => {
-            const therapistData = await listTherapists();
-            setTherapists(therapistData || []);
-        };
-        fetchTherapists();
-        fetchPayouts();
-    }, [filters]);
+  const run = async (label: string, fn: () => Promise<{ success: boolean; error?: string }>) => {
+    const res = await fn();
+    if (!res.success) { toast({ variant: 'destructive', title: 'Not done', description: res.error }); return false; }
+    toast({ title: label });
+    load();
+    return true;
+  };
 
-    const getTherapistName = (id: string | number) => {
-        return therapists.find(t => String(t.id) === String(id))?.name || String(id);
-    };
+  const exportCsv = async () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(week)) { toast({ variant: 'destructive', title: 'Choose the week', description: 'Pick the Monday of the week to export.' }); return; }
+    const blob = await exportPayoutCsv(week);
+    if (!blob) { toast({ variant: 'destructive', title: 'Export failed' }); return; }
+    saveBlob(blob, `curevan-payouts-${week}.csv`);
+  };
 
-    const handleExport = async () => {
-        toast({ title: "Exporting...", description: "Fetching all payout data..." });
-        const allPayouts = await listPayoutBatches(); // Fetch all for a full export
-        const data = allPayouts.map(payout => [
-            payout.id,
-            getSafeDate(payout.payoutDate)?.toLocaleDateString() || '',
-            `${getSafeDate(payout.weekStart)?.toLocaleDateString()} - ${getSafeDate(payout.weekEnd)?.toLocaleDateString()}`,
-            payout.therapistId,
-            getTherapistName(payout.therapistId),
-            payout.totals.gross,
-            payout.totals.commission,
-            payout.totals.penalties,
-            payout.totals.net,
-            payout.status,
-            payout.payoutRef || '',
-        ]);
-        const headers = [
-            "Batch ID", "Payout Date", "Period", "Therapist ID", "Therapist Name",
-            "Gross (Paise)", "Commission (Paise)", "Penalties (Paise)", "Net (Paise)", "Status", "Reference #"
-        ];
-        downloadCsv(headers, data, 'all-payouts-export.csv');
-        toast({ title: "Export Complete", description: `${allPayouts.length} payout batches exported.` });
-    };
+  const statement = async (id: number) => {
+    const blob = await downloadPayoutStatement(id);
+    if (blob) saveBlob(blob, `curevan-payout-statement-${id}.pdf`);
+  };
 
-    return (
-        <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight font-headline">Therapist Payouts</h1>
-                <p className="text-muted-foreground text-sm">Monitor and manage therapist payout batches.</p>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight font-headline">Therapist Payouts</h1>
+          <p className="text-muted-foreground text-sm">Batches are made every Sunday night. Approve, export the bank file, then record the UTR.</p>
+        </div>
+        <div className="flex items-end gap-2">
+          <label className="text-sm">Week (Monday)<Input type="date" value={week} onChange={(e) => setWeek(e.target.value)} /></label>
+          <Button onClick={exportCsv}><FileDown className="mr-2 h-4 w-4" />Export bank CSV</Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Payout batches</CardTitle><CardDescription>One batch per therapist per week.</CardDescription></CardHeader>
+        <CardContent className="p-0 sm:p-6">
+          {loading ? <Skeleton className="h-40 w-full" /> : rows.length === 0 ? (
+            <div className="py-16 flex flex-col items-center gap-3 text-center">
+              <Banknote className="h-10 w-10 text-muted-foreground opacity-60" />
+              <p className="text-muted-foreground">No batches yet. They appear after the Sunday run, once PCRs are locked.</p>
             </div>
-            <Button onClick={handleExport} className="w-full sm:w-auto"><FileDown className="mr-2 h-4 w-4"/>Export All</Button>
-        </div>
+          ) : (
+            <div className="rounded-md border-x sm:border overflow-x-auto">
+              <Table className="min-w-[900px] lg:min-w-full">
+                <TableHeader>
+                  <TableRow><TableHead>Week</TableHead><TableHead>Therapist</TableHead><TableHead>Gross</TableHead><TableHead>Fee + GST</TableHead><TableHead>TDS</TableHead><TableHead>Net</TableHead><TableHead>Status</TableHead><TableHead>Bank ref</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((b) => (
+                    <TableRow key={b.id}>
+                      <TableCell>{b.weekStart} to {b.weekEnd}</TableCell>
+                      <TableCell>{b.therapistName}<span className="block text-xs text-muted-foreground">{b.itemCount} line(s)</span></TableCell>
+                      <TableCell><Price amount={b.gross} showDecimals /></TableCell>
+                      <TableCell><Price amount={b.platformFee + b.gstOnFee} showDecimals /></TableCell>
+                      <TableCell><Price amount={b.tds} showDecimals /></TableCell>
+                      <TableCell className="font-semibold"><Price amount={b.net} showDecimals /></TableCell>
+                      <TableCell>
+                        <Badge className={cn(STATUS_CLASS[b.status], 'capitalize')}>{STATUS_LABEL[b.status] ?? b.status}</Badge>
+                        {b.status === 'on_hold' && b.holdReason && <span className="block text-xs text-muted-foreground">{b.holdReason}</span>}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{b.utr}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={`Actions for batch ${b.id}`}><MoreHorizontal /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {isSuper && b.status === 'scheduled' && <DropdownMenuItem onClick={() => run('Batch approved', () => approvePayoutBatch(b.id))}><CheckCircle2 className="mr-2 h-4 w-4" />Approve</DropdownMenuItem>}
+                            {isSuper && b.status === 'approved' && <DropdownMenuItem onClick={() => setPay({ id: b.id, utr: '' })}><Banknote className="mr-2 h-4 w-4" />Mark paid (UTR)</DropdownMenuItem>}
+                            {b.status !== 'paid' && b.status !== 'on_hold' && <DropdownMenuItem onClick={() => setHold({ id: b.id, reason: '' })}><PauseCircle className="mr-2 h-4 w-4" />Hold</DropdownMenuItem>}
+                            {b.status === 'on_hold' && <DropdownMenuItem onClick={() => run('Batch released', () => releasePayoutBatch(b.id))}><PlayCircle className="mr-2 h-4 w-4" />Release</DropdownMenuItem>}
+                            <DropdownMenuItem onClick={() => statement(b.id)}><Receipt className="mr-2 h-4 w-4" />Statement (PDF)</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <FilterBar 
-            showDatePicker 
-            showTherapyFilters 
-            showAppointmentFilters // This now includes the therapist dropdown and status
-            onFilterChange={setFilters} 
-        />
-        
-        <Card>
-            <CardHeader>
-                <CardTitle>Payout Batches</CardTitle>
-                <CardDescription>Weekly payout batches sent to therapists.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 sm:p-6">
-                {payouts.length > 0 || loading ? (
-                    <div className="rounded-md border-x sm:border overflow-x-auto">
-                    <Table className="min-w-[800px] lg:min-w-full">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Payout Date</TableHead>
-                                <TableHead>Period</TableHead>
-                                <TableHead>Therapist</TableHead>
-                                <TableHead>Gross</TableHead>
-                                <TableHead>Net</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Reference #</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {loading ? (
-                            <TableRow><TableCell colSpan={8}><Skeleton className="h-24 w-full" /></TableCell></TableRow>
-                        ) : payouts.map((payout) => (
-                            <TableRow key={payout.id}>
-                                <TableCell>{getSafeDate(payout.payoutDate)?.toLocaleDateString()}</TableCell>
-                                <TableCell>{`${getSafeDate(payout.weekStart)?.toLocaleDateString()} - ${getSafeDate(payout.weekEnd)?.toLocaleDateString()}`}</TableCell>
-                                <TableCell>{getTherapistName(payout.therapistId)}</TableCell>
-                                <TableCell><Price amount={payout.totals.gross / 100} showDecimals /></TableCell>
-                                <TableCell className="font-semibold"><Price amount={payout.totals.net / 100} showDecimals /></TableCell>
-                                <TableCell><Badge className={cn(getStatusBadgeClass(payout.status), "capitalize")}>{payout.status}</Badge></TableCell>
-                                <TableCell className="font-mono text-xs">{payout.payoutRef}</TableCell>
-                                <TableCell className="text-right">
-                                    <ActionsMenu payout={payout} therapistName={getTherapistName(payout.therapistId)} onStatusChange={fetchPayouts} />
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                    </div>
-                ) : (
-                    <div className="py-24 flex flex-col items-center justify-center space-y-4 w-full text-center animate-in fade-in zoom-in duration-500">
-                        <div className="bg-muted p-6 rounded-full ring-8 ring-muted/20">
-                            <Banknote className="h-12 w-12 text-muted-foreground opacity-50" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-bold font-headline tracking-tight">No Payouts Found</h3>
-                            <p className="text-muted-foreground max-w-xs mx-auto text-sm leading-relaxed">
-                                There are no payout batches matching your current filter criteria.
-                            </p>
-                        </div>
-                        <Button variant="outline" className="mt-4 shadow-sm hover:shadow-md transition-all rounded-full px-6" onClick={() => { setFilters({}); fetchPayouts(); }}>
-                            <RefreshCw className="mr-2 h-4 w-4" /> Reset Filters
-                        </Button>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-        </div>
-    );
+      <Dialog open={!!hold} onOpenChange={(o) => !o && setHold(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Hold this payout</DialogTitle><DialogDescription>The therapist is not paid until it is released. The reason is kept.</DialogDescription></DialogHeader>
+          <Textarea value={hold?.reason ?? ''} onChange={(e) => hold && setHold({ ...hold, reason: e.target.value })} placeholder="Reason" maxLength={300} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHold(null)}>Cancel</Button>
+            <Button disabled={(hold?.reason.trim().length ?? 0) < 3} onClick={async () => { if (hold && (await run('Batch put on hold', () => holdPayoutBatch(hold.id, hold.reason.trim())))) setHold(null); }}>Hold</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!pay} onOpenChange={(o) => !o && setPay(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Record the bank transfer</DialogTitle><DialogDescription>Enter the UTR the bank gave you. The therapist is told their payout was sent.</DialogDescription></DialogHeader>
+          <Input value={pay?.utr ?? ''} onChange={(e) => pay && setPay({ ...pay, utr: e.target.value.trim() })} placeholder="UTR reference" maxLength={30} aria-label="UTR reference" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPay(null)}>Cancel</Button>
+            <Button disabled={!/^[A-Za-z0-9]{6,30}$/.test(pay?.utr ?? '')} onClick={async () => { if (pay && (await run('Marked paid', () => markPayoutBatchPaid(pay.id, pay.utr)))) setPay(null); }}>Mark paid</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

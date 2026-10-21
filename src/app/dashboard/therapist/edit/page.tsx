@@ -25,6 +25,9 @@ export default function TherapistEditProfile() {
     bio: '',
     qualification: '',
     experienceYears: 0,
+    council: '',
+    registrationNo: '',
+    registrationValidUntil: '',
     documents: [] as string[]
   });
 
@@ -39,8 +42,11 @@ export default function TherapistEditProfile() {
           setFullProfile(profile);
           setFormData({
             bio: profile.bio || '',
-            qualification: profile.qualifications || '',
+            qualification: profile.qualifications || (profile as any).qualification || '',
             experienceYears: profile.experience_years || 0,
+            council: (profile as any).council || '',
+            registrationNo: (profile as any).registrationNo || (profile as any).registration_no || '',
+            registrationValidUntil: (profile as any).registration_valid_until ? new Date((profile as any).registration_valid_until).toISOString().slice(0, 10) : '',
             documents: profile.documents || []
           });
         }
@@ -94,10 +100,12 @@ export default function TherapistEditProfile() {
         experienceYears: Number(formData.experienceYears),
         experience: Number(formData.experienceYears),
         
+        council: formData.council,
+        registrationValidUntil: formData.registrationValidUntil,
+        registrationNo: formData.registrationNo || fullProfile?.registration_no,
         hourlyRate: fullProfile?.hourly_rate,
         membershipPlan: fullProfile?.membership_plan,
         panNumber: fullProfile?.pan_number,
-        registrationNo: fullProfile?.registration_no,
         bankAccountNumber: fullProfile?.bank_account_number,
         bankIfscCode: fullProfile?.bank_ifsc_code,
         serviceRadiusKm: fullProfile?.service_radius_km,
@@ -125,16 +133,46 @@ export default function TherapistEditProfile() {
     <div className="space-y-6 max-w-4xl mx-auto py-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Edit Profile & Documents</h1>
-        <p className="text-muted-foreground">Manage your experience details and uploaded certificates.</p>
+        <p className="text-muted-foreground">Manage your credentials, experience details, and uploaded certificates.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle>Experience Details</CardTitle>
-            <CardDescription>Tell patients about your background.</CardDescription>
+            <CardTitle>Professional Credentials</CardTitle>
+            <CardDescription>Tell patients and councils about your qualifications.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="council">Professional Council</Label>
+              <Input 
+                id="council" 
+                name="council" 
+                value={formData.council} 
+                onChange={handleChange} 
+                placeholder="e.g. NCAHP, State Allied Council, RCI" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="registrationNo">Registration Number</Label>
+              <Input 
+                id="registrationNo" 
+                name="registrationNo" 
+                value={formData.registrationNo} 
+                onChange={handleChange} 
+                placeholder="e.g. GSCPT/12345" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="registrationValidUntil">Registration Valid Until</Label>
+              <Input 
+                id="registrationValidUntil" 
+                name="registrationValidUntil" 
+                type="date"
+                value={formData.registrationValidUntil} 
+                onChange={handleChange} 
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
               <Textarea 
@@ -143,7 +181,7 @@ export default function TherapistEditProfile() {
                 value={formData.bio} 
                 onChange={handleChange} 
                 placeholder="Write a short bio..."
-                className="min-h-[120px]"
+                className="min-h-[100px]"
               />
             </div>
             <div className="space-y-2">

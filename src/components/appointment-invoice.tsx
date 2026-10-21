@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { InvoiceData } from "@/services/invoice-service";
 import Logo from "./logo";
 import { Price } from "./money/price";
+import { BankDetails, GstinWarning, SupplierDetails } from "./invoice-supplier";
 import React from 'react';
 import { BundleComponentsList } from "./ecommerce/bundle-components-list";
 
@@ -94,6 +95,7 @@ export function AppointmentInvoice({ invoice }: { invoice: InvoiceData }) {
     return (
         <Card className="max-w-[210mm] mx-auto my-8 p-0 border shadow-lg print:shadow-none print:border-none print:m-0 bg-white text-[11px] font-sans text-black leading-tight border-none">
             {/* Main Wrapper with Border */}
+            <GstinWarning supplier={invoice.supplier} />
             <div className="border border-gray-400 m-4 print:m-0">
                 {/* Header: Logo | Company Details | TAX INVOICE */}
                 <div className="grid grid-cols-[1fr_2fr_1.2fr] border-b border-gray-400">
@@ -103,14 +105,7 @@ export function AppointmentInvoice({ invoice }: { invoice: InvoiceData }) {
                     </div>
                     <div className="p-4 text-center border-r border-gray-400">
                         <h1 className="text-base font-black uppercase mb-1">{invoice.supplier.legalName}</h1>
-                        <div className="space-y-0.5 text-[10px]">
-                            <p className="font-semibold">CIN #{invoice.supplier.gstin.substring(0, 5)}... {invoice.supplier.address.pin}</p>
-                            <p>{invoice.supplier.address.line1}</p>
-                            <p>{invoice.supplier.address.city}, {invoice.supplier.address.state}, India - {invoice.supplier.address.pin}</p>
-                            <p>GSTIN {invoice.supplier.gstin}</p>
-                            <p>{invoice.supplier.email}</p>
-                            <p>+91 {invoice.supplier.phone}</p>
-                        </div>
+                        <SupplierDetails supplier={invoice.supplier} />
                     </div>
                     <div className="p-4 flex flex-col justify-center items-end bg-gray-50/20">
                         <h2 className="text-3xl font-black uppercase text-gray-900 tracking-tighter">Tax Invoice</h2>
@@ -311,10 +306,8 @@ export function AppointmentInvoice({ invoice }: { invoice: InvoiceData }) {
                                 <p className="font-bold uppercase text-[9px] text-gray-500 border-b pb-1 mb-2 tracking-widest">Payment Details</p>
                                 <div className="text-[10px] space-y-1 leading-tight">
                                     <p className="font-black uppercase leading-none mb-1 text-black">{invoice.supplier.legalName}</p>
-                                    <p><span className="font-bold">PAN -</span> {invoice.supplier.gstin.substring(2, 12)}</p>
-                                    <p><span className="font-bold text-gray-900 underline decoration-primary underline-offset-1">HDFC BANK LTD</span>, BARODA</p>
-                                    <p><span className="font-bold">A/c No -</span> 5020006094XXXX</p>
-                                    <p><span className="font-bold">IFSC -</span> HDFC0000033</p>
+                                    {invoice.supplier.pan && <p><span className="font-bold">PAN -</span> {invoice.supplier.pan}</p>}
+                                    <BankDetails supplier={invoice.supplier} />
                                 </div>
                             </div>
                             <div className="flex flex-col items-center justify-center border border-gray-200 rounded p-2 bg-gray-50/50 shadow-sm">

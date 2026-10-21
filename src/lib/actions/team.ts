@@ -76,7 +76,7 @@ export async function updateUserRoles(
     const validated = updateRolesSchema.parse({ uid, roles });
 
     const { data: response } = await serverApi.post(
-      "/api/admin/update-roles",
+      "/api/users/update-roles",
       {
         uid: validated.uid,
         roles: validated.roles,

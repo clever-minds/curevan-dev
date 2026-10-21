@@ -16,30 +16,37 @@ import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { FileDown, Upload } from "lucide-react";
-import type { Product, Inventory } from '@/lib/types';
+import type { Product, Inventory, InventoryForecastItem } from '@/lib/types';
+import { getInventoryForecast } from "@/lib/repos/admin";
 import { listProducts } from "@/lib/repos/products";
 import { downloadCsv } from "@/lib/utils";
 
 export default function EcomAdminInventoryPage() {
     const [filters, setFilters] = useState({});
     const [products, setProducts] = useState<Product[]>([]);
+    const [stock, setStock] = useState<InventoryForecastItem[]>([]);
     
     useEffect(() => {
         const fetchData = async () => {
             const productData = await listProducts();
             setProducts(productData);
+            setStock(await getInventoryForecast());
         };
         fetchData();
     }, []);
 
-    const inventory = useMemo(() => products.map(p => ({
-        ...p,
-        sku: p.sku || `${p.id}-M`, // mock sku
-        onHand: p.stock,
-        reserved: Math.floor(Math.random() * 10),
-        reorderPoint: p.reorderPoint,
-        updatedAt: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 5).toISOString(),
-    })), [products]);
+    // on hand, reserved, reorder point and last change come from the inventory table (forecast endpoint), not from guesses
+    const inventory = useMemo(() => products.map(p => {
+        const s = stock.find(x => x.productId === Number(p.id));
+        return {
+            ...p,
+            sku: p.sku || s?.sku || String(p.id),
+            onHand: s ? s.onHand : p.stock,
+            reserved: s ? s.reserved : 0,
+            reorderPoint: s ? s.reorderPoint : p.reorderPoint,
+            updatedAt: s?.updatedAt ?? null,
+        };
+    }), [products, stock]);
     
     const handleExport = () => {
         const headers = [
@@ -56,7 +63,7 @@ export default function EcomAdminInventoryPage() {
             item.reserved,
             item.onHand - item.reserved,
             item.reorderPoint,
-            new Date(item.updatedAt).toISOString(),
+            item.updatedAt ? new Date(item.updatedAt).toISOString() : "",
             item.price,
             item.mrp,
             item.brand || '',
@@ -123,7 +130,7 @@ export default function EcomAdminInventoryPage() {
                                          {isLowStock ? <Badge variant="destructive">{available}</Badge> : available}
                                     </TableCell>
                                     <TableCell className="text-center">{item.reorderPoint}</TableCell>
-                                    <TableCell>{new Date(item.updatedAt).toLocaleDateString()}</TableCell>
+                                    <TableCell>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "-"}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="outline" size="sm">Adjust Stock</Button>
                                     </TableCell>

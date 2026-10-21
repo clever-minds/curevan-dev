@@ -1,9 +1,11 @@
 import serverApi from "@/lib/repos/axios.server";
+import { getToken } from "@/lib/auth";
 
 export interface LogConsentPayload {
-  userId: number;
-  consentType: 'terms' | 'privacy' | 'medical' | 'marketing';
+  userId?: number;
+  consentType: 'terms' | 'privacy' | 'medical' | 'marketing' | 'cookies';
   version: string;
+  granted?: boolean;
 }
 
 /**
@@ -18,6 +20,7 @@ export async function logConsent(payload: LogConsentPayload): Promise<{ success:
         userId: payload.userId,
         consentType: payload.consentType,
         version: payload.version,
+        granted: payload.granted ?? true,
       },
       {
         headers: {
