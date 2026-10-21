@@ -3,7 +3,7 @@
 ## Every pull request (CI: `.github/workflows/ci.yml`, no Firebase / App Hosting step)
 
 ```bash
-npm ci --legacy-peer-deps
+npm ci
 npm run typecheck      # go-live item 7 (build): types
 npm run lint
 npx vitest run         # unit tests: helpers, AI safety/tools, call window, server actions
