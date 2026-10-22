@@ -101,7 +101,7 @@ export function AppointmentInvoice({ invoice }: { invoice: InvoiceData }) {
                 <div className="grid grid-cols-[1fr_2fr_1.2fr] border-b border-gray-400">
                     <div className="p-4 flex flex-col items-center justify-center border-r border-gray-400">
                         <Logo className="h-14 w-auto" />
-                        <p className="text-[8px] font-bold text-primary mt-1 uppercase tracking-tighter">We make workplace safer</p>
+                        <p className="text-[8px] font-bold text-primary mt-1 uppercase tracking-tighter">Cure. Anywhere.</p>
                     </div>
                     <div className="p-4 text-center border-r border-gray-400">
                         <h1 className="text-base font-black uppercase mb-1">{invoice.supplier.legalName}</h1>
@@ -325,7 +325,7 @@ export function AppointmentInvoice({ invoice }: { invoice: InvoiceData }) {
                             <ul className="text-[8px] text-gray-600 list-disc pl-4 italic space-y-1 font-medium leading-snug">
                                 <li>Tax rates are indicative and subject to change per governement regulations.</li>
                                 <li>All disputes are subject to <span className="font-black uppercase text-black">{invoice.supplier.address.city}</span> jurisdiction.</li>
-                                <li>Goods once sold will not be taken back or exchanged.</li>
+                                <li>Cancellations and refunds follow the Refund, Cancellation &amp; Return Policy on curevan.com.</li>
                             </ul>
                         </div>
                     </div>
