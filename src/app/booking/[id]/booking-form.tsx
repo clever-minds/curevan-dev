@@ -53,7 +53,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import useRazorpay from "@/hooks/use-razorpay";
 import { isSameDay, addDays, startOfDay, format } from "date-fns";
 import { Price } from "@/components/money/price";
-import { getTherapistSlots } from "@/lib/repos/appointments";
+import { getAppointmentById, getFollowUpOptions, getTherapistSlots, type FollowUpOptions } from "@/lib/repos/appointments";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
 import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
 import { getMyCarePacks, type CarePack } from "@/lib/repos/carePacks";
@@ -724,6 +724,12 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   // Care Pack state (P28)
   const [myPacks, setMyPacks] = useState<CarePack[]>([]);
   const [usePack, setUsePack] = useState(false);
+  // "Book follow-up" from a completed visit: /booking/<therapist>?followUp=<visit id>
+  const followUpOf = Number(searchParams.get("followUp")) || undefined;
+  const [followUpFrom, setFollowUpFrom] = useState<{ date?: string; therapyType?: string } | null>(null);
+  const [followUpOptions, setFollowUpOptions] = useState<FollowUpOptions | null>(null);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
+  const followUpBlocked = !!followUpOf && (!!followUpError || (!!followUpOptions && ['none', 'proposed', 'booked'].includes(followUpOptions.mode)));
   const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -844,6 +850,25 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       addressId: "",
     },
   });
+
+  useEffect(() => {
+    if (!followUpOf) return;
+    getAppointmentById(followUpOf).then((a) => {
+      if (!a) return;
+      setFollowUpFrom({ date: a.date as any, therapyType: a.therapyType });
+      if (a.therapyType) form.setValue("serviceType", a.therapyType);   // same service as the last visit
+    });
+  }, [followUpOf, form]);
+
+  // only the date(s) the doctor gave in the report can be chosen for a follow-up
+  useEffect(() => {
+    if (!followUpOf) return;
+    getFollowUpOptions(followUpOf).then((r) => {
+      if (!r.ok) { setFollowUpError(r.error); return; }
+      setFollowUpOptions(r.options);
+      if (r.options.mode === "dates" && r.options.dates?.length === 1) form.setValue("scheduledDate", new Date(`${r.options.dates[0]}T00:00:00`), { shouldValidate: true });
+    });
+  }, [followUpOf, form]);
 
   useEffect(() => {
     if (initialServiceType) {
@@ -1056,6 +1081,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               data.sessionMode === "home" ? Number(data.addressId) : undefined,
             status: "pending_payment", // server decides the real status (pack P07: Pending until paid)
             verificationStatus: "Not Verified",
+            followUpOf,
             payWith: usePack ? "pack" : undefined,
             carePackId: usePack && selectedPackId ? selectedPackId : undefined,
           } as any,
@@ -1168,6 +1194,20 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       {/* ── Main Form ── */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {followUpOf && (
+            <div role="status" className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+              <p className="font-medium">Follow-up visit</p>
+              <p className="text-muted-foreground">
+                {followUpFrom?.date ? `Continuing from your session on ${format(new Date(followUpFrom.date), "dd MMM yyyy")}. ` : ""}
+                Your last report is shared with your therapist so they can continue from it.
+              </p>
+              {followUpOptions?.mode === "dates" && followUpOptions.dates && (
+                <p className="mt-1 font-medium">Your therapist asked for this visit on {followUpOptions.dates.map((d) => format(new Date(`${d}T00:00:00`), "EEE dd MMM yyyy")).join(", ")}.</p>
+              )}
+              {followUpOptions?.note && <p className="mt-1 text-muted-foreground">{followUpOptions.note}</p>}
+              {(followUpError || (followUpBlocked && followUpOptions?.message)) && <p role="alert" className="mt-1 font-medium text-destructive">{followUpError || followUpOptions?.message}</p>}
+            </div>
+          )}
           {/* Service Type */}
           <FormField
             control={form.control}
@@ -1348,7 +1388,8 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                       disabled={(date) =>
                         date < startOfDay(new Date()) ||
                         date > addDays(new Date(), advanceDays) ||
-                        !worksOnDay(date)
+                        !worksOnDay(date) ||
+                        (followUpOptions?.mode === "dates" && !followUpOptions.dates?.includes(format(date, "yyyy-MM-dd")))
                       }
                       initialFocus
                       className="rounded-md border p-0"
@@ -1612,7 +1653,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             <Button
               size="lg"
               type="submit"
-              disabled={!isLoaded || isPending}
+              disabled={!isLoaded || isPending || followUpBlocked}
               className="w-full text-white hover:opacity-90 transition-opacity border-0"
               style={{
                 background:

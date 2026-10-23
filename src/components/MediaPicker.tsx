@@ -58,8 +58,9 @@ export default function MediaPicker({
   };
 
   useEffect(() => {
+    if (disabled) return;   // read-only (a patient, or a locked report): the library is not needed, and the list is closed to patients
     fetchMedia();
-  }, []);
+  }, [disabled]);
 
   return (
     <div className="space-y-3">

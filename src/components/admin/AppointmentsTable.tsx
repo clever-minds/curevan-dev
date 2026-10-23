@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlayCircle, FileText, Phone, MapPin, Video, User, Star, Ban, MessageSquareWarning } from 'lucide-react';
+import { CalendarPlus, MoreHorizontal, PlayCircle, FileText, Phone, MapPin, Video, User, Star, Ban, MessageSquareWarning } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
 import type { Appointment } from '@/lib/types';
@@ -190,6 +190,9 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
         <DropdownMenuSeparator />
         {isPatient && appointment.status === 'completed' && (
           <ReviewDialog appointmentId={appointment.id} />
+        )}
+        {isPatient && appointment.status === 'completed' && appointment.therapistId && (
+          <DropdownMenuItem asChild><Link href={`/booking/${appointment.therapistId}?followUp=${appointment.id}`} className="w-full flex items-center"><CalendarPlus className="mr-2" />Book follow-up</Link></DropdownMenuItem>
         )}
         {isTherapist && appointment.status === 'searching_therapist' && (
             <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>

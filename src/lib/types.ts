@@ -166,6 +166,7 @@ export interface Appointment {
   therapistPhone?: string;
   serviceTypeId: string;
   therapyType: string;
+  followUpOf?: number | null;   // the earlier visit this one follows
   serviceAmount?: number;
   totalAmount?: number;
   clinicId?: string;
