@@ -180,8 +180,8 @@ export function ReconciliationCard() {
           </div>
         </div>
 
-        {/* Status Callout Banner */}
-        {!loading && (
+        {/* Status Callout Banner: never a green "zero mismatches" when the report did not load */}
+        {!loading && !error && data && (
           <div>
             {mismatches.length === 0 ? (
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-3">

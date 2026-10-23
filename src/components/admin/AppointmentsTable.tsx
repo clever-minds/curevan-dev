@@ -182,7 +182,7 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
 
   const content = (
     <>
-        <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=BK-${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link href={`/pcr/${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2" />View PCR</Link></DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link href={`/dashboard/admin/users?search=${appointment.patientId}`} className="w-full flex items-center"><User className="mr-2"/>View Patient</Link></DropdownMenuItem>
@@ -246,7 +246,7 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
           </SheetHeader>
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/pcr/${appointment.id}`}><FileText className="mr-2" /> Open PCR</Link></Button>
-             <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
+             <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=BK-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
              {isTherapist && appointment.status === 'searching_therapist' && (
                  <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
              )}

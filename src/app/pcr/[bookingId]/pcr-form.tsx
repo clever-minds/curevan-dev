@@ -454,7 +454,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
             </div>
             {isFinal && (
               <Button variant="secondary" asChild>
-                <Link href={`/dashboard/invoices?id=INV-${bookingId}`}><FileText className="mr-2" />View Service Invoice</Link>
+                <Link href={`/dashboard/invoices?id=BK-${bookingId}`}><FileText className="mr-2" />View Service Invoice</Link>
               </Button>
             )}
           </div>
