@@ -53,7 +53,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import useRazorpay from "@/hooks/use-razorpay";
 import { isSameDay, addDays, startOfDay, format } from "date-fns";
 import { Price } from "@/components/money/price";
-import { getTherapistSlots } from "@/lib/repos/appointments";
+import { getAppointmentById, getTherapistSlots } from "@/lib/repos/appointments";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
 import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
 import { getMyCarePacks, type CarePack } from "@/lib/repos/carePacks";
@@ -724,6 +724,9 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   // Care Pack state (P28)
   const [myPacks, setMyPacks] = useState<CarePack[]>([]);
   const [usePack, setUsePack] = useState(false);
+  // "Book follow-up" from a completed visit: /booking/<therapist>?followUp=<visit id>
+  const followUpOf = Number(searchParams.get("followUp")) || undefined;
+  const [followUpFrom, setFollowUpFrom] = useState<{ date?: string; therapyType?: string } | null>(null);
   const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -844,6 +847,15 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       addressId: "",
     },
   });
+
+  useEffect(() => {
+    if (!followUpOf) return;
+    getAppointmentById(followUpOf).then((a) => {
+      if (!a) return;
+      setFollowUpFrom({ date: a.date as any, therapyType: a.therapyType });
+      if (a.therapyType) form.setValue("serviceType", a.therapyType);   // same service as the last visit
+    });
+  }, [followUpOf, form]);
 
   useEffect(() => {
     if (initialServiceType) {
@@ -1056,6 +1068,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               data.sessionMode === "home" ? Number(data.addressId) : undefined,
             status: "pending_payment", // server decides the real status (pack P07: Pending until paid)
             verificationStatus: "Not Verified",
+            followUpOf,
             payWith: usePack ? "pack" : undefined,
             carePackId: usePack && selectedPackId ? selectedPackId : undefined,
           } as any,
@@ -1168,6 +1181,15 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       {/* ── Main Form ── */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {followUpOf && (
+            <div role="status" className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+              <p className="font-medium">Follow-up visit</p>
+              <p className="text-muted-foreground">
+                {followUpFrom?.date ? `Continuing from your session on ${format(new Date(followUpFrom.date), "dd MMM yyyy")}. ` : ""}
+                Your last report is shared with your therapist so they can continue from it.
+              </p>
+            </div>
+          )}
           {/* Service Type */}
           <FormField
             control={form.control}

@@ -34,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { PCR, DueMeasure } from '@/lib/types';
 import { OutcomeMeasureInput, outcomeKey, type OutcomeEntry } from '@/components/clinical/OutcomeMeasureInput';
 import { TreatmentPlanForm } from '@/components/clinical/TreatmentPlanForm';
+import { LastVisitCard } from '@/components/clinical/LastVisitCard';
 import { NextSessionPlanner, nextPlanProblem, type NextSessionPlan } from '@/components/clinical/NextSessionPlanner';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
@@ -78,6 +79,7 @@ const pcrFormSchema = z.object({
   functionalMeasure: z.string().nullable().optional(),
   hep: z.string().nullable().optional(),
   baseline: z.any().optional(),
+  lastVisit: z.any().optional(),   // read-only: the report of the visit this one follows
   historyLocked: z.boolean().optional(),
 }).refine(data => {
   if (data.status === 'locked') {
@@ -118,7 +120,7 @@ function dbToForm(pcrData: any): Partial<PcrFormValues> {
  * converts attachment array → array of ids only.
  */
 function formToDb(data: PcrFormValues) {
-  const { vitalSigns, attachment, ...rest } = data;
+  const { vitalSigns, attachment, lastVisit: _lastVisit, ...rest } = data as any;
 
   // Send only the id of the first attachment (upload_attachment_id is a single value)
   const uploadAttachmentId: number | null = Array.isArray(attachment) && attachment.length > 0
@@ -460,6 +462,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
 
         <div className="grid lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-3 space-y-8">
+            {form.watch('lastVisit') && <LastVisitCard visit={form.watch('lastVisit') as any} />}
             {/* Patient Demographics */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium font-headline">Patient Demographics</h3>
