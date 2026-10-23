@@ -260,6 +260,19 @@ export async function cancelWithPolicy(appointmentId: number, body: { reason?: s
 }
 
 /** Bookable times for one therapist on one date (YYYY-MM-DD). The server decides; the form shows only these. */
+export type FollowUpOptions = { mode: 'dates' | 'any' | 'none' | 'proposed' | 'booked'; dates?: string[]; message?: string; note?: string };
+
+/** May the patient book a follow-up of this completed visit, and on which dates (the dates the doctor gave in the report)? */
+export async function getFollowUpOptions(visitId: number): Promise<{ ok: true; options: FollowUpOptions } | { ok: false; error: string }> {
+  try {
+    const token = await getToken();
+    const { data: response } = await serverApi.get<any>(`/api/appointments/${visitId}/follow-up-options`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    return { ok: true, options: response.data };
+  } catch (err: any) {
+    return { ok: false, error: err?.response?.data?.error || 'Could not check the follow-up options.' };
+  }
+}
+
 export async function getTherapistSlots(therapistId: number | string, date: string): Promise<{ slots: string[]; minLeadHours: number; maxAdvanceDays: number; error?: string }> {
   const fallback = { slots: [] as string[], minLeadHours: 4, maxAdvanceDays: 30 };
   try {
