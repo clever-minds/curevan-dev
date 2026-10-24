@@ -18,10 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!p) return { title: 'Product not found', robots: { index: false } };
   // sheet template: "[Product name] – Buy Online" and "[First 120 characters of description] Price ₹[price]. Order online from Curevan."
   const intro = plain(p.description || p.longDescription || '').slice(0, 120);
+  // the /ecommerce layout above sets a plain title, which switches the root " | Curevan" template off for pages under it: add the brand here
   return seoMetadata(productPath(p), {
-    title: `${p.name} – Buy Online`,
+    title: `${p.name} – Buy Online | Curevan`,
     description: `${intro}${intro ? ' ' : ''}Price ₹${p.price}. Order online from Curevan.`,
-  });
+  }, { absoluteTitle: true });
 }
 
 export default async function ProductLayout({ params, children }: Props & { children: ReactNode }) {

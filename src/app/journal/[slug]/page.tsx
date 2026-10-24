@@ -44,13 +44,15 @@ export async function generateMetadata(
         return {
             title: 'Article Not Found',
             description: 'The article you are looking for does not exist.',
+            alternates: { canonical: `/journal/${slug}` },
+            robots: { index: false },
         }
     }
 
     const imageUrl = getMediaUrl(post.featuredImage as string);
 
     return {
-        title: post.title,   // the root template adds " | Curevan"
+        title: { absolute: `${post.title} | Curevan` },   // the /journal layout's plain title switches the root template off for article pages
         description: String(post.excerpt || '').slice(0, 155),
         alternates: { canonical: `/journal/${post.slug}` },
         keywords: post.tags,

@@ -24,13 +24,16 @@ export async function generateMetadata(
     return {
       title: 'Therapist Not Found',
       description: 'The therapist you are looking for is not on our platform.',
+      robots: { index: false },
     }
   }
 
   // sheet template: "[Name] – [Specialty] in [City]" and "Book [Name], a verified [Specialty] specialist with [X]+ years' experience, for home visits in [City]. [Short bio]."
-  const specialty = (Array.isArray(therapist.serviceTypes) && therapist.serviceTypes[0]) || (typeof therapist.specialty === 'string' ? therapist.specialty : 'Therapist');
+  const named = (v: unknown) => (typeof v === 'string' && v && !/^\d+$/.test(v) ? v : '');   // an unmatched category id is not a name
+  const specialty = named(Array.isArray(therapist.serviceTypes) && therapist.serviceTypes[0]) || named(therapist.specialty) || 'Therapist';
   const where = therapist.city || 'your city';
-  const intro = `Book ${therapist.name}, a verified ${specialty} specialist with ${therapist.experience_years}+ years' experience, for home visits in ${where}.`;
+  const years = Number(therapist.experience_years) > 0 ? ` with ${therapist.experience_years}+ years' experience` : '';
+  const intro = `Book ${therapist.name}, a verified ${specialty} specialist${years}, for home visits in ${where}.`;
   return {
     title: `${therapist.name} – ${specialty} in ${where}`,
     description: `${intro} ${therapist.bio || ''}`.trim().slice(0, 160),
