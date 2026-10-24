@@ -34,9 +34,12 @@ export async function generateMetadata(
   const where = therapist.city || 'your city';
   const years = Number(therapist.experience_years) > 0 ? ` with ${therapist.experience_years}+ years' experience` : '';
   const intro = `Book ${therapist.name}, a verified ${specialty} specialist${years}, for home visits in ${where}.`;
+  // 60 characters with " | Curevan": a long name drops the city; a bio's line breaks and Markdown symbols stay out of the tag
+  const full = `${therapist.name} – ${specialty} in ${where}`;
+  const title = full.length + 10 <= 60 ? full : `${therapist.name} – ${specialty}`;
   return {
-    title: `${therapist.name} – ${specialty} in ${where}`,
-    description: `${intro} ${therapist.bio || ''}`.trim().slice(0, 160),
+    title,
+    description: `${intro} ${therapist.bio || ''}`.replace(/[#*_`>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
     alternates: { canonical: `/therapists/${slug}` },
     openGraph: {
       title: `${therapist.name} | Curevan Therapist Profile`,

@@ -32,7 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // a category the SEO sheet does not list yet
   return seoMetadata(path, {
     title: `${bySlug.name} at Home`,
-    description: bySlug.description || `Book a verified ${bySlug.name.toLowerCase()} professional at home with Curevan.`,
+    // a short admin note ("Pain, mobility & recovery") is not a description
+    description: bySlug.description && bySlug.description.length >= 70 ? bySlug.description : `Book a verified ${bySlug.name.toLowerCase()} professional at home with Curevan. Compare experience and reviews, then choose a time that suits you.`,
   });
 }
 
