@@ -142,6 +142,7 @@ function formToDb(data: PcrFormValues) {
 export function PcrForm({ bookingId }: { bookingId: number }) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
@@ -218,6 +219,9 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
         // ✅ FIX: map flat DB fields into nested form shape before reset
         form.reset(dbToForm(pcrData) as any);
         applyMeta(pcrData);
+        setLoadError(false);
+      } else {
+        setLoadError(true);   // never leave a blank, editable form that looks like a new report
       }
       setTherapyCategories(cats);
       setIsLoading(false);
@@ -364,7 +368,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
   const isPatient = user?.role === 'patient';
   const canUnlock = user?.roles?.includes('admin.therapy') || user?.roles?.includes('admin.super');
   const canFinalize = user?.roles?.includes('admin.therapy') || user?.roles?.includes('admin.super');
-  const isReadOnly = isFinal || isPatient;
+  const isReadOnly = isFinal || isPatient || loadError;
 
   if (isLoading) {
     return (
@@ -393,6 +397,15 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
               <AlertTitle>This PCR is Locked</AlertTitle>
               <AlertDescription>
                 This report has been finalized and cannot be edited. To make changes, an admin must unlock it.
+              </AlertDescription>
+            </Alert>
+          )}
+          {loadError && !isLoading && (
+            <Alert variant="destructive" className="mb-4" role="alert">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>This report could not be loaded</AlertTitle>
+              <AlertDescription>
+                Nothing has been changed and nothing can be saved from this page right now. Please reload; if it keeps happening, contact support.
               </AlertDescription>
             </Alert>
           )}
@@ -454,7 +467,7 @@ export function PcrForm({ bookingId }: { bookingId: number }) {
             </div>
             {isFinal && (
               <Button variant="secondary" asChild>
-                <Link href={`/dashboard/invoices?id=INV-${bookingId}`}><FileText className="mr-2" />View Service Invoice</Link>
+                <Link href={`/dashboard/invoices?id=BK-${bookingId}`}><FileText className="mr-2" />View Service Invoice</Link>
               </Button>
             )}
           </div>

@@ -63,7 +63,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
   const isAdmin = scope === 'admin' || scope === 'ecom-admin';
   const isPatient = scope === 'patient';
   const hasInvoice = order.paymentStatus === 'Paid' || hasPaidInvoice(order.status);
-  const invoiceLink = `/dashboard/invoices?id=${order.invoiceId || order.id}`;
+  const invoiceLink = `/dashboard/invoices?id=${order.invoiceId ? order.invoiceId : `ORD-${order.id}`}`;
   const [isCreatingShipment, setIsCreatingShipment] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isReturning, setIsReturning] = React.useState(false);

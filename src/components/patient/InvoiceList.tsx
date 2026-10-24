@@ -25,11 +25,11 @@ export function InvoiceList() {
       const [appts, orders] = await Promise.all([listAppointmentsForUser(user.id, 'patient'), listOrders({ userId: Number(user.uid) })]);
       const sessions: Row[] = (appts ?? []).filter((a: any) => a.paymentStatus === 'Paid').map((a: any) => ({
         key: `a${a.id}`, kind: 'Session', label: `${a.therapyType || 'Session'} with ${a.therapist || a.therapistName || 'your therapist'}`,
-        date: getSafeDate(a.date), amount: Number(a.totalAmount || 0), href: `/dashboard/invoices?id=INV-${a.id}`,
+        date: getSafeDate(a.date), amount: Number(a.totalAmount || 0), href: `/dashboard/invoices?id=BK-${a.id}`,
       }));
       const shop: Row[] = (orders ?? []).filter((o: any) => o.paymentStatus === 'Paid').map((o: any) => ({
         key: `o${o.id}`, kind: 'Shop order', label: `Order ${o.number}`,
-        date: getSafeDate(o.createdAt), amount: Number(o.total || 0), href: `/dashboard/invoices?id=${o.invoiceId || o.id}`,
+        date: getSafeDate(o.createdAt), amount: Number(o.total || 0), href: `/dashboard/invoices?id=${o.invoiceId ? o.invoiceId : `ORD-${o.id}`}`,
       }));
       setRows([...sessions, ...shop].sort((x, y) => (y.date?.getTime() ?? 0) - (x.date?.getTime() ?? 0)));
     })();
