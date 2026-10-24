@@ -1,5 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { LEGAL_SEO, seoMetadata } from '@/lib/seo';
+
+export const metadata = seoMetadata('/legal/terms-of-use', LEGAL_SEO['terms-of-use']);
+
 
 export default function TermsOfUsePage() {
   return (

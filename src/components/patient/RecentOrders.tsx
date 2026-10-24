@@ -14,7 +14,7 @@ export function RecentOrders({ orders }: { orders: PatientDashboard['orders'] })
     <Card data-testid="recent-orders">
       <CardHeader><CardTitle className="text-base">Recent orders</CardTitle></CardHeader>
       <CardContent className="space-y-2">
-        {orders.length === 0 && <p className="text-sm text-muted-foreground">You have not ordered anything yet. <Link href="/shop" className="text-primary underline">Visit the shop</Link></p>}
+        {orders.length === 0 && <p className="text-sm text-muted-foreground">You have not ordered anything yet. <Link href="/ecommerce" className="text-primary underline">Visit the shop</Link></p>}
         {orders.map((o) => (
           <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
             <span className="font-mono text-xs">{o.number}</span>

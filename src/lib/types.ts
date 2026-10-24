@@ -222,6 +222,7 @@ export interface BundleItem {
 
 export interface Product {
   id: number;
+  slug?: string;
   name: string;
   description: string;
   longDescription?: string;

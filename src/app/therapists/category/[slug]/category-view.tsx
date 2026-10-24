@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
-import { useParams } from 'next/navigation';
 import TherapistCard from '@/components/therapist-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterBar } from '@/components/admin/FilterBar';
@@ -30,10 +29,8 @@ const SPECIALTIES = [
 
 const PAGE_SIZE = 12;
 
-export default function TherapistCategoryPage() {
-  const params = useParams<{ service: string | string[] }>();
-  const rawService = Array.isArray(params?.service) ? params.service.join('/') : params?.service || '';
-  const serviceName = decodeURIComponent(rawService);
+/** `serviceName` is the category's display name; the page address carries only its slug. */
+export default function TherapistCategoryPage({ serviceName }: { serviceName: string }) {
   const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
@@ -338,7 +335,7 @@ export default function TherapistCategoryPage() {
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white capitalize leading-[1.1] drop-shadow-lg">
-              Expert <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">{serviceName}s</span> <br className="hidden md:block"/> at Your Doorstep
+              Expert <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">{serviceName}</span> <br className="hidden md:block"/> at Your Doorstep
             </h1>
             
             <p className="mt-8 text-lg md:text-2xl text-slate-300 flex items-center justify-center gap-3 font-medium max-w-2xl">
@@ -346,8 +343,8 @@ export default function TherapistCategoryPage() {
                 <MapPin className="w-5 h-5 text-cyan-400" />
               </span>
               {userPosition && consentChecked 
-                ? `Showing the best ${serviceName.toLowerCase()}s near you` 
-                : `Allow location to find elite ${serviceName.toLowerCase()}s nearby`}
+                ? `Showing the best ${serviceName.toLowerCase()} professionals near you` 
+                : `Allow location to find elite ${serviceName.toLowerCase()} professionals nearby`}
             </p>
           </div>
         </div>
@@ -430,7 +427,7 @@ export default function TherapistCategoryPage() {
                           <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-6">
                             <SearchX className="w-10 h-10 text-primary/40" />
                           </div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-3">No {serviceName}s Found</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-3">No {serviceName} Professionals Found</h3>
                           <p className="text-gray-500 max-w-sm mb-8 text-lg">We couldn't find any professionals matching your criteria in this area. Try adjusting your filters.</p>
                           <Button 
                             onClick={() => setFilters({

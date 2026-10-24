@@ -61,7 +61,7 @@ import ProductCard from '@/components/product-card';
 import ProductReviews from '@/components/product-reviews';
 
 export default function ProductDetailsPage() {
-  const { id } = useParams();
+  const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -89,20 +89,19 @@ export default function ProductDetailsPage() {
 
   const isTherapist = user?.role === 'therapist';
   const cartItem = cart.find(item => 
-    Number(item.productId) === Number(id) && 
+    product && Number(item.productId) === Number(product.id) && 
     (selectedVariant ? item.variantId === selectedVariant.id : true)
   );
   const quantityInCart = cartItem?.quantity || 0;
 
   useEffect(() => {
     async function getProductData() {
-      if (!id) return;
+      if (!slug) return;
       setLoading(true);
       try {
-        const [productData, reviewsData] = await Promise.all([
-          fetchProductById(id as string),
-          fetchProductReviews(id as string)
-        ]);
+        // the address carries the slug; the reviews are looked up by the product's id
+        const productData = await fetchProductById(slug);
+        const reviewsData = productData ? await fetchProductReviews(productData.id) : [];
 
         if (productData) {
           setProduct(productData);
@@ -130,7 +129,7 @@ export default function ProductDetailsPage() {
       }
     }
     getProductData();
-  }, [id, router, toast]);
+  }, [slug, router, toast]);
 
   const isVideo = (url: string) => {
     if (!url) return false;

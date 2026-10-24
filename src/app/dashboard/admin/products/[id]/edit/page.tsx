@@ -46,6 +46,7 @@ export default function EditProductPage() {
             productId={product.id}
             initialData={{
               title: product.title,
+              slug: product.slug,
               productType: (() => {
                 const pt = product.product_type || product.productType;
                 if (!pt) return undefined;

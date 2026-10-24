@@ -33,7 +33,7 @@ export default function SignupPage() {
                     </p>
                     <p className="mt-2 text-center text-sm text-muted-foreground">
                         Are you a therapist?{' '}
-                        <Link href="/auth/therapist-signup" className="font-semibold text-primary hover:underline">
+                        <Link href="/join-as-therapist" className="font-semibold text-primary hover:underline">
                             Register Here
                         </Link>
                     </p>

@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/api/auth';
-import { therapistOnboardingSchema } from '@/app/auth/therapist-signup/therapist-onboarding-form';
+import { therapistOnboardingSchema } from '@/app/join-as-therapist/therapist-onboarding-form';
 import { getToken } from '../auth';
 
 type OnboardingData = z.infer<typeof therapistOnboardingSchema>;

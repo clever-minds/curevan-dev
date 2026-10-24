@@ -40,14 +40,14 @@ import { Badge } from './ui/badge';
 const guestNav = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/therapists', label: 'Therapists', icon: Users },
-  { href: '/shop', label: 'Shop', icon: ShoppingBag },
+  { href: '/ecommerce', label: 'Shop', icon: ShoppingBag },
   { href: '/journal', label: 'Journal', icon: FileText },
   { href: '/auth/signin', label: 'Sign In', icon: User },
 ];
 
 const patientNav = [
   { href: '/dashboard/patient/my-dashboard', label: 'Home', icon: Home },
-  { href: '/book', label: 'Book', icon: MapPinned },
+  { href: '/discover', label: 'Book', icon: MapPinned },
   { href: '/dashboard/patient/bookings', label: 'Bookings', icon: CalendarDays },
   { href: '/dashboard/patient/progress', label: 'Progress', icon: HeartPulse },
   { href: '/dashboard/patient/orders', label: 'Orders', icon: Package },

@@ -18,7 +18,7 @@ export function useAffiliateRules() {
   return rules;
 }
 
-export const shopLink = (code: string) => `${window.location.origin}/shop?coupon=${encodeURIComponent(code)}`;
+export const shopLink = (code: string) => `${window.location.origin}/ecommerce?coupon=${encodeURIComponent(code)}`;
 
 /** The therapist's DR code with Copy link and Share on WhatsApp. */
 export function ReferralCard({ title = 'Grow Your Earnings' }: { title?: string }) {

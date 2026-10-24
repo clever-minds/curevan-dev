@@ -5,7 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TherapistOnboardingForm } from "@/app/auth/therapist-signup/therapist-onboarding-form";
+import { TherapistOnboardingForm } from "@/app/join-as-therapist/therapist-onboarding-form";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
 import { FileDown, Edit, TrendingUp, CalendarDays, Wallet, Star, FileText, Receipt, PackageOpen } from "lucide-react";

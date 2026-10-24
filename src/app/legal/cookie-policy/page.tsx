@@ -1,5 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LEGAL_SEO, seoMetadata } from '@/lib/seo';
+
+export const metadata = seoMetadata('/legal/cookie-policy', LEGAL_SEO['cookie-policy']);
+
 
 export default function CookiePolicyPage() {
   return (

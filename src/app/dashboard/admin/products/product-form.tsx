@@ -45,6 +45,7 @@ const productFormSchema = z.object({
   // Core Info
   productType: z.enum(['Physical', 'Digital', 'Service', 'Bundle'], { required_error: "Product type is required." }),
   title: z.string().min(3, 'Product title must be at least 3 characters.'),
+  slug: z.string().optional(),
   subtitle: z.string().nullable().optional(),
   shortDescription: z.string().min(10, 'Short description must be at least 10 characters.'),
   longDescription: z.string().nullable().optional(),
@@ -252,6 +253,7 @@ export function ProductForm({
       sacCode: initialData.sacCode || '',
       hsnCode: initialData.hsnCode || '',
       subtitle: initialData.subtitle || '',
+      slug: (initialData as any).slug || '',
       longDescription: initialData.longDescription || '',
       brand: initialData.brand || '',
       manufacturer: initialData.manufacturer || '',
@@ -423,6 +425,7 @@ export function ProductForm({
         const payload = {
             productType: data.productType,
             title: data.title,
+            slug: data.slug?.trim() || undefined,
             subtitle: data.subtitle ?? undefined,
             tags: data.tags ?? undefined,
             shortDescription: data.shortDescription,
@@ -517,6 +520,7 @@ export function ProductForm({
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                 <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="slug" render={({ field }) => (<FormItem><FormLabel>Page link (slug)</FormLabel><FormControl><Input placeholder="auto from the title" {...field} value={field.value ?? ''} /></FormControl><p className="text-xs text-muted-foreground">Used in the page link (letters, numbers, hyphens). Leave blank to make it from the name.</p><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>

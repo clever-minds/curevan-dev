@@ -27,7 +27,7 @@ interface Message {
 }
 
 const getContextualWelcomeMessage = (pathname: string, name: string): string => {
-    if (pathname.startsWith('/ecommerce') || pathname.startsWith('/shop')) return "Need help choosing the right product?";
+    if (pathname.startsWith('/ecommerce')) return "Need help choosing the right product?";
     if (pathname.startsWith('/booking')) return "May I help you with your booking?";
     if (pathname.startsWith('/shop/checkout')) return "Need any help to complete your purchase?";
     if (pathname.startsWith('/dashboard/bookings')) return "Want an update on your booking?";

@@ -27,9 +27,14 @@ export async function generateMetadata(
     }
   }
 
+  // sheet template: "[Name] – [Specialty] in [City]" and "Book [Name], a verified [Specialty] specialist with [X]+ years' experience, for home visits in [City]. [Short bio]."
+  const specialty = (Array.isArray(therapist.serviceTypes) && therapist.serviceTypes[0]) || (typeof therapist.specialty === 'string' ? therapist.specialty : 'Therapist');
+  const where = therapist.city || 'your city';
+  const intro = `Book ${therapist.name}, a verified ${specialty} specialist with ${therapist.experience_years}+ years' experience, for home visits in ${where}.`;
   return {
-    title: `${therapist.name} | ${therapist.specialty} in ${therapist.city}`,
-    description: `Book an appointment with ${therapist.name}, a certified ${therapist.specialty} with ${therapist.experience_years} years of experience. ${therapist.bio.substring(0, 120)}...`,
+    title: `${therapist.name} – ${specialty} in ${where}`,
+    description: `${intro} ${therapist.bio || ''}`.trim().slice(0, 160),
+    alternates: { canonical: `/therapists/${slug}` },
     openGraph: {
       title: `${therapist.name} | Curevan Therapist Profile`,
       description: therapist.bio.substring(0, 160),

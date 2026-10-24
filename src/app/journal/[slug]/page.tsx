@@ -50,8 +50,9 @@ export async function generateMetadata(
     const imageUrl = getMediaUrl(post.featuredImage as string);
 
     return {
-        title: `${post.title} | Curevan Journal`,
-        description: post.excerpt,
+        title: post.title,   // the root template adds " | Curevan"
+        description: String(post.excerpt || '').slice(0, 155),
+        alternates: { canonical: `/journal/${post.slug}` },
         keywords: post.tags,
         openGraph: {
             title: post.title,

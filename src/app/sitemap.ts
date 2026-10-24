@@ -2,7 +2,8 @@
 import { MetadataRoute } from 'next';
 import { listPublicJournalEntries } from '@/lib/repos/content';
 import { listTherapists } from '@/lib/repos/therapists';
-import { getTherapyCategories } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
+import { categorySlug, productPath } from '@/lib/slug';
 import { fetchPublicProducts } from '@/lib/repos/products';
 
 export const revalidate = 3600; // Revalidate every hour
@@ -20,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/book`,
+      url: `${baseUrl}/discover`,
       lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9,
@@ -32,10 +33,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/shop`,
+      url: `${baseUrl}/ecommerce`,
       lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/join-as-therapist`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/journal`,
@@ -109,17 +116,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 2. Dynamic routes for therapy categories/services
   let categoryRoutes: MetadataRoute.Sitemap = [];
   try {
-    const therapyCategories = await getTherapyCategories();
-    const uniqueCategories = Array.from(
-      new Set(
-        (therapyCategories || [])
-          .map((cat: any) => (typeof cat === 'string' ? cat : (cat?.name || '')).trim())
-          .filter(Boolean)
-      )
-    );
+    const therapyCategories = await getTherapyCategoriesWithIds();
+    const uniqueSlugs = Array.from(new Set((therapyCategories || []).filter((cat) => cat?.name?.trim()).map(categorySlug)));
 
-    categoryRoutes = uniqueCategories.map((categoryName) => ({
-      url: `${baseUrl}/therapists/category/${encodeURIComponent(categoryName)}`,
+    categoryRoutes = uniqueSlugs.map((slug) => ({
+      url: `${baseUrl}/therapists/category/${slug}`,
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
@@ -174,7 +175,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     productRoutes = (products || [])
       .filter((product) => product && product.id)
       .map((product) => ({
-        url: `${baseUrl}/ecommerce/product/${product.id}`,
+        url: `${baseUrl}${productPath(product)}`,
         lastModified: now,
         changeFrequency: 'weekly' as const,
         priority: 0.7,
