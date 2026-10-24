@@ -1,6 +1,7 @@
 
 'use client';
 
+import { productPath } from '@/lib/slug';
 import {
   Table,
   TableBody,
@@ -257,7 +258,7 @@ export default function AdminProductsPage() {
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild className="cursor-pointer">
-                                  <Link href={`/ecommerce/product/${product.id}`}>
+                                  <Link href={productPath(product)}>
                                     View on Store
                                   </Link>
                                 </DropdownMenuItem>

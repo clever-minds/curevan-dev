@@ -199,7 +199,7 @@ console.log("CartSheet render - cart items:", cart);
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center">
                         <p className="text-muted-foreground">Your cart is empty.</p>
-                        <Button variant="link" asChild><Link href="/shop">Start Shopping</Link></Button>
+                        <Button variant="link" asChild><Link href="/ecommerce">Start Shopping</Link></Button>
                     </div>
                 )}
             </SheetContent>

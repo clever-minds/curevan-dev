@@ -81,14 +81,20 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // one address per page (Curevan_SEO_Page_Titles.xlsx): the duplicates point to the real pages, the query string (?coupon=, ?ref=) is kept
       {
-        source: '/discover',
-        destination: '/book',
+        source: '/book',
+        destination: '/discover',
         permanent: true,
       },
       {
-        source: '/ecommerce',
-        destination: '/shop',
+        source: '/shop',
+        destination: '/ecommerce',
+        permanent: true,
+      },
+      {
+        source: '/auth/therapist-signup',
+        destination: '/join-as-therapist',
         permanent: true,
       },
       {

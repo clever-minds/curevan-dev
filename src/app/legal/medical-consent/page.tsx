@@ -1,4 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LEGAL_SEO, seoMetadata } from '@/lib/seo';
+
+export const metadata = seoMetadata('/legal/medical-consent', LEGAL_SEO['medical-consent']);
+
 
 export default function MedicalConsentPage() {
   return (

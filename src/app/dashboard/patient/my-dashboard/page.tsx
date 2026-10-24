@@ -80,7 +80,7 @@ export default function PatientHomePage() {
           ) : data.recovery?.followUpOverdue ? (
             <Card className="border-amber-300" data-testid="book-next">
               <CardHeader><CardTitle className="text-base">Book your next session</CardTitle><CardDescription>It has been a while since your last session. Keep your recovery on track.</CardDescription></CardHeader>
-              <CardContent><Button asChild><Link href={data.lastTherapist ? `/booking/${data.lastTherapist.therapistId}` : '/book'}>Book now</Link></Button></CardContent>
+              <CardContent><Button asChild><Link href={data.lastTherapist ? `/booking/${data.lastTherapist.therapistId}` : '/discover'}>Book now</Link></Button></CardContent>
             </Card>
           ) : null}
 
@@ -91,7 +91,7 @@ export default function PatientHomePage() {
           {data.isNew && (
             <Card data-testid="first-session">
               <CardHeader><CardTitle>Book your first session</CardTitle><CardDescription>Qualified therapists come to your home. Choose a service and a time that suits you.</CardDescription></CardHeader>
-              <CardContent className="flex flex-wrap gap-2"><Button asChild><Link href="/book">Book a session</Link></Button><Button asChild variant="outline"><Link href="/therapists">Find a therapist</Link></Button></CardContent>
+              <CardContent className="flex flex-wrap gap-2"><Button asChild><Link href="/discover">Book a session</Link></Button><Button asChild variant="outline"><Link href="/therapists">Find a therapist</Link></Button></CardContent>
             </Card>
           )}
 

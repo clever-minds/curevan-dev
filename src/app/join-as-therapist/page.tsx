@@ -1,7 +1,10 @@
 
+import { PAGE_SEO, seoMetadata } from "@/lib/seo";
 import { TherapistOnboardingForm } from "./therapist-onboarding-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+
+export const metadata = seoMetadata("/join-as-therapist", PAGE_SEO.joinAsTherapist);
 
 export default function TherapistSignupPage() {
   return (

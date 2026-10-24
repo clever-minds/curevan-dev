@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export const PENDING_COUPON_KEY = 'curevan.pendingCoupon';
 
-/** /shop?coupon=CODE: keep the code until checkout applies it. */
+/** /ecommerce?coupon=CODE: keep the code until checkout applies it. */
 export function CouponParamCapture() {
   useEffect(() => {
     try {

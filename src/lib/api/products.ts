@@ -25,6 +25,7 @@ export async function createProducts(payload: {
   productType: string;
   title: string;
   subtitle?: string;
+  slug?: string;
   tags?: string[];
   shortDescription: string;
   longDescription?: string;
@@ -108,6 +109,7 @@ export async function updateProduct(
    productType: string;
   title: string;
   subtitle?: string;
+  slug?: string;
   tags?: string[];
   shortDescription: string;
   longDescription?: string;

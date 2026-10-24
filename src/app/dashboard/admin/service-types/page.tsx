@@ -16,6 +16,7 @@ import { imageUrl } from '@/lib/image';
 interface ServiceType {
   id: number;
   name: string;
+  slug?: string;
   is_active: boolean;
   icon_path?: string;
   fa_icon?: string;
@@ -29,6 +30,8 @@ export default function AdminServiceTypesPage() {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newTypeName, setNewTypeName] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [editSlug, setEditSlug] = useState("");
   const [newFaIcon, setNewFaIcon] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newTax, setNewTax] = useState<"exempt_clinical" | "taxable_18">("exempt_clinical");
@@ -71,6 +74,7 @@ export default function AdminServiceTypesPage() {
       setIsAdding(true);
       const payload = {
         name: newTypeName.trim(),
+        slug: newSlug.trim() || undefined,
         fa_icon: newFaIcon.trim(),
         description: newDescription.trim(),
         tax_category: newTax
@@ -80,6 +84,7 @@ export default function AdminServiceTypesPage() {
       if (data?.success) {
         toast({ title: "Success", description: "Service type added successfully" });
         setNewTypeName("");
+        setNewSlug("");
         setNewFaIcon("");
         setNewDescription("");
         fetchServiceTypes();
@@ -112,6 +117,7 @@ export default function AdminServiceTypesPage() {
   const openEditModal = (st: ServiceType) => {
     setEditingType(st);
     setEditName(st.name);
+    setEditSlug(st.slug || "");
     setEditFaIcon(st.fa_icon || "");
     setEditDescription(st.description || "");
     setEditIsActive(st.is_active);
@@ -124,6 +130,7 @@ export default function AdminServiceTypesPage() {
       setIsUpdating(true);
       const payload = {
         name: editName.trim(),
+        slug: editSlug.trim() || undefined,
         fa_icon: editFaIcon.trim(),
         description: editDescription.trim(),
         is_active: editIsActive,
@@ -168,6 +175,10 @@ export default function AdminServiceTypesPage() {
                     onChange={(e) => setNewTypeName(e.target.value)} 
                     onKeyDown={(e) => e.key === 'Enter' && handleAddServiceType()}
                   />
+              </div>
+              <div className="w-full sm:max-w-xs space-y-2">
+                  <Label>Link name (slug)</Label>
+                  <Input placeholder="auto from the name" value={newSlug} onChange={(e) => setNewSlug(e.target.value)} />
               </div>
               <div className="w-full sm:max-w-xs space-y-2">
                   <Label>FA Icon Class</Label>
@@ -284,6 +295,11 @@ export default function AdminServiceTypesPage() {
                 onChange={(e) => setEditName(e.target.value)} 
                 placeholder="Service type name"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Link name (slug)</Label>
+              <Input value={editSlug} onChange={(e) => setEditSlug(e.target.value)} placeholder="post-surgery-rehab" />
+              <p className="text-xs text-muted-foreground">Used in the page link (letters, numbers, hyphens). Leave blank to make it from the name. Changing it changes the page link.</p>
             </div>
             <div className="space-y-2">
               <Label>FA Icon Class</Label>

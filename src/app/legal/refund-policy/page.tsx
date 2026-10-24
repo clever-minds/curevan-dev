@@ -1,4 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LEGAL_SEO, seoMetadata } from '@/lib/seo';
+
+export const metadata = seoMetadata('/legal/refund-policy', LEGAL_SEO['refund-policy']);
+
 
 // The numbers below come from the server (businessRules.cancellation via /api/config/public), so the page
 // can never disagree with what the app really charges. The fallback only covers the API being unreachable.

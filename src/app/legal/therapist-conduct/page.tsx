@@ -1,4 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LEGAL_SEO, seoMetadata } from '@/lib/seo';
+
+export const metadata = seoMetadata('/legal/therapist-conduct', LEGAL_SEO['therapist-conduct']);
+
 
 export default function TherapistConductPage() {
   return (

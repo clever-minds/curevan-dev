@@ -20,7 +20,7 @@ export function QuickActions({ lastTherapist }: { lastTherapist: { therapistId: 
           <Button asChild variant="outline" className="h-auto justify-start whitespace-normal py-3 text-left"><Link href={`/booking/${lastTherapist.therapistId}`}><CalendarPlus className="mr-2 h-4 w-4 shrink-0" />Book again with {lastTherapist.name}</Link></Button>
         )}
         <Button asChild variant="outline" className="h-auto justify-start whitespace-normal py-3 text-left"><Link href="/discover"><UserSearch className="mr-2 h-4 w-4 shrink-0" />Request a therapist</Link></Button>
-        <Button asChild variant="outline" className="h-auto justify-start whitespace-normal py-3 text-left"><Link href="/shop"><ShoppingBag className="mr-2 h-4 w-4 shrink-0" />Shop</Link></Button>
+        <Button asChild variant="outline" className="h-auto justify-start whitespace-normal py-3 text-left"><Link href="/ecommerce"><ShoppingBag className="mr-2 h-4 w-4 shrink-0" />Shop</Link></Button>
         <Button asChild variant="outline" className="h-auto justify-start whitespace-normal py-3 text-left"><Link href="/dashboard/patient/support"><LifeBuoy className="mr-2 h-4 w-4 shrink-0" />Raise a ticket</Link></Button>
         {features.maskedCall && <Button variant="outline" disabled className="h-auto justify-start py-3"><Phone className="mr-2 h-4 w-4" />Call your therapist</Button>}
         {features.carePacks && <Button variant="outline" disabled className="h-auto justify-start py-3"><Package className="mr-2 h-4 w-4" />Care packs</Button>}
