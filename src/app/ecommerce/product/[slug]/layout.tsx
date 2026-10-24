@@ -21,7 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // the /ecommerce layout above sets a plain title, which switches the root " | Curevan" template off for pages under it: add the brand here
   return seoMetadata(productPath(p), {
     title: `${p.name} – Buy Online | Curevan`,
-    description: `${intro}${intro ? ' ' : ''}Price ₹${p.price}. Order online from Curevan.`,
+    // no price sentence while the product has no price yet ("Price ₹0" would show in Google)
+    description: `${intro}${intro ? ' ' : ''}${p.price > 0 ? `Price ₹${p.price}. ` : ''}Order online from Curevan.`,
   }, { absoluteTitle: true });
 }
 
