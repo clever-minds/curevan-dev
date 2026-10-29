@@ -20,7 +20,6 @@ import { Mail, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { createUserWithEmailAndPassword } from '@/lib/api/auth';;
 import { useRouter } from 'next/navigation';
-import { createUserProfile } from '@/services/firestore-service';
 import Link from 'next/link';
 import { PasswordStrengthInput } from '@/components/auth/password-strength-input';
 

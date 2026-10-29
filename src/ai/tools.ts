@@ -1,6 +1,7 @@
 // The tools of the AI assistant (handoff pack P26). Each one is a thin wrapper over an existing backend API and is called with the
 // signed-in user's OWN token, so the backend decides what that user may see. They never query the database and they return only the
 // few fields the answer needs (no addresses, no phone numbers, no session-record text).
+import { trackingUrl } from '@/lib/tracking';
 import { isAffirmative, specialtyFor } from '@/ai/safety';
 
 export type Http = (method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown) => Promise<any>;
@@ -60,7 +61,7 @@ export function createTools(ctx: ToolContext) {
       return {
         found: true, orderNumber: o.number, status: o.status, paymentStatus: o.paymentStatus, placedOn: day(o.createdAt), deliveredOn: day(o.deliveredAt),
         itemCount: (o.items ?? []).length, total: Number(o.total),
-        trackingLink: o.awb ? `https://shiprocket.co/tracking/${encodeURIComponent(o.awb)}` : null,
+        trackingLink: o.awb ? trackingUrl(o.awb) : null,
       };
     }),
 

@@ -46,8 +46,8 @@ export default async function RefundPolicyPage() {
             <h2 className="text-xl font-semibold text-foreground">SERVICE BOOKING CANCELLATIONS (THERAPY & CONSULTATION SESSIONS)</h2>
             <h3 className="font-semibold text-foreground">CANCELLATION BY CUSTOMER</h3>
             <ul className="list-disc pl-6 space-y-2">
-                <li>More than <strong>{p.freeHoursBefore} hours</strong> before the session: free cancellation, 100% refund.</li>
-                <li>Between <strong>{p.freeHoursBefore} and {p.partialHoursBefore} hours</strong> before the session: <strong>{p.partialChargePct}%</strong> of the session fee is kept, the rest is refunded.</li>
+                <li><strong>{p.freeHoursBefore} hours or more</strong> before the session: free cancellation, 100% refund.</li>
+                <li>From <strong>{p.partialHoursBefore} hours</strong> up to less than <strong>{p.freeHoursBefore} hours</strong> before the session: <strong>{p.partialChargePct}%</strong> of the session fee is kept, the rest is refunded.</li>
                 <li>Less than <strong>{p.partialHoursBefore} hours</strong> before the session, or if you are not available when the therapist arrives (no-show): <strong>{p.lateChargePct}%</strong> of the session fee is kept.</li>
                 <li>Cancelling within <strong>{p.graceMinutesAfterBooking} minutes</strong> of booking is always free.</li>
                 <li>If your therapist has not arrived <strong>{p.therapistLateMinutes} minutes</strong> after the start time, you may cancel for free.</li>
