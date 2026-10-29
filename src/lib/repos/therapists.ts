@@ -1,4 +1,5 @@
 
+import { oldTherapistSlug } from "@/lib/slug";
 import serverApi from '@/lib/repos/axios.server';
 import type { Therapist, Address, GeoPoint } from '../types';
 import { getToken } from '../auth';
@@ -27,6 +28,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             id: item.id,
             user_id: item.user_id,
             name: item.name,
+            slug: item.slug,
             specialty: item.specialty,
             city: item.city,
             state: item.state,
@@ -118,6 +120,7 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       id: item.id,
       user_id: item.user_id,
       name: item.name,
+      slug: item.slug,
       specialty: item.specialty,
       registrationNo: item.registrationNo || item.registration_no || '',
       bankAccountNo: item.bankAccountNo || item.bank_account_number || '',
@@ -175,14 +178,11 @@ export async function getTherapistBySlug(slug: string): Promise<Therapist | null
   try {
     const therapists = await listTherapists();
     if (!therapists) return null;
-therapists.find(
-        t => t.name.toLowerCase().replace(/ /g, '-') === slug.toLowerCase()
-      ) || null
-const matched = therapists.find(t => t.name.toLowerCase().replace(/ /g, '-') === slug.toLowerCase());
-console.log("matched therapist:", matched);    
-return (
-      matched || null
-    );
+    const wanted = slug.toLowerCase();
+    // the name + city link first; the old name-only link still finds the person (the website redirects it to the new one)
+    return therapists.find((t) => t.slug && t.slug.toLowerCase() === wanted)
+      || therapists.find((t) => oldTherapistSlug(t.name) === wanted)
+      || null;
   } catch (error: any) {
     console.error('GET THERAPIST BY SLUG ERROR:', error?.message);
     return null;
@@ -217,6 +217,7 @@ export async function listTherapistsByLocation(
     const therapists: Therapist[] = (data.data || []).map((item: any) => ({
       id: item.id,
       name: item.name,
+      slug: item.slug,
       user_id: item.user_id,
       specialty: item.specialty,
       phone: item.phone,

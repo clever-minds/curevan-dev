@@ -71,6 +71,7 @@ export interface TherapistReview {
 }
 
 export interface Therapist {
+  slug?: string;
   address?: any;
   experience?: number | string;
   id: number; // This is the user UID

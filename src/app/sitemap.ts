@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 import { listPublicJournalEntries } from '@/lib/repos/content';
 import { listTherapists } from '@/lib/repos/therapists';
 import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
-import { categorySlug, productPath } from '@/lib/slug';
+import { categorySlug, productPath, therapistPath } from '@/lib/slug';
 import { fetchPublicProducts } from '@/lib/repos/products';
 
 export const revalidate = 3600; // Revalidate every hour
@@ -136,7 +136,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     therapistRoutes = (therapists || [])
       .filter((therapist) => therapist && therapist.name && (therapist.isProfilePublic ?? true))
       .map((therapist) => ({
-        url: `${baseUrl}/therapists/${encodeURIComponent(therapist.name.toLowerCase().trim().replace(/\s+/g, '-'))}`,
+        url: `${baseUrl}${therapistPath(therapist)}`,
         lastModified: now,
         changeFrequency: 'weekly' as const,
         priority: 0.8,
