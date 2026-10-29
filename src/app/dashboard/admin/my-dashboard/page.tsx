@@ -23,7 +23,6 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { PayoutReleasePanel } from "@/components/admin/PayoutReleasePanel";
@@ -279,16 +278,6 @@ export default function AdminDashboardPage() {
                     <KpiCard title="Products Sold" value={stats?.productsDeliveredTotal ?? 0} icon={ShoppingBag} loading={loading} showCurrency={false} />
                     <KpiCard title="Refunds (90d)" value={totalRefunds} icon={DollarSign} loading={loading} />
                 </div>
-
-                <ReportAiSummary
-                    summaryText={[
-                        "Product sales are up 15% WoW, driven by the new Resistance Bands promotion.",
-                        "Therapist onboarding has slowed; consider a new recruitment campaign.",
-                        "High refund rate for 'Online Consultations' from new patients. Investigate service quality or expectation mismatch."
-                    ]}
-                    regenerate={() => console.log('regenerate')}
-                    copy={() => console.log('copy')}
-                />
 
                 <div className="space-y-6 w-full overflow-hidden">
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 w-full">

@@ -83,7 +83,7 @@ START OF CONTEXT
 
 **Contact Information:**
 - Email: info@curevan.com
-- Phone: +91 95144 46292
+- Phone: +91 951 444 6292
 - Address: Himaya Care Pvt. Ltd., Office 704, Time Square, Vasna - Bhayli Main Rd, Ashwamegh Nagar, Tandalja, Vadodara, Gujarat 390012.
 
 **Earnings & Payments:**

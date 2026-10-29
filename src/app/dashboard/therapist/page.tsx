@@ -1,6 +1,8 @@
 
 'use client';
 
+import { useAffiliateRules, referralText } from '@/components/affiliate/ReferralCard';
+
 import {
   Table,
   TableBody,
@@ -24,7 +26,6 @@ import Link from "next/link";
 import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { fetchEarningsData, EarningsData } from "@/services/earnings-service";
 import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
@@ -58,6 +59,7 @@ const KpiCard = ({ title, value, icon: Icon, description }: { title: string, val
 )
 
 export default function TherapistDashboard() {
+  const rules = useAffiliateRules();
   const [activeSession, setActiveSession] = useState<Appointment | null>(null);
   const [verifyingAppointment, setVerifyingAppointment] = useState<Appointment | null>(null);
   const { user } = useAuth();
@@ -248,16 +250,6 @@ export default function TherapistDashboard() {
                 <KpiCard title="Unique Patients" value={stats?.kpis?.uniquePatients ?? 0} icon={Users} />
                 <KpiCard title="Avg. Rating" value={stats?.kpis?.avgRating ?? "0.0"} icon={Star} />
             </div>
-
-            <ReportAiSummary 
-                summaryText={[
-                    "Your session volume is highest on Fridays. Consider opening more slots.",
-                    "You have 3 pending PCRs older than 48 hours. Locking these will unlock ₹4,500 in earnings for the next payout.",
-                    "Your most frequent service is post-op knee rehab. A new training module on advanced techniques is available."
-                ]}
-                regenerate={() => console.log('regenerate')}
-                copy={() => console.log('copy')}
-            />
 
             <DashboardSection id="charts" title="Insights (Dynamic)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
@@ -498,7 +490,7 @@ export default function TherapistDashboard() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Grow Your Earnings</CardTitle>
-                        <CardDescription>Share your permanent code with patients. They get 5% off products, and you earn a 10% commission on every sale.</CardDescription>
+                        <CardDescription>Share your permanent code with patients. {referralText(rules)}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-lg bg-muted border">

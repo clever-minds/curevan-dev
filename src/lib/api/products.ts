@@ -36,6 +36,7 @@ export async function createProducts(payload: {
   sellingPrice: number;
   isTaxInclusive?: boolean;
   isCouponExcluded?: boolean;
+  non_returnable?: boolean;
   hsnCode?: string;
   sacCode?: string;
   gstSlab?: number;
@@ -120,6 +121,7 @@ export async function updateProduct(
   sellingPrice: number;
   isTaxInclusive?: boolean;
   isCouponExcluded?: boolean;
+  non_returnable?: boolean;
   hsnCode?: string;
   sacCode?: string;
   gstSlab?: number;

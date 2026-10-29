@@ -60,6 +60,7 @@ const productFormSchema = z.object({
   sellingPrice: z.coerce.number().min(0, 'Selling price must be a positive number.'),
   isTaxInclusive: z.boolean().default(true),
   isCouponExcluded: z.boolean().default(false).describe("Exclude this product from therapist coupon discounts."),
+  nonReturnable: z.boolean().default(false).describe("The customer cannot return this product."),
   hsnCode: z.string().nullable().optional(),
   sacCode: z.string().nullable().optional(),
   gstSlab: z.coerce.number().nullable().optional(),
@@ -212,6 +213,7 @@ export function ProductForm({
       sellingPrice: 0,
       isTaxInclusive: true,
       isCouponExcluded: false,
+      nonReturnable: false,
       trackInventory: true,
       stock: 0,
       reorderPoint: 0,
@@ -437,6 +439,7 @@ export function ProductForm({
             sellingPrice: data.sellingPrice,
             isTaxInclusive: data.isTaxInclusive,
             isCouponExcluded: data.isCouponExcluded,
+            non_returnable: data.nonReturnable,
             hsnCode: data.hsnCode ?? undefined,
             sacCode: data.sacCode ?? undefined,
             gstSlab: data.gstSlab ?? undefined,
@@ -869,6 +872,7 @@ export function ProductForm({
                     <div className="flex gap-6">
                         <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Price includes taxes</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
                         <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Exclude from Coupons</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                        <FormField control={form.control} name="nonReturnable" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Not returnable</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
                     </div>
                 </div>
                 <Separator />

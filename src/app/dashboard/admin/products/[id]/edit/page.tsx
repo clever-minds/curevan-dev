@@ -61,6 +61,7 @@ export default function EditProductPage() {
               sacCode: product.sac_code || product.sacCode,
               gstSlab: product.gst_slab || product.gstSlab,
               isTaxInclusive: product.is_tax_inclusive !== undefined ? product.is_tax_inclusive : (product.isTaxInclusive !== undefined ? product.isTaxInclusive : true),
+              nonReturnable: Boolean(product.non_returnable),
               isCouponExcluded: product.is_coupon_excluded !== undefined ? product.is_coupon_excluded : (product.isCouponExcluded !== undefined ? product.isCouponExcluded : false),
               tags: product.tags || [],
               subtitle: product.subtitle,
