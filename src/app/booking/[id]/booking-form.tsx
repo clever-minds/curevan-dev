@@ -1,46 +1,79 @@
-'use client';
+"use client";
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
-import type { Appointment, Therapist } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import type { Appointment, Therapist } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
-  CheckCircle, MapPin, Edit, Trash2, Plus, X,
-  User, Mail, Phone, ChevronRight, ChevronDown, Loader2, Navigation,
-} from 'lucide-react';
+  CheckCircle,
+  MapPin,
+  Edit,
+  Trash2,
+  Plus,
+  X,
+  User,
+  Mail,
+  Phone,
+  ChevronRight,
+  ChevronDown,
+  Loader2,
+  Navigation,
+  Package,
+} from "lucide-react";
 import {
-  Form, FormControl, FormField, FormItem, FormLabel,
-  FormMessage, FormDescription,
-} from '@/components/ui/form';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import Link from 'next/link';
-import { useState, useMemo, useEffect, useTransition } from 'react';
-import { useAuth } from '@/context/auth-context';
-import { useRouter } from 'next/navigation';
-import useRazorpay from '@/hooks/use-razorpay';
-import { isSameDay, isPast, set, format } from 'date-fns';
-import { Price } from '@/components/money/price';
-import { listAppointmentsForUser } from '@/lib/repos/appointments';
-import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
-import { createBookingAndInvoice } from '@/lib/actions/booking';
-import { createAddress, deleteAddress, listAddresses, updateAddress } from '@/lib/repos/address';
-import { getIndianStates } from '@/lib/repos/meta';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { GuardianFields } from "@/components/booking/GuardianFields";
+import { consentPayload, guardianIssues } from "@/lib/booking-consent";
+import Link from "next/link";
+import { useState, useMemo, useEffect, useTransition } from "react";
+import { useAuth } from "@/context/auth-context";
+import { useRouter, useSearchParams } from "next/navigation";
+import useRazorpay from "@/hooks/use-razorpay";
+import { isSameDay, addDays, startOfDay, format } from "date-fns";
+import { Price } from "@/components/money/price";
+import { getAppointmentById, getFollowUpOptions, getTherapistSlots, type FollowUpOptions } from "@/lib/repos/appointments";
+import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
+import { createBookingAndInvoice, verifyBookingPayment } from "@/lib/actions/booking";
+import { getMyCarePacks, type CarePack } from "@/lib/repos/carePacks";
+import {
+  createAddress,
+  deleteAddress,
+  listAddresses,
+  updateAddress,
+} from "@/lib/repos/address";
+import { getIndianStates } from "@/lib/repos/meta";
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reverse Geocoding helper (OpenStreetMap Nominatim — free, no key needed)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function reverseGeocode(lat: number, lng: number): Promise<{
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<{
   fullAddress: string;
   city: string;
   state: string;
@@ -51,9 +84,9 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
       {
         headers: {
-          'Accept-Language': 'en-US,en;q=0.9',
+          "Accept-Language": "en-US,en;q=0.9",
         },
-      }
+      },
     );
     const data = await res.json();
 
@@ -61,21 +94,24 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{
 
     const address = data.address;
 
-    const streetNumber = address.house_number || '';
-    const route = address.road || '';
-    const sublocality = address.suburb || address.neighbourhood || address.residential || '';
-    
-    const fullAddress = [streetNumber, route, sublocality].filter(Boolean).join(', ');
+    const streetNumber = address.house_number || "";
+    const route = address.road || "";
+    const sublocality =
+      address.suburb || address.neighbourhood || address.residential || "";
+
+    const fullAddress = [streetNumber, route, sublocality]
+      .filter(Boolean)
+      .join(", ");
 
     const city =
       address.city ||
       address.town ||
       address.county ||
       address.state_district ||
-      '';
+      "";
 
-    const state = address.state || '';
-    const pincode = address.postcode || '';
+    const state = address.state || "";
+    const pincode = address.postcode || "";
 
     return { fullAddress, city, state, pincode };
   } catch {
@@ -93,25 +129,35 @@ export function AddressFormModal({
   onSave,
   indianStates,
   address = null,
-  mode = 'add',
+  mode = "add",
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
   indianStates: string[];
   address?: any;
-  mode?: 'add' | 'edit';
+  mode?: "add" | "edit";
 }) {
-  const blank = { fullName: '', email: '', phone: '', fullAddress: '', city: '', state: '', pincode: '' };
+  const blank = {
+    fullName: "",
+    email: "",
+    phone: "",
+    fullAddress: "",
+    city: "",
+    state: "",
+    pincode: "",
+  };
   const [formData, setFormData] = useState(address || blank);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => { if (address) setFormData(address); }, [address]);
+  useEffect(() => {
+    if (address) setFormData(address);
+  }, [address]);
 
   if (!isOpen) return null;
 
-  const isEdit = mode === 'edit';
+  const isEdit = mode === "edit";
   const Icon = isEdit ? Edit : Plus;
 
   const handleReset = () => setFormData(blank);
@@ -119,7 +165,11 @@ export function AddressFormModal({
   // ── Auto-fill from GPS ──────────────────────────────────────────────────
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
-      toast({ variant: 'destructive', title: 'Not supported', description: 'Geolocation is not supported by your browser.' });
+      toast({
+        variant: "destructive",
+        title: "Not supported",
+        description: "Geolocation is not supported by your browser.",
+      });
       return;
     }
     setIsFetchingLocation(true);
@@ -134,17 +184,28 @@ export function AddressFormModal({
             state: geo.state || prev.state,
             pincode: geo.pincode || prev.pincode,
           }));
-          toast({ title: '📍 Location detected!', description: 'Address fields have been filled automatically.' });
+          toast({
+            title: "📍 Location detected!",
+            description: "Address fields have been filled automatically.",
+          });
         } else {
-          toast({ variant: 'destructive', title: 'Could not resolve address', description: 'Please fill in the address manually.' });
+          toast({
+            variant: "destructive",
+            title: "Could not resolve address",
+            description: "Please fill in the address manually.",
+          });
         }
         setIsFetchingLocation(false);
       },
       () => {
-        toast({ variant: 'destructive', title: 'Location Error', description: 'Could not retrieve your location.' });
+        toast({
+          variant: "destructive",
+          title: "Location Error",
+          description: "Could not retrieve your location.",
+        });
         setIsFetchingLocation(false);
       },
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
   };
 
@@ -155,22 +216,46 @@ export function AddressFormModal({
         @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
       `}</style>
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
-
         {/* Header */}
         <div className="relative h-28 overflow-hidden">
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }} />
-          <div className="absolute inset-0 opacity-40" style={{ background: 'linear-gradient(-45deg,transparent 40%,rgba(255,255,255,0.15) 50%,transparent 60%)', animation: 'shimmer 3s infinite' }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))",
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-40"
+            style={{
+              background:
+                "linear-gradient(-45deg,transparent 40%,rgba(255,255,255,0.15) 50%,transparent 60%)",
+              animation: "shimmer 3s infinite",
+            }}
+          />
           <div className="relative h-full px-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center">
                 <Icon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">{isEdit ? 'Edit Address' : 'Add New Address'}</h3>
-                <p className="text-white/75 text-sm">{isEdit ? 'Update home visit address' : 'Add a new home visit address'}</p>
+                <h3 className="text-xl font-bold text-white">
+                  {isEdit ? "Edit Address" : "Add New Address"}
+                </h3>
+                <p className="text-white/75 text-sm">
+                  {isEdit
+                    ? "Update home visit address"
+                    : "Add a new home visit address"}
+                </p>
               </div>
             </div>
-            <button onClick={() => { handleReset(); onClose(); }} className="p-2 hover:bg-white/15 rounded-xl text-white transition-colors">
+            <button
+              onClick={() => {
+                handleReset();
+                onClose();
+              }}
+              className="p-2 hover:bg-white/15 rounded-xl text-white transition-colors"
+            >
               <X size={22} />
             </button>
           </div>
@@ -178,26 +263,60 @@ export function AddressFormModal({
 
         {/* Body */}
         <div className="p-8 max-h-[60vh] overflow-y-auto space-y-6">
-
           {/* Contact */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><User size={16} /></div>
-              <span className="font-semibold text-gray-800">Contact Information</span>
+              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                <User size={16} />
+              </div>
+              <span className="font-semibold text-gray-800">
+                Contact Information
+              </span>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Full Name</label>
-                <Input value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} placeholder="Enter full name" className="rounded-xl" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Full Name
+                </label>
+                <Input
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
+                  placeholder="Enter full name"
+                  className="rounded-xl"
+                />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 block"><Mail size={13} className="text-purple-500" />Email</label>
-                  <Input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" className="rounded-xl" />
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 block">
+                    <Mail size={13} className="text-purple-500" />
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    placeholder="email@example.com"
+                    className="rounded-xl"
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 block"><Phone size={13} className="text-purple-500" />Phone</label>
-                  <Input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="10-digit number" className="rounded-xl" />
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 block">
+                    <Phone size={13} className="text-purple-500" />
+                    Phone
+                  </label>
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    placeholder="10-digit number"
+                    className="rounded-xl"
+                  />
                 </div>
               </div>
             </div>
@@ -213,8 +332,12 @@ export function AddressFormModal({
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-fuchsia-50 flex items-center justify-center text-fuchsia-600"><MapPin size={16} /></div>
-                <span className="font-semibold text-gray-800">Address Details</span>
+                <div className="w-8 h-8 rounded-lg bg-fuchsia-50 flex items-center justify-center text-fuchsia-600">
+                  <MapPin size={16} />
+                </div>
+                <span className="font-semibold text-gray-800">
+                  Address Details
+                </span>
               </div>
 
               {/* 📍 Use My Location button — inside the modal */}
@@ -226,36 +349,77 @@ export function AddressFormModal({
                 disabled={isFetchingLocation}
                 className="gap-1.5 text-xs border-purple-300 text-purple-700 hover:bg-purple-50 rounded-xl"
               >
-                {isFetchingLocation
-                  ? <Loader2 size={13} className="animate-spin" />
-                  : <Navigation size={13} />
-                }
-                {isFetchingLocation ? 'Detecting...' : 'Use My Location'}
+                {isFetchingLocation ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Navigation size={13} />
+                )}
+                {isFetchingLocation ? "Detecting..." : "Use My Location"}
               </Button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Street Address</label>
-                <Input value={formData.fullAddress} onChange={e => setFormData({ ...formData, fullAddress: e.target.value })} placeholder="House No, Building, Street" className="rounded-xl" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Street Address
+                </label>
+                <Input
+                  value={formData.fullAddress}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullAddress: e.target.value })
+                  }
+                  placeholder="House No, Building, Street"
+                  className="rounded-xl"
+                />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">City</label>
-                  <Input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} placeholder="City" className="rounded-xl" />
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    City
+                  </label>
+                  <Input
+                    value={formData.city}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    placeholder="City"
+                    className="rounded-xl"
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">State</label>
-                  <Select value={formData.state} onValueChange={v => setFormData({ ...formData, state: v })}>
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="State" /></SelectTrigger>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    State
+                  </label>
+                  <Select
+                    value={formData.state}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, state: v })
+                    }
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="State" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {indianStates.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Pincode</label>
-                  <Input value={formData.pincode} onChange={e => setFormData({ ...formData, pincode: e.target.value })} placeholder="6 digits" className="rounded-xl" />
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Pincode
+                  </label>
+                  <Input
+                    value={formData.pincode}
+                    onChange={(e) =>
+                      setFormData({ ...formData, pincode: e.target.value })
+                    }
+                    placeholder="6 digits"
+                    className="rounded-xl"
+                  />
                 </div>
               </div>
             </div>
@@ -265,13 +429,27 @@ export function AddressFormModal({
         {/* Footer */}
         <div className="border-t bg-gray-50 px-8 py-5 flex gap-3">
           <Button
-            onClick={() => { onSave(formData); handleReset(); onClose(); }}
+            onClick={() => {
+              onSave(formData);
+              handleReset();
+              onClose();
+            }}
             className="flex-1 text-white rounded-xl h-11 border-0 font-semibold"
-            style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))",
+            }}
           >
-            {isEdit ? 'Save Changes' : 'Add Address'}
+            {isEdit ? "Save Changes" : "Add Address"}
           </Button>
-          <Button variant="outline" onClick={() => { handleReset(); onClose(); }} className="flex-1 rounded-xl h-11 font-semibold">
+          <Button
+            variant="outline"
+            onClick={() => {
+              handleReset();
+              onClose();
+            }}
+            className="flex-1 rounded-xl h-11 font-semibold"
+          >
             Cancel
           </Button>
         </div>
@@ -310,10 +488,15 @@ export function AddressPickerModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
-
         {/* Header */}
         <div className="relative h-24 overflow-hidden">
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))",
+            }}
+          />
           <div className="relative h-full px-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center">
@@ -321,10 +504,15 @@ export function AddressPickerModal({
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white">Select Address</h3>
-                <p className="text-white/70 text-xs">Choose a home visit location</p>
+                <p className="text-white/70 text-xs">
+                  Choose a home visit location
+                </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/15 rounded-xl text-white transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/15 rounded-xl text-white transition-colors"
+            >
               <X size={20} />
             </button>
           </div>
@@ -344,7 +532,9 @@ export function AddressPickerModal({
               </div>
               <div className="text-center">
                 <p className="font-medium text-gray-500">No addresses saved</p>
-                <p className="text-sm text-gray-400 mt-1">Add your first home visit address</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Add your first home visit address
+                </p>
               </div>
             </div>
           ) : (
@@ -353,42 +543,61 @@ export function AddressPickerModal({
               return (
                 <div
                   key={addr.id}
-                  onClick={() => { onSelect(String(addr.id)); onClose(); }}
+                  onClick={() => {
+                    onSelect(String(addr.id));
+                    onClose();
+                  }}
                   className={cn(
-                    'relative p-4 rounded-2xl border-2 cursor-pointer transition-all group',
+                    "relative p-4 rounded-2xl border-2 cursor-pointer transition-all group",
                     isSelected
-                      ? 'border-purple-500 bg-purple-50 shadow-md shadow-purple-100'
-                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                      ? "border-purple-500 bg-purple-50 shadow-md shadow-purple-100"
+                      : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm",
                   )}
                 >
                   {/* Radio indicator */}
                   <div className="absolute top-4 right-4">
-                    <div className={cn(
-                      'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
-                      isSelected ? 'border-purple-500 bg-purple-500' : 'border-gray-300 bg-white'
-                    )}>
-                      {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                        isSelected
+                          ? "border-purple-500 bg-purple-500"
+                          : "border-gray-300 bg-white",
+                      )}
+                    >
+                      {isSelected && (
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      )}
                     </div>
                   </div>
 
                   <div className="pr-8 space-y-1">
-                    <p className="font-semibold text-gray-900 text-sm">{addr.fullName}</p>
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {addr.fullName}
+                    </p>
                     <p className="text-sm text-gray-600">{addr.fullAddress}</p>
-                    <p className="text-sm text-gray-500">{addr.city}, {addr.state} — {addr.pincode}</p>
+                    <p className="text-sm text-gray-500">
+                      {addr.city}, {addr.state} — {addr.pincode}
+                    </p>
                   </div>
 
                   {/* Edit / Delete (shown on hover) */}
                   <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); onEdit(addr); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(addr);
+                      }}
                       className="p-1.5 bg-blue-100 hover:bg-blue-200 rounded-lg text-blue-600 transition-colors"
                     >
                       <Edit size={13} />
                     </button>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); onDelete(String(addr.id), e); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(String(addr.id), e);
+                      }}
                       className="p-1.5 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 transition-colors"
                     >
                       <Trash2 size={13} />
@@ -406,7 +615,10 @@ export function AddressPickerModal({
             type="button"
             onClick={onAdd}
             className="w-full gap-2 rounded-xl h-11 text-white font-semibold border-0"
-            style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))",
+            }}
           >
             <Plus size={16} /> Add New Address
           </Button>
@@ -420,32 +632,62 @@ export function AddressPickerModal({
 // Schema
 // ─────────────────────────────────────────────────────────────────────────────
 
-const bookingFormSchema = z.object({
-  serviceType: z.string().min(1, { message: 'Please select a service type.' }),
-  patientFullName: z.string().min(1, { message: "Please enter the patient's full name." }),
-  dob: z.string().min(1, { message: 'Please select the date of birth.' })
-    .refine(val => !isNaN(Date.parse(val)), { message: 'Invalid date format.' }),
-  sessionMode: z.enum(['home', 'online', 'clinic'], { required_error: 'Please select a session mode.' }),
-  scheduledDate: z.date({ required_error: 'Please select a date.' }),
-  scheduledTime: z.string().min(1, { message: 'Please select a time slot.' }),
-  isHomeVisit: z.boolean().default(false),
-  addressId: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  prescription: z.any().optional(),
-  reports: z.any().optional(),
-  notes: z.string().optional(),
-  consent_terms: z.boolean().refine(val => val === true, { message: 'You must agree to the Terms of Use.' }),
-  consent_medical: z.boolean().refine(val => val === true, { message: 'You must agree to the Medical Consent Terms.' }),
-  consent_privacy: z.boolean().refine(val => val === true, { message: 'You must agree to the Privacy Policy.' }),
-  consent_refund: z.boolean().refine(val => val === true, { message: 'You must agree to the Refund, Cancellation & Return Policy.' }),
-}).refine(data => {
-  if (data.sessionMode === 'home') return !!data.addressId;
-  return true;
-}, {
-  message: 'Please select a home visit address.',
-  path: ['addressId'],
-});
+const bookingFormSchema = z
+  .object({
+    serviceType: z
+      .string()
+      .min(1, { message: "Please select a service type." }),
+    patientFullName: z
+      .string()
+      .min(1, { message: "Please enter the patient's full name." }),
+    dob: z
+      .string()
+      .min(1, { message: "Please select the date of birth." })
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: "Invalid date format.",
+      }),
+    sessionMode: z.enum(["home", "online", "clinic"], {
+      required_error: "Please select a session mode.",
+    }),
+    scheduledDate: z.date({ required_error: "Please select a date." }),
+    scheduledTime: z.string().min(1, { message: "Please select a time slot." }),
+    isHomeVisit: z.boolean().default(false),
+    addressId: z.string().optional(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+    prescription: z.any().optional(),
+    reports: z.any().optional(),
+    notes: z.string().optional(),
+    consent_terms: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Terms of Use.",
+    }),
+    consent_medical: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Medical Consent Terms.",
+    }),
+    consent_privacy: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Privacy Policy.",
+    }),
+    consent_refund: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Refund, Cancellation & Return Policy.",
+    }),
+    guardianName: z.string().optional(),
+    guardianRelation: z.string().optional(),
+    guardianPhone: z.string().optional(),
+    guardianConsent: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    for (const i of guardianIssues(data)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: i.message, path: i.path });
+  })
+  .refine(
+    (data) => {
+      if (data.sessionMode === "home") return !!data.addressId;
+      return true;
+    },
+    {
+      message: "Please select a home visit address.",
+      path: ["addressId"],
+    },
+  );
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
@@ -457,11 +699,19 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const { openPayment, isLoaded } = useRazorpay();
 
-  const [therapistAppointments, setTherapistAppointments] = useState<Appointment[]>([]);
-  const [therapyCategories, setTherapyCategories] = useState<{id: number, name: string}[]>([]);
+  // open times for the chosen date, as decided by the server
+  const [serverSlots, setServerSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [leadHours, setLeadHours] = useState(4);
+  const [advanceDays, setAdvanceDays] = useState(30);
+  const [therapyCategories, setTherapyCategories] = useState<
+    { id: number; name: string }[]
+  >([]);
 
   // Address state
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -471,21 +721,54 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
   const [showAddressFormModal, setShowAddressFormModal] = useState(false);
   const [showAddressPickerModal, setShowAddressPickerModal] = useState(false);
 
+  // Care Pack state (P28)
+  const [myPacks, setMyPacks] = useState<CarePack[]>([]);
+  const [usePack, setUsePack] = useState(false);
+  // "Book follow-up" from a completed visit: /booking/<therapist>?followUp=<visit id>
+  const followUpOf = Number(searchParams.get("followUp")) || undefined;
+  const [followUpFrom, setFollowUpFrom] = useState<{ date?: string; therapyType?: string } | null>(null);
+  const [followUpOptions, setFollowUpOptions] = useState<FollowUpOptions | null>(null);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
+  const followUpBlocked = !!followUpOf && (!!followUpError || (!!followUpOptions && ['none', 'proposed', 'booked'].includes(followUpOptions.mode)));
+  const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    getMyCarePacks()
+      .then((packs) => {
+        const active = (packs || []).filter(
+          (p) => p.status === "active" && p.sessions_total - p.sessions_used > 0
+        );
+        setMyPacks(active);
+        const paramId = searchParams.get("carePackId");
+        if (paramId) {
+          const match = active.find((p) => String(p.id) === paramId);
+          if (match) {
+            setSelectedPackId(match.id);
+            setUsePack(true);
+          }
+        } else if (active.length > 0) {
+          setSelectedPackId(active[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [user, searchParams]);
+
   useEffect(() => {
     const fetchData = async () => {
-      const [apps, cats, states] = await Promise.all([
-        listAppointmentsForUser(therapist.id, 'therapist'),
+      const [cats, states] = await Promise.all([
         getTherapyCategoriesWithIds(),
         getIndianStates(),
       ]);
-      setTherapistAppointments(apps);
       setTherapyCategories(cats || []);
       setIndianStates(states);
     };
     fetchData();
   }, [therapist.id]);
 
-  useEffect(() => { fetchAddressesData(); }, [user?.id]);
+  useEffect(() => {
+    fetchAddressesData();
+  }, [user?.id]);
 
   const fetchAddressesData = async () => {
     if (!user?.id) return;
@@ -494,68 +777,154 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     setIsAddressLoading(false);
     if (data && Array.isArray(data) && data.length > 0) {
       setAddresses(data);
-      form.setValue('addressId', String(data[0].id), { shouldValidate: true });
+      form.setValue("addressId", String(data[0].id), { shouldValidate: true });
     }
   };
+
+  const therapistServiceTypes = useMemo(() => {
+    try {
+      let types: string[] = [];
+      let rawInputs: any[] = [];
+      
+      if (Array.isArray(therapist.serviceTypes)) {
+        rawInputs.push(...therapist.serviceTypes);
+      } else if (typeof therapist.serviceTypes === 'string') {
+        rawInputs.push(therapist.serviceTypes);
+      }
+
+      if (Array.isArray(therapist.specialty)) {
+        rawInputs.push(...therapist.specialty);
+      } else if (typeof therapist.specialty === 'string') {
+        rawInputs.push(therapist.specialty);
+      }
+
+      for (let item of rawInputs) {
+        if (typeof item === 'string') {
+          // Clean postgres curly braces
+          item = item.replace(/^\{|\}$/g, '');
+          const parts = item.split(',').map((s: string) => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
+          types.push(...parts);
+        }
+      }
+
+      let uniqueTypes = Array.from(new Set(types));
+      if (uniqueTypes.length === 0) {
+        uniqueTypes = ["Physiotherapy"];
+      }
+
+      return uniqueTypes;
+    } catch (e) {
+      console.error("Error parsing therapistServiceTypes", e);
+      return ["Physiotherapy"];
+    }
+  }, [therapist]);
+
+  const initialServiceType = useMemo(() => {
+    const urlService = searchParams?.get('service') || '';
+    let target = therapistServiceTypes[0];
+    if (urlService) {
+      const matched = therapistServiceTypes.find(s => s.toLowerCase() === urlService.toLowerCase());
+      if (matched) target = matched;
+    }
+    return target;
+  }, [searchParams, therapistServiceTypes]);
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
-      serviceType: therapist.serviceTypes[0] || 'Physiotherapy',
-      sessionMode: 'home',
+      serviceType: initialServiceType,
+      sessionMode: "home",
       isHomeVisit: true,
       prescription: null,
       reports: null,
-      notes: '',
+      notes: "",
       dob: "",
       consent_terms: false,
       consent_medical: false,
       consent_privacy: false,
       consent_refund: false,
-      addressId: '',
+      guardianName: "",
+      guardianRelation: "",
+      guardianPhone: "",
+      guardianConsent: false,
+      addressId: "",
     },
   });
 
-  const sessionMode = form.watch('sessionMode');
-  const selectedDate = form.watch('scheduledDate');
-  const selectedAddressId = form.watch('addressId');
+  useEffect(() => {
+    if (!followUpOf) return;
+    getAppointmentById(followUpOf).then((a) => {
+      if (!a) return;
+      setFollowUpFrom({ date: a.date as any, therapyType: a.therapyType });
+      if (a.therapyType) form.setValue("serviceType", a.therapyType);   // same service as the last visit
+    });
+  }, [followUpOf, form]);
+
+  // only the date(s) the doctor gave in the report can be chosen for a follow-up
+  useEffect(() => {
+    if (!followUpOf) return;
+    getFollowUpOptions(followUpOf).then((r) => {
+      if (!r.ok) { setFollowUpError(r.error); return; }
+      setFollowUpOptions(r.options);
+      if (r.options.mode === "dates" && r.options.dates?.length === 1) form.setValue("scheduledDate", new Date(`${r.options.dates[0]}T00:00:00`), { shouldValidate: true });
+    });
+  }, [followUpOf, form]);
+
+  useEffect(() => {
+    if (initialServiceType) {
+      const currentServiceType = form.getValues("serviceType");
+      if (currentServiceType !== initialServiceType) {
+        form.setValue("serviceType", initialServiceType, { shouldValidate: true });
+      }
+    }
+  }, [initialServiceType, form]);
+
+  const sessionMode = form.watch("sessionMode");
+  const selectedDate = form.watch("scheduledDate");
+  const selectedAddressId = form.watch("addressId");
 
   const selectedAddress = useMemo(
-    () => addresses.find(a => String(a.id) === selectedAddressId) || null,
-    [addresses, selectedAddressId]
+    () => addresses.find((a) => String(a.id) === selectedAddressId) || null,
+    [addresses, selectedAddressId],
   );
 
-  const timeSlots = useMemo(() => {
-    if (!selectedDate || !therapist.availability) return [];
-    const day = selectedDate.toLocaleString('en-US', { weekday: 'short' }).toLowerCase() as keyof Therapist['availability']['windows'];
-    const avail = therapist.availability.windows[day];
-    if (!avail) return [];
-    const slots: string[] = [];
-    const addSlots = (period: { start: string | null; end: string | null; enabled: boolean }) => {
-      if (!period.enabled || !period.start || !period.end) return;
-      for (let i = parseInt(period.start); i < parseInt(period.end); i++)
-        slots.push(`${i.toString().padStart(2, '0')}:00`);
+  // Does the therapist work on this weekday at all? (only a hint for the calendar; the server decides the real slots)
+  const worksOnDay = (date: Date) => {
+    const availabilityData = therapist.availability?.windows || therapist.availability;
+    if (!availabilityData) return false;
+    const day = date.toLocaleString("en-US", { weekday: "short" }).toLowerCase() as keyof typeof availabilityData;
+    const avail = availabilityData[day];
+    const isFalsy = (val: any) => val === false || val === "false" || val === 0 || val === "0" || val === null;
+    return !!avail && !isFalsy(avail.enabled);
+  };
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setServerSlots([]);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    setSlotsError(null);
+    getTherapistSlots(therapist.user_id ?? therapist.id, format(selectedDate, "yyyy-MM-dd")).then((res) => {
+      if (cancelled) return;
+      setServerSlots(res.slots);
+      setLeadHours(res.minLeadHours);
+      setAdvanceDays(res.maxAdvanceDays);
+      setSlotsError(res.error ?? null);
+      setSlotsLoading(false);
+      // a time chosen earlier may no longer be offered
+      if (form.getValues("scheduledTime") && !res.slots.includes(form.getValues("scheduledTime"))) {
+        form.setValue("scheduledTime", "");
+      }
+    });
+    return () => {
+      cancelled = true;
     };
-    addSlots(avail.morning);
-    addSlots(avail.evening);
-    return slots;
-  }, [selectedDate, therapist.availability]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, therapist.id]);
 
-  const isTimeSlotAvailable = (time: string): boolean => {
-    if (!selectedDate) return false;
-    const [h, m] = time.split(':').map(Number);
-    if (isPast(set(selectedDate, { hours: h, minutes: m }))) return false;
-    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
-    return !therapistAppointments.some(a =>
-      String(a.date).startsWith(selectedDateStr) && a.time === time && a.status !== 'Cancelled'
-    );
-  };
-
-  const isDateFullyBooked = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return timeSlots.length > 0 &&
-      therapistAppointments.filter(a => String(a.date).startsWith(dateStr) && a.status !== 'Cancelled').length >= timeSlots.length;
-  };
+  const timeSlots = serverSlots;
 
   // ── Address handlers ──────────────────────────────────────────────────────
 
@@ -568,17 +937,21 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       email: formData.email,
       city: formData.city,
       state: formData.state,
-      country: 'India',
+      country: "India",
       postal_code: formData.pincode,
       is_default: false,
     });
     if (result) {
-      toast({ title: '✓ Address added successfully!' });
+      toast({ title: "✓ Address added successfully!" });
       await fetchAddressesData();
       setShowAddressFormModal(false);
       setShowAddressPickerModal(true);
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add address' });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add address",
+      });
     }
   };
 
@@ -586,11 +959,15 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     e.stopPropagation();
     const result = await deleteAddress(Number(id));
     if (result.success) {
-      toast({ title: '✓ Address deleted!' });
-      if (selectedAddressId === id) form.setValue('addressId', '');
+      toast({ title: "✓ Address deleted!" });
+      if (selectedAddressId === id) form.setValue("addressId", "");
       await fetchAddressesData();
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result.message,
+      });
     }
   };
 
@@ -605,35 +982,54 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       street: formData.fullAddress,
       city: formData.city,
       state: formData.state,
-      country: 'India',
+      country: "India",
       postal_code: formData.pincode,
     };
 
     try {
       const result = await updateAddress(editingAddress.id, payload);
       if (result && result.success) {
-        toast({ title: '✓ Address updated successfully!' });
+        toast({ title: "✓ Address updated successfully!" });
         await fetchAddressesData();
         setEditingAddress(null);
       } else {
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to update address' });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to update address",
+        });
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message || 'Something went wrong' });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Something went wrong",
+      });
     }
   };
-
 
   // ── Submit ────────────────────────────────────────────────────────────────
 
   function onSubmit(data: BookingFormValues) {
     if (!user) {
-      toast({ variant: 'destructive', title: 'Authentication Required', description: 'Please sign in to book an appointment.' });
-      router.push('/auth/signin');
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please sign in to book an appointment.",
+      });
+      router.push("/auth/signin");
       return;
     }
 
-    const serviceAmount = therapist.hourlyRate ?? 500;
+    // The price is set and charged by the server. Nothing is guessed in the browser.
+    if (!therapist.hourlyRate) {
+      toast({
+        variant: "destructive",
+        title: "Price not available",
+        description: "This therapist has not set a session price yet.",
+      });
+      return;
+    }
 
     // Convert reports to base64 if provided
     let reportsBase64: any = null;
@@ -643,7 +1039,9 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       if (file instanceof File) {
         const reader = new FileReader();
         reader.onloadend = () => {
-          reportsBase64 = [{ name: file.name, type: file.type, data: reader.result }];
+          reportsBase64 = [
+            { name: file.name, type: file.type, data: reader.result },
+          ];
           proceedWithPayment(reportsBase64);
         };
         reader.readAsDataURL(file);
@@ -653,48 +1051,96 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
     proceedWithPayment(reportsBase64);
 
     function proceedWithPayment(processedReports: any) {
-    console.log("booking new data", data);
-    openPayment({
-      amount: serviceAmount * 100,
-      currency: 'INR',
-      receipt: `receipt_booking_${therapist.id}_${Date.now()}`,
-      productName: `Session with ${therapist.name}`,
-      productDescription: `A ${data.serviceType} session on ${data.scheduledDate.toLocaleDateString()} at ${data.scheduledTime}.`,
-      prefill: { name: user!.name, email: user!.email },
-      onSuccess: (paymentResponse) => {
-        startTransition(async () => {
-          const selectedCategory = therapyCategories.find(c => c.name === data.serviceType);
-          const serviceTypeId = selectedCategory ? selectedCategory.id : null;
+      console.log("booking new data", data);
+      startTransition(async () => {
+        const selectedCategory = therapyCategories.find(
+          (c) => c.name === data.serviceType,
+        );
+        const serviceTypeId = selectedCategory
+          ? String(selectedCategory.id)
+          : "";
 
-          const result = await createBookingAndInvoice({
+        const result = await createBookingAndInvoice(
+          {
             patientId: user!.id,
-            patientName: data.patientFullName || user!.name || 'N/A',
+            patientName: data.patientFullName || user!.name || "N/A",
             dateofBirth: data.dob,
-            therapistId: therapist.id,
+            ...consentPayload(data),
+            therapistId: therapist.user_id ?? therapist.id,   // bookings, leave and slots are all keyed by the therapist's USER id
             therapist: therapist.name,
             serviceTypeId: serviceTypeId,
             therapyType: data.serviceType,
-            serviceAmount,
-            totalAmount: serviceAmount,
-            date: format(data.scheduledDate, 'yyyy-MM-dd') as unknown as Date,
+            serviceAmount: 0, // ignored: the server decides the price
+            totalAmount: 0,
+            date: format(data.scheduledDate, "yyyy-MM-dd") as unknown as Date,
             time: data.scheduledTime,
             mode: data.sessionMode,
             notes: data.notes,
             reports: processedReports,
-            addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,  // ← yahan
-            status: 'Pending',
-            verificationStatus: 'Not Verified',
-          }, { paymentId: paymentResponse.razorpay_payment_id, gateway: 'razorpay' });
+            addressId:
+              data.sessionMode === "home" ? Number(data.addressId) : undefined,
+            status: "pending_payment", // server decides the real status (pack P07: Pending until paid)
+            verificationStatus: "Not Verified",
+            followUpOf,
+            payWith: usePack ? "pack" : undefined,
+            carePackId: usePack && selectedPackId ? selectedPackId : undefined,
+          } as any,
+        );
 
-          if (result.success) {
-            toast({ title: 'Booking Confirmed!', description: 'Your appointment has been successfully booked.' });
-            router.push('/dashboard/bookings');
-          } else {
-            toast({ variant: 'destructive', title: 'Booking Failed', description: result.error || 'There was an issue saving your booking.' });
-          }
-        });
-      },
-    });
+        if (result.success && result.paidWith === "pack") {
+          toast({
+            title: "Booking Confirmed!",
+            description: `Session booked using your Care Package. ${result.sessionsRemaining ?? ""} sessions left.`,
+          });
+          router.push("/dashboard/bookings");
+          return;
+        }
+
+        if (result.success && result.razorpayOrderId && result.amountPaise) {
+          // Pay-immediately mode: open Razorpay for the amount the server calculated,
+          // then let the server verify the signature before the booking counts as paid.
+          openPayment({
+            amount: result.amountPaise,
+            currency: "INR",
+            receipt: `appt-${result.appointmentId}`,
+            orderId: result.razorpayOrderId,
+            keyId: result.keyId,
+            productName: "Curevan session",
+            productDescription: `${data.serviceType} session with ${therapist.name}`,
+            prefill: { name: data.patientFullName || user!.name || "" },
+            onSuccess: async (paymentResponse) => {
+              const verified = await verifyBookingPayment({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              });
+              if (verified.success) {
+                toast({ title: "Booking confirmed!", description: "Your payment was received." });
+                router.push("/dashboard/bookings");
+              } else {
+                toast({ variant: "destructive", title: "Payment not confirmed", description: verified.error || "We could not confirm your payment." });
+              }
+            },
+            onFailure: (err) => {
+              toast({ variant: "destructive", title: "Payment Failed", description: err.reason || "Please try again." });
+            },
+          });
+        } else if (result.success) {
+          toast({
+            title: "Booking Requested!",
+            description:
+              "Your appointment request has been sent to the therapist.",
+          });
+          router.push("/dashboard/bookings");
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Booking Failed",
+            description:
+              result.error || "There was an issue saving your booking.",
+          });
+        }
+      });
     }
   }
 
@@ -709,10 +1155,10 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
         isOpen={showAddressPickerModal}
         onClose={() => setShowAddressPickerModal(false)}
         addresses={addresses}
-        selectedId={selectedAddressId || ''}
+        selectedId={selectedAddressId || ""}
         isLoading={isAddressLoading}
         onSelect={(id) => {
-          form.setValue('addressId', id, { shouldValidate: true });
+          form.setValue("addressId", id, { shouldValidate: true });
           setShowAddressPickerModal(false);
         }}
         onAdd={() => {
@@ -748,57 +1194,115 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       {/* ── Main Form ── */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-
+          {followUpOf && (
+            <div role="status" className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+              <p className="font-medium">Follow-up visit</p>
+              <p className="text-muted-foreground">
+                {followUpFrom?.date ? `Continuing from your session on ${format(new Date(followUpFrom.date), "dd MMM yyyy")}. ` : ""}
+                Your last report is shared with your therapist so they can continue from it.
+              </p>
+              {followUpOptions?.mode === "dates" && followUpOptions.dates && (
+                <p className="mt-1 font-medium">Your therapist asked for this visit on {followUpOptions.dates.map((d) => format(new Date(`${d}T00:00:00`), "EEE dd MMM yyyy")).join(", ")}.</p>
+              )}
+              {followUpOptions?.note && <p className="mt-1 text-muted-foreground">{followUpOptions.note}</p>}
+              {(followUpError || (followUpBlocked && followUpOptions?.message)) && <p role="alert" className="mt-1 font-medium text-destructive">{followUpError || followUpOptions?.message}</p>}
+            </div>
+          )}
           {/* Service Type */}
-          <FormField control={form.control} name="serviceType" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Service Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger></FormControl>
-                <SelectContent>{therapyCategories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField
+            control={form.control}
+            name="serviceType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Service Type</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {therapistServiceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           {/* Patient Full Name */}
-          <FormField control={form.control} name="patientFullName" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Patient Full Name</FormLabel>
-              <FormControl><Input placeholder="Enter patient full name" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField
+            control={form.control}
+            name="patientFullName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Patient Full Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter patient full name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           {/* Date of Birth */}
-          <FormField control={form.control} name="dob" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date of Birth</FormLabel>
-              <FormControl><Input type="date" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField
+            control={form.control}
+            name="dob"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date of Birth</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <GuardianFields />
 
           {/* Session Mode */}
-          <FormField control={form.control} name="sessionMode" render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Session Mode</FormLabel>
-              <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                  {(['home', 'online', 'clinic'] as const).map(mode => (
-                    <FormItem key={mode} className="flex items-center space-x-2 space-y-0">
-                      <FormControl><RadioGroupItem value={mode} /></FormControl>
-                      <FormLabel className="font-normal capitalize">{mode === 'home' ? 'Home Visit' : mode}</FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField
+            control={form.control}
+            name="sessionMode"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Session Mode</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex space-x-4"
+                  >
+                    {(["home", "online", "clinic"] as const).map((mode) => (
+                      <FormItem
+                        key={mode}
+                        className="flex items-center space-x-2 space-y-0"
+                      >
+                        <FormControl>
+                          <RadioGroupItem value={mode} />
+                        </FormControl>
+                        <FormLabel className="font-normal capitalize">
+                          {mode === "home" ? "Home Visit" : mode}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           {/* ── Home Visit: Address Picker ── */}
-          {sessionMode === 'home' && (
+          {sessionMode === "home" && (
             <div className="space-y-3">
               <FormLabel className="text-base">Home Visit Address</FormLabel>
 
@@ -809,9 +1313,16 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                   onClick={() => setShowAddressPickerModal(true)}
                 >
                   <div className="pr-10 space-y-1">
-                    <p className="font-semibold text-gray-900 text-sm">{selectedAddress.fullName}</p>
-                    <p className="text-sm text-gray-600">{selectedAddress.fullAddress}</p>
-                    <p className="text-sm text-gray-500">{selectedAddress.city}, {selectedAddress.state} — {selectedAddress.pincode}</p>
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {selectedAddress.fullName}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {selectedAddress.fullAddress}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {selectedAddress.city}, {selectedAddress.state} —{" "}
+                      {selectedAddress.pincode}
+                    </p>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 right-4 flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-lg group-hover:bg-purple-200 transition-colors">
                     Change <ChevronDown size={12} />
@@ -823,127 +1334,299 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
                   onClick={() => setShowAddressPickerModal(true)}
                 >
                   {isAddressLoading ? (
-                    <><Loader2 className="animate-spin text-gray-400 w-6 h-6" /><p className="text-sm text-gray-400">Loading addresses...</p></>
+                    <>
+                      <Loader2 className="animate-spin text-gray-400 w-6 h-6" />
+                      <p className="text-sm text-gray-400">
+                        Loading addresses...
+                      </p>
+                    </>
                   ) : (
-                    <><MapPin className="text-gray-300 w-8 h-8" /><p className="text-sm font-medium text-gray-500">Select or add a home visit address</p><p className="text-xs text-gray-400">Tap to open address picker</p></>
+                    <>
+                      <MapPin className="text-gray-300 w-8 h-8" />
+                      <p className="text-sm font-medium text-gray-500">
+                        Select or add a home visit address
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Tap to open address picker
+                      </p>
+                    </>
                   )}
                 </div>
               )}
 
               {/* Validation error */}
-              <FormField control={form.control} name="addressId" render={() => <FormMessage />} />
+              <FormField
+                control={form.control}
+                name="addressId"
+                render={() => <FormMessage />}
+              />
 
               {/* Lat/lng if captured */}
-              {form.watch('latitude') && form.watch('longitude') && (
-                <Input disabled value={`Lat: ${form.watch('latitude')}, Lng: ${form.watch('longitude')}`} className="text-xs text-gray-400" />
+              {form.watch("latitude") && form.watch("longitude") && (
+                <Input
+                  disabled
+                  value={`Lat: ${form.watch("latitude")}, Lng: ${form.watch("longitude")}`}
+                  className="text-xs text-gray-400"
+                />
               )}
             </div>
           )}
 
           {/* Date & Time */}
           <div className="flex flex-col gap-6">
-            <FormField control={form.control} name="scheduledDate" render={({ field }) => (
+            <FormField
+              control={form.control}
+              name="scheduledDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Date</FormLabel>
+                  <FormControl>
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < startOfDay(new Date()) ||
+                        date > addDays(new Date(), advanceDays) ||
+                        !worksOnDay(date) ||
+                        (followUpOptions?.mode === "dates" && !followUpOptions.dates?.includes(format(date, "yyyy-MM-dd")))
+                      }
+                      initialFocus
+                      className="rounded-md border p-0"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="scheduledTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Time</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-3 gap-2">
+                      {timeSlots.map((time) => (
+                        <Button
+                          key={time}
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "text-xs h-10",
+                            field.value === time &&
+                              "bg-primary text-primary-foreground",
+                          )}
+                          onClick={() => field.onChange(time)}
+                        >
+                          {time}
+                        </Button>
+                      ))}
+                    </div>
+                  </FormControl>
+                  {!selectedDate && (
+                    <FormDescription>
+                      Please select a date first.
+                    </FormDescription>
+                  )}
+                  {selectedDate && slotsLoading && (
+                    <FormDescription>Loading available times...</FormDescription>
+                  )}
+                  {selectedDate && !slotsLoading && slotsError && (
+                    <FormDescription className="text-destructive">{slotsError}</FormDescription>
+                  )}
+                  {selectedDate && !slotsLoading && !slotsError && timeSlots.length === 0 && (
+                    <FormDescription>No times are open on this date. Please try another day.</FormDescription>
+                  )}
+                  <FormDescription>
+                    Earliest booking is {leadHours} hours from now; you can book up to {advanceDays} days ahead.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Prescription */}
+          <FormField
+            control={form.control}
+            name="prescription"
+            render={({ field: { onChange, ...fieldProps } }) => (
               <FormItem>
-                <FormLabel>Preferred Date</FormLabel>
+                <FormLabel>Upload Prescription (Optional)</FormLabel>
                 <FormControl>
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={date =>
-                      date < new Date(new Date().setDate(new Date().getDate() - 1)) ||
-                      isDateFullyBooked(date)
-                    }
-                    initialFocus
-                    className="rounded-md border p-0"
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+                    {...fieldProps}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Upload an image or PDF of your prescription.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Reports */}
+          <FormField
+            control={form.control}
+            name="reports"
+            render={({ field: { onChange, ...fieldProps } }) => (
+              <FormItem>
+                <FormLabel>Upload Reports (Optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+                    {...fieldProps}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Upload any relevant medical reports.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Notes */}
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Special Instructions</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Any additional notes for the therapist or clinic."
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )} />
-
-            <FormField control={form.control} name="scheduledTime" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Preferred Time</FormLabel>
-                <FormControl>
-                  <div className="grid grid-cols-3 gap-2">
-                    {timeSlots.map(time => (
-                      <Button
-                        key={time}
-                        type="button"
-                        variant="outline"
-                        className={cn('text-xs h-10', field.value === time && 'bg-primary text-primary-foreground')}
-                        onClick={() => field.onChange(time)}
-                        disabled={!isTimeSlotAvailable(time)}
-                      >
-                        {time}
-                      </Button>
-                    ))}
-                  </div>
-                </FormControl>
-                {!selectedDate && <FormDescription>Please select a date first.</FormDescription>}
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
-
-          {/* Prescription */}
-          <FormField control={form.control} name="prescription" render={({ field: { onChange, ...fieldProps } }) => (
-            <FormItem>
-              <FormLabel>Upload Prescription (Optional)</FormLabel>
-              <FormControl>
-                <Input type="file" accept="image/*,.pdf" onChange={e => onChange(e.target.files?.[0] ?? null)} {...fieldProps} />
-              </FormControl>
-              <FormDescription>Upload an image or PDF of your prescription.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          {/* Reports */}
-          <FormField control={form.control} name="reports" render={({ field: { onChange, ...fieldProps } }) => (
-            <FormItem>
-              <FormLabel>Upload Reports (Optional)</FormLabel>
-              <FormControl>
-                <Input type="file" accept="image/*,.pdf,.doc,.docx" onChange={e => onChange(e.target.files?.[0] ?? null)} {...fieldProps} />
-              </FormControl>
-              <FormDescription>Upload any relevant medical reports.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          {/* Notes */}
-          <FormField control={form.control} name="notes" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Special Instructions</FormLabel>
-              <FormControl><Textarea placeholder="Any additional notes for the therapist or clinic." {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+            )}
+          />
 
           {/* Consents */}
           <div className="space-y-4">
-            {([
-              { name: 'consent_terms', href: '/legal/terms-of-use', label: 'Terms of Use' },
-              { name: 'consent_medical', href: '/legal/medical-consent', label: 'Medical Consent Terms' },
-              { name: 'consent_privacy', href: '/legal/privacy-policy', label: 'Privacy Policy' },
-              { name: 'consent_refund', href: '/legal/refund-policy', label: 'Refund, Cancellation & Return Policy' },
-            ] as const).map(({ name, href, label }) => (
-              <FormField key={name} control={form.control} name={name} render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>I agree to the <Link href={href} className="text-primary hover:underline" target="_blank">{label}</Link>.</FormLabel>
-                    <FormMessage />
-                  </div>
-                </FormItem>
-              )} />
+            {(
+              [
+                {
+                  name: "consent_terms",
+                  href: "/legal/terms-of-use",
+                  label: "Terms of Use",
+                },
+                {
+                  name: "consent_medical",
+                  href: "/legal/medical-consent",
+                  label: "Medical Consent Terms",
+                },
+                {
+                  name: "consent_privacy",
+                  href: "/legal/privacy-policy",
+                  label: "Privacy Policy",
+                },
+                {
+                  name: "consent_refund",
+                  href: "/legal/refund-policy",
+                  label: "Refund, Cancellation & Return Policy",
+                },
+              ] as const
+            ).map(({ name, href, label }) => (
+              <FormField
+                key={name}
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        I agree to the{" "}
+                        <Link
+                          href={href}
+                          className="text-primary hover:underline"
+                          target="_blank"
+                        >
+                          {label}
+                        </Link>
+                        .
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
             ))}
           </div>
+
+          {/* Care Package Option (P28) */}
+          {myPacks.length > 0 && (
+            <div className="p-4 rounded-xl border border-primary/40 bg-primary/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm">Pay with Care Package</span>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-primary">
+                  <input
+                    type="checkbox"
+                    checked={usePack}
+                    onChange={(e) => setUsePack(e.target.checked)}
+                    className="h-4 w-4 rounded accent-primary cursor-pointer"
+                  />
+                  Use Package
+                </label>
+              </div>
+
+              {usePack && (
+                <div className="space-y-2 pt-2 border-t border-primary/20">
+                  <label className="text-xs text-muted-foreground block">Select Active Package:</label>
+                  <select
+                    value={selectedPackId || ""}
+                    onChange={(e) => setSelectedPackId(Number(e.target.value))}
+                    className="w-full text-xs rounded-lg border bg-background p-2.5 font-medium"
+                  >
+                    {myPacks.map((p) => {
+                      const left = p.sessions_total - p.sessions_used;
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.plan_name} — {left} sessions remaining
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-emerald-600 font-medium">
+                    ✓ 1 session will be redeemed from your package. No online payment required.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Price */}
           <div className="p-4 rounded-lg bg-muted/50 text-center">
             <p className="text-muted-foreground">Service Fee</p>
-            <p className="text-2xl font-bold"><Price amount={therapist?.hourlyRate ?? 1500} showDecimals /></p>
+            {usePack ? (
+              <div className="space-y-0.5">
+                <p className="text-2xl font-bold text-emerald-600">₹0</p>
+                <p className="text-xs text-muted-foreground font-medium">Covered by active Care Package</p>
+              </div>
+            ) : (
+              <p className="text-2xl font-bold">
+                {therapist?.hourlyRate ? <Price amount={therapist.hourlyRate} showDecimals /> : <span className="text-sm text-muted-foreground">Price not set</span>}
+              </p>
+            )}
           </div>
 
           {/* Submit */}
@@ -952,11 +1635,17 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               size="lg"
               type="button"
               onClick={() => {
-                toast({ title: 'Authentication Required', description: 'Please sign in to book an appointment.' });
-                router.push('/auth/signin');
+                toast({
+                  title: "Authentication Required",
+                  description: "Please sign in to book an appointment.",
+                });
+                router.push("/auth/signin");
               }}
               className="w-full text-white hover:opacity-90 transition-opacity border-0"
-              style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))",
+              }}
             >
               Sign In to Book
             </Button>
@@ -964,15 +1653,21 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             <Button
               size="lg"
               type="submit"
-              disabled={!isLoaded || isPending}
+              disabled={!isLoaded || isPending || followUpBlocked}
               className="w-full text-white hover:opacity-90 transition-opacity border-0"
-              style={{ background: 'linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))' }}
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(262,80%,50%), hsl(280,85%,56%))",
+              }}
             >
-              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-              Proceed to Payment
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle className="mr-2 h-4 w-4" />
+              )}
+              Request Appointment
             </Button>
           )}
-
         </form>
       </Form>
     </>

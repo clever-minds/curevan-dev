@@ -77,15 +77,7 @@ export function PhoneSigninForm() {
   const handleSendOTP = async (data: PhoneFormValues) => {
     setLoading(true);
     try {
-      // 1️⃣ Check backend if number exists
-     const checkData = await loginWithOTP({
-            phoneNumber: `+91${data.phoneNumber}`
-            });
-    
-      if (!checkData.success)
-        throw new Error(checkData.error || 'Phone number not registered');
-
-      // 2️⃣ Send OTP via Firebase
+      // Send OTP via Firebase (registration is checked by the server after the code is verified)
       const formattedPhone = `+91${data.phoneNumber}`;
 
       confirmationResultRef.current = await sendOTP(formattedPhone);
@@ -112,13 +104,11 @@ export function PhoneSigninForm() {
     setLoading(true);
     try {
       const result = await confirmationResultRef.current.confirm(otp);
-      const phoneNumber = result.user.phoneNumber;
+      // The server verifies this Firebase ID token and reads the phone number from it.
+      const firebaseIdToken = await result.user.getIdToken();
 
       // 3️⃣ Call backend to generate JWT
-     const data = await loginWithOTP({
-                phoneNumber: phoneNumber || '',
-                verifyOtp: true,
-                });
+     const data = await loginWithOTP({ firebaseIdToken });
       if (!data.success) throw new Error(data.error || 'Failed to login');
       const token=data.token;
       const userProfile = await getUserProfile(token);
@@ -131,7 +121,7 @@ export function PhoneSigninForm() {
       const redirectUrl = searchParams.get('redirectUrl');
       
       // Resolve role-specific dashboard link
-      const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
+      const roles = Array.isArray(userProfile.roles) && userProfile.roles.length ? userProfile.roles as string[] : (Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[]);      // the generic 'admin' in .role says nothing about which admin
       const dashboardHref = resolveMyDashboardHref(roles);
       
       router.push(redirectUrl || dashboardHref);

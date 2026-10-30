@@ -22,7 +22,7 @@ export default function NotificationsPage() {
 
       const fetchNotifications = async () => {
           setLoading(true);
-          const data = await listNotifications();
+          const data = await listNotifications(user.id);
           setNotifications(data);
           setLoading(false);
       }

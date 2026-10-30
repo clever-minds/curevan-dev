@@ -1,5 +1,6 @@
 
 import { Product, Coupon, Offer } from './types';
+export type { Offer };
 
 export interface PricingResult {
   originalPrice: number;

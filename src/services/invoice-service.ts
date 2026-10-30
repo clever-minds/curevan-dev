@@ -5,20 +5,23 @@ import { getAppointmentById } from '@/lib/repos/appointments';
 import { getOrderById, listOrders } from '@/lib/repos/orders';
 import serverApi from "@/lib/repos/axios.server";
 import { getToken } from "@/lib/auth";
-const supplierDetails = {
-  legalName: "Himaya Care Pvt. Ltd.",
-  tradeName: "Curevan",
-  address: {
-    line1: "Office 704, Time Square, Vasna-Bhayli Main Rd",
-    city: "Vadodara",
-    state: "Gujarat",
-    pin: "390012",
-    country: "India"
-  },
-  gstin: "24AAICH1171N1ZG", // Example GSTIN
-  phone: "+91 79 9060 213",
-  email: "accounts@curevan.com"
-};
+// Who issues the invoices: the company settings (GET /api/config/legal-entity). Empty fields stay empty and the invoice shows a warning.
+async function getSupplierDetails() {
+  const empty = { legalName: "", tradeName: "Curevan", address: { line1: "", city: "", state: "", pin: "", country: "India" }, gstin: "", cin: "", pan: "", phone: "", email: "", bank: { name: "", branch: "", accountNumber: "", ifsc: "" } };
+  try {
+    const { data } = await serverApi.get("/api/config/legal-entity");
+    const e = data?.data ?? {};
+    return {
+      legalName: e.name || empty.legalName,
+      tradeName: e.tradeName || empty.tradeName,
+      address: { line1: e.addressLine1 || "", city: e.city || "", state: e.state || "", pin: e.pin || "", country: "India" },
+      gstin: e.gstin || "", cin: e.cin || "", pan: e.pan || "", phone: e.phone || "", email: e.email || "",
+      bank: { name: e.bankName || "", branch: e.bankBranch || "", accountNumber: e.bankAccountNumber || "", ifsc: e.bankIfsc || "" },
+    };
+  } catch {
+    return empty;
+  }
+}
 
 interface InvoiceAddress {
   id: number;
@@ -87,6 +90,7 @@ const getSafeDate = (date?: string | Date | null): string => {
 
 
 async function generateGoodsInvoiceData(order: any, invoice: any) {
+  const supplierDetails = await getSupplierDetails();
   // Use most accurate totals from either 'invoice' (offical record) or 'source' (order data)
   const totalAmount = Number(order.total || (invoice.total_amount_paise / 100) || 0);
   const cgstTotal = Number(order.cgst || ((invoice.cgst_amount || 0) / 100) || 0);
@@ -138,6 +142,7 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
 
     return {
       ...item,
+      invoiceType: 'order',
       id: item.id || item.sku,
       name: item.name || 'Product',
       hsnCode: item.hsnCode || '3004',
@@ -169,6 +174,7 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
 
   return {
     ...invoice,
+    invoiceType: 'order',
     supplier: supplierDetails,
     customer: {
       name: order.customer_name || order.customerName || "Customer",
@@ -195,40 +201,49 @@ async function generateGoodsInvoiceData(order: any, invoice: any) {
 
 
 
-function generateServiceInvoiceData(appointment: Appointment, invoice: InvoiceType) {
-  // Convert Paise to Rupees for consistency
-  const totalAmountRupees = (invoice as any).total_amount_paise ? ((invoice as any).total_amount_paise / 100) : (invoice.totalAmountPaise / 100);
-  const subtotalRupees = appointment.serviceAmount || (totalAmountRupees / 1.18);
-  const totalTaxRupees = totalAmountRupees - subtotalRupees;
+async function generateServiceInvoiceData(appointment: Appointment, invoice: InvoiceType) {
+  const supplierDetails = await getSupplierDetails();
+  const raw = invoice as any;
+  const totalAmountRupees = raw.total_amount_paise ? raw.total_amount_paise / 100 : invoice.totalAmountPaise / 100;
+  // the category is stored on the invoice when it is issued; an invoice from before that has no category and keeps the 18% layout it was issued with
+  const taxCategory: 'exempt_clinical' | 'taxable_18' = raw.tax_category === 'exempt_clinical' ? 'exempt_clinical' : 'taxable_18';
+  const exempt = taxCategory === 'exempt_clinical';
+  const gst = exempt ? 0 : (raw.gst_amount !== null && raw.gst_amount !== undefined && Number(raw.gst_amount) > 0 ? Number(raw.gst_amount) : totalAmountRupees - totalAmountRupees / 1.18);
+  const subtotalRupees = totalAmountRupees - gst;
+  const hasSplit = raw.cgst_amount !== undefined && raw.cgst_amount !== null && (Number(raw.cgst_amount) + Number(raw.sgst_amount) + Number(raw.igst_amount)) > 0;
+  const cgst = exempt ? 0 : hasSplit ? Number(raw.cgst_amount) : gst / 2;
+  const sgst = exempt ? 0 : hasSplit ? Number(raw.sgst_amount) : gst / 2;
+  const igst = exempt ? 0 : hasSplit ? Number(raw.igst_amount) : 0;
 
   return {
     ...invoice,
+    invoiceType: 'booking',
+    taxCategory,
     supplier: supplierDetails,
-    customer: { 
-      name: appointment.patientName, 
-      billingAddress: normalizeAddress(appointment.serviceAddress), 
-      shippingAddress: normalizeAddress(appointment.serviceAddress) 
+    customer: {
+      name: appointment.patientName,
+      billingAddress: normalizeAddress(appointment.serviceAddress),
+      shippingAddress: normalizeAddress(appointment.serviceAddress)
     },
-    invoiceNumber: (invoice as any).invoice_number || invoice.invoiceNumber || `INV-${invoice.id}`,
-    invoiceDate: getSafeDate((invoice as any).issued_at || invoice.issuedAt as any),
+    invoiceNumber: raw.invoice_number || invoice.invoiceNumber || `INV-${invoice.id}`,
+    invoiceDate: getSafeDate(raw.issued_at || invoice.issuedAt as any),
     placeOfSupply: `${appointment.serviceAddress?.city || ''}, ${appointment.serviceAddress?.state || ''}`,
     items: [{
       id: appointment.id,
       name: appointment.therapyType || 'Physiotherapy Service',
       quantity: 1,
       price: subtotalRupees,
-      gstRate: 18,
-      hsnCode: '99834',
-      cgst: totalTaxRupees / 2,
-      sgst: totalTaxRupees / 2,
+      gstRate: exempt ? 0 : 18,
+      hsnCode: '99834',     // unchanged from before; the CA confirms the SAC code together with the GST treatment (owner decision D1)
+      cgst, sgst, igst,
       taxableValue: subtotalRupees
     }],
-    subtotal: subtotalRupees, 
-    totalTax: totalTaxRupees, 
-    cgstTotal: totalTaxRupees / 2, 
-    sgstTotal: totalTaxRupees / 2, 
-    igstTotal: 0,
-    totalAmount: totalAmountRupees, 
+    subtotal: subtotalRupees,
+    totalTax: gst,
+    cgstTotal: cgst,
+    sgstTotal: sgst,
+    igstTotal: igst,
+    totalAmount: totalAmountRupees,
     amountInWords: numberToWords(totalAmountRupees)
   };
 }
@@ -272,7 +287,8 @@ export async function getInvoiceById(invoiceId: string | number) {
     if (!token) {
       throw new Error('Token missing, please login again');
     }
-    const response = await serverApi.get(`/api/orders/invoice/${invoiceId}`, {
+    const parsedId = String(invoiceId).startsWith('INV-') ? String(invoiceId).replace('INV-', '') : invoiceId;
+    const response = await serverApi.get(`/api/orders/invoice/${parsedId}`, {
       withCredentials: true,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -294,7 +310,7 @@ export async function getInvoiceById(invoiceId: string | number) {
 
       if (!orderData) {
           try {
-            const orderRes = await serverApi.get(`/api/orders/${sourceIdValue}`, {
+            const orderRes = await serverApi.get(`/api/orders/order/${sourceIdValue}`, {
               withCredentials: true,
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -326,7 +342,7 @@ export async function getInvoiceById(invoiceId: string | number) {
           orderData = appointmentRes.data;
       }
       if (!orderData) return null;
-      return generateServiceInvoiceData(orderData, invoice);
+      return await generateServiceInvoiceData(orderData, invoice);
     }
 
     return null;
@@ -341,4 +357,4 @@ export async function getInvoiceById(invoiceId: string | number) {
 }
 
 // Export the type for use in components
-export type InvoiceData = Awaited<ReturnType<typeof generateGoodsInvoiceData>> | ReturnType<typeof generateServiceInvoiceData>;
+export type InvoiceData = Awaited<ReturnType<typeof generateGoodsInvoiceData>> | Awaited<ReturnType<typeof generateServiceInvoiceData>>;

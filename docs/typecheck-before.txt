@@ -1,0 +1,193 @@
+src/ai/dev.ts(7,10): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/ai/dev.ts(8,10): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/ai/dev.ts(9,10): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/ai/flows/chat-assistant.ts(55,35): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/app/auth/signin/debug-login-buttons.tsx(13,5): error TS2322: Type '{ uid: string; email: string; role: "admin"; roles: string[]; name: string; label: string; }' is not assignable to type 'UserProfile & { label: string; }'.
+  Type '{ uid: string; email: string; role: "admin"; roles: string[]; name: string; label: string; }' is missing the following properties from type 'UserProfile': id, push_opt_in, email_opt_in
+src/app/auth/signin/debug-login-buttons.tsx(14,5): error TS2322: Type '{ uid: string; email: string; role: "admin"; roles: string[]; name: string; label: string; }' is not assignable to type 'UserProfile & { label: string; }'.
+  Type '{ uid: string; email: string; role: "admin"; roles: string[]; name: string; label: string; }' is missing the following properties from type 'UserProfile': id, push_opt_in, email_opt_in
+src/app/auth/signin/debug-login-buttons.tsx(15,5): error TS2322: Type '{ uid: string; email: string; role: "admin"; roles: string[]; name: string; label: string; }' is not assignable to type 'UserProfile & { label: string; }'.
+  Type '{ uid: string; email: string; role: "admin"; roles: string[]; name: string; label: string; }' is missing the following properties from type 'UserProfile': id, push_opt_in, email_opt_in
+src/app/auth/signin/debug-login-buttons.tsx(16,5): error TS2322: Type '{ uid: string; email: string; role: "therapist"; roles: string[]; name: string; label: string; }' is not assignable to type 'UserProfile & { label: string; }'.
+  Type '{ uid: string; email: string; role: "therapist"; roles: string[]; name: string; label: string; }' is missing the following properties from type 'UserProfile': id, push_opt_in, email_opt_in
+src/app/auth/signin/debug-login-buttons.tsx(17,5): error TS2322: Type '{ uid: string; email: string; role: "patient"; roles: string[]; name: string; label: string; }' is not assignable to type 'UserProfile & { label: string; }'.
+  Type '{ uid: string; email: string; role: "patient"; roles: string[]; name: string; label: string; }' is missing the following properties from type 'UserProfile': id, push_opt_in, email_opt_in
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(179,32): error TS2322: Type 'string' is not assignable to type '"locked" | "needsApproval" | "instant"'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(287,24): error TS2345: Argument of type '{ email: string; mobile: string; fullName: string; bio: string; serviceRadiusKm: number; line1: string; line2: string; city: string; state: string; pin: string; qualification: string; registrationNo: string; ... 7 more ...; specialty: string[]; }' is not assignable to parameter of type '{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; } | { ...; } | ResetAction<...> | undefined'.
+  Types of property 'membershipPlan' are incompatible.
+    Type '"basic" | "standard" | "premium"' is not assignable to type '"standard" | "premium" | undefined'.
+      Type '"basic"' is not assignable to type '"standard" | "premium" | undefined'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(300,42): error TS2339: Property 'experience' does not exist on type 'Therapist'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(392,45): error TS2345: Argument of type '{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }' is not assignable to parameter of type '{ state: string; email: string; fullName: string; lat: number; lng: number; fullAddress: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; ... 18 more ...; isEditing?: string | undefined; }'.
+  Type '{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }' is missing the following properties from type '{ state: string; email: string; fullName: string; lat: number; lng: number; fullAddress: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; ... 18 more ...; isEditing?: string | undefined; }': lat, lng, fullAddress, experience_years
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(395,46): error TS2345: Argument of type '{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }' is not assignable to parameter of type 'FormData'.
+  Type '{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }' is missing the following properties from type 'FormData': append, delete, get, getAll, and 7 more.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(511,35): error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+  Type 'string | number' is not assignable to type 'string'.
+    Type 'number' is not assignable to type 'string'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(557,43): error TS2322: Type '`availability.${string}.enabled`' is not assignable to type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(560,135): error TS2322: Type '`availability.${string}.morning.start`' is not assignable to type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(560,308): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(names: readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[], defaultValue?: { ...; } | undefined): readonly any[]', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[]'.
+  Overload 2 of 4, '(name: "state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears", defaultValue?: any): any', gave the following error.
+    Argument of type '`availability.${string}.enabled`' is not assignable to parameter of type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+  Overload 3 of 4, '(callback: WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>, defaultValues?: { ...; } | undefined): Subscription', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(560,369): error TS2322: Type '`availability.${string}.morning.end`' is not assignable to type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(560,540): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(names: readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[], defaultValue?: { ...; } | undefined): readonly any[]', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[]'.
+  Overload 2 of 4, '(name: "state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears", defaultValue?: any): any', gave the following error.
+    Argument of type '`availability.${string}.enabled`' is not assignable to parameter of type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+  Overload 3 of 4, '(callback: WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>, defaultValues?: { ...; } | undefined): Subscription', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(561,135): error TS2322: Type '`availability.${string}.evening.start`' is not assignable to type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(561,308): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(names: readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[], defaultValue?: { ...; } | undefined): readonly any[]', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[]'.
+  Overload 2 of 4, '(name: "state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears", defaultValue?: any): any', gave the following error.
+    Argument of type '`availability.${string}.enabled`' is not assignable to parameter of type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+  Overload 3 of 4, '(callback: WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>, defaultValues?: { ...; } | undefined): Subscription', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(561,369): error TS2322: Type '`availability.${string}.evening.end`' is not assignable to type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+src/app/auth/therapist-signup/therapist-onboarding-form-bk.tsx(561,540): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(names: readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[], defaultValue?: { ...; } | undefined): readonly any[]', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'readonly ("state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears")[]'.
+  Overload 2 of 4, '(name: "state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears", defaultValue?: any): any', gave the following error.
+    Argument of type '`availability.${string}.enabled`' is not assignable to parameter of type '"state" | "image" | "email" | "password" | "confirmPassword" | "fullName" | "bio" | "serviceRadiusKm" | "line1" | "line2" | "city" | "pin" | "mobile" | "qualification" | "registrationNo" | ... 73 more ... | "experienceYears"'.
+  Overload 3 of 4, '(callback: WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>, defaultValues?: { ...; } | undefined): Subscription', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'WatchObserver<{ state: string; email: string; fullName: string; serviceRadiusKm: number; line1: string; city: string; pin: string; mobile: string; qualification: string; registrationNo: string; specialty: (string | number)[]; ... 15 more ...; kycBankProof?: any; }>'.
+src/app/booking/[id]/page.tsx(27,42): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/app/booking/[id]/page.tsx(108,62): error TS2339: Property 'address' does not exist on type 'Therapist'.
+src/app/components/header.tsx(3,24): error TS2307: Cannot find module './ui/button' or its corresponding type declarations.
+src/app/components/header.tsx(4,18): error TS2307: Cannot find module './logo' or its corresponding type declarations.
+src/app/components/header.tsx(5,132): error TS2307: Cannot find module './ui/dropdown-menu' or its corresponding type declarations.
+src/app/components/header.tsx(6,53): error TS2307: Cannot find module './ui/avatar' or its corresponding type declarations.
+src/app/components/header.tsx(7,51): error TS2307: Cannot find module './ui/sheet' or its corresponding type declarations.
+src/app/contact/page.tsx(76,58): error TS2339: Property 'error' does not exist on type 'ApiResponse<any>'.
+src/app/dashboard/admin/ai/page.tsx(118,16): error TS2339: Property 'userId' does not exist on type 'AIFeedback'.
+src/app/dashboard/admin/reports/ecom-financials/page.tsx(35,23): error TS2345: Argument of type 'Order[] | null' is not assignable to parameter of type 'SetStateAction<Order[]>'.
+  Type 'null' is not assignable to type 'SetStateAction<Order[]>'.
+src/app/dashboard/admin/reports/ecom-financials/page.tsx(55,22): error TS18047: 'allOrders' is possibly 'null'.
+src/app/dashboard/admin/reports/financials/page.tsx(561,32): error TS2304: Cannot find name 'CheckCircle2'.
+src/app/dashboard/admin/reports/financials/page.tsx(628,36): error TS2304: Cannot find name 'CheckCircle2'.
+src/app/dashboard/admin/settings/page.tsx(53,51): error TS2339: Property 'userId' does not exist on type 'PatientProfile'.
+src/app/dashboard/admin/settings/page.tsx(58,9): error TS2531: Object is possibly 'null'.
+src/app/dashboard/admin/settings/page.tsx(58,73): error TS2339: Property 'experience' does not exist on type 'Therapist'.
+src/app/dashboard/admin/settings/page.tsx(58,141): error TS2339: Property 'address' does not exist on type 'Therapist'.
+src/app/dashboard/admin/settings/page.tsx(58,160): error TS2339: Property 'address' does not exist on type 'Therapist'.
+src/app/dashboard/admin/settings/page.tsx(68,9): error TS2531: Object is possibly 'null'.
+src/app/dashboard/admin/settings/page.tsx(73,77): error TS2339: Property 'userId' does not exist on type 'Invoice'.
+src/app/dashboard/admin/settings/page.tsx(78,122): error TS2339: Property 'userId' does not exist on type 'CreditNote'.
+src/app/dashboard/admin/settings/page.tsx(143,68): error TS2339: Property 'userId' does not exist on type 'PaymentTransaction'.
+src/app/dashboard/admin/settings/page.tsx(148,65): error TS2339: Property 'userId' does not exist on type 'AIFeedback'.
+src/app/dashboard/admin/sos-alerts/page.tsx(56,79): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/app/dashboard/admin/sos-alerts/page.tsx(111,34): error TS2339: Property 'type' does not exist on type 'SOSAlert'.
+src/app/dashboard/admin/sos-alerts/page.tsx(131,51): error TS2339: Property '_latitude' does not exist on type 'GeoPoint'.
+src/app/dashboard/admin/sos-alerts/page.tsx(131,82): error TS2339: Property '_longitude' does not exist on type 'GeoPoint'.
+src/app/dashboard/admin/sos-alerts/page.tsx(168,68): error TS2339: Property 'type' does not exist on type 'SOSAlert'.
+src/app/dashboard/admin/sos-alerts/page.tsx(169,63): error TS2352: Conversion of type 'Date' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/app/dashboard/admin/team/page.tsx(72,34): error TS18047: 'therapistProfiles' is possibly 'null'.
+src/app/dashboard/admin/team/page.tsx(157,14): error TS2551: Property 'address' does not exist on type 'UserProfile & Partial<Therapist>'. Did you mean 'addresses'?
+src/app/dashboard/admin/team/page.tsx(158,14): error TS2551: Property 'address' does not exist on type 'UserProfile & Partial<Therapist>'. Did you mean 'addresses'?
+src/app/dashboard/admin/team/page.tsx(309,39): error TS2551: Property 'address' does not exist on type 'UserProfile & Partial<Therapist>'. Did you mean 'addresses'?
+src/app/dashboard/admin/team/page.tsx(309,57): error TS2551: Property 'address' does not exist on type 'UserProfile & Partial<Therapist>'. Did you mean 'addresses'?
+src/app/dashboard/admin/team/page.tsx(309,79): error TS2551: Property 'address' does not exist on type 'UserProfile & Partial<Therapist>'. Did you mean 'addresses'?
+src/app/dashboard/bookings/page.tsx(41,34): error TS2339: Property 'length' does not exist on type 'Date'.
+src/app/dashboard/bookings/page.tsx(41,60): error TS2339: Property 'includes' does not exist on type 'Date'.
+src/app/dashboard/bookings/page.tsx(42,33): error TS2339: Property 'substring' does not exist on type 'Date'.
+src/app/dashboard/bookings/page.tsx(47,13): error TS2322: Type 'string' is not assignable to type 'Date'.
+src/app/dashboard/bookings/page.tsx(52,11): error TS2322: Type 'string' is not assignable to type 'Date'.
+src/app/dashboard/bookings/page.tsx(52,53): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'string'.
+src/app/dashboard/earnings/page.tsx(104,48): error TS2353: Object literal may only specify known properties, and 'couponCode' does not exist in type '{ userId?: number | undefined; }'.
+src/app/dashboard/earnings/page.tsx(105,29): error TS2345: Argument of type 'Order[] | null' is not assignable to parameter of type 'SetStateAction<Order[]>'.
+  Type 'null' is not assignable to type 'SetStateAction<Order[]>'.
+src/app/dashboard/earnings/page.tsx(367,54): error TS2352: Conversion of type 'Date' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/app/dashboard/ecom-admin/my-dashboard/page.tsx(78,33): error TS18047: 'ordersData' is possibly 'null'.
+src/app/dashboard/ecom-admin/my-dashboard/page.tsx(80,27): error TS2345: Argument of type 'Order[] | null' is not assignable to parameter of type 'SetStateAction<Order[]>'.
+  Type 'null' is not assignable to type 'SetStateAction<Order[]>'.
+src/app/dashboard/patient/orders/page.tsx(45,45): error TS2322: Type 'string' is not assignable to type 'number'.
+src/app/dashboard/patient/orders/page.tsx(46,23): error TS2345: Argument of type 'Order[] | null' is not assignable to parameter of type 'SetStateAction<Order[]>'.
+  Type 'null' is not assignable to type 'SetStateAction<Order[]>'.
+src/app/dashboard/therapist/pcr/page.tsx(41,36): error TS2339: Property 'length' does not exist on type 'Date'.
+src/app/dashboard/therapist/pcr/page.tsx(41,62): error TS2339: Property 'includes' does not exist on type 'Date'.
+src/app/dashboard/therapist/pcr/page.tsx(42,37): error TS2339: Property 'substring' does not exist on type 'Date'.
+src/app/dashboard/therapist/pcr/page.tsx(47,35): error TS2552: Cannot find name 'format'. Did you mean 'FormData'?
+src/app/dashboard/therapist/pcr/page.tsx(52,43): error TS2552: Cannot find name 'format'. Did you mean 'FormData'?
+src/app/dashboard/therapist/pcr/page.tsx(52,50): error TS2304: Cannot find name 'parseISO'.
+src/app/dashboard/therapist/schedule/page.tsx(146,16): error TS2739: Type '{ session: Appointment; onEndSession: () => void; }' is missing the following properties from type '{ session: Appointment; onEndSession: () => void; onStatusUpdate: (id: number, status: "Pending Approval" | "Pending" | "Payment Pending" | "Confirmed" | "Completed" | "Cancelled" | ... 10 more ... | "Session Started") => void; onVerifyRequest: (session: Appointment) => void; }': onStatusUpdate, onVerifyRequest
+src/app/dashboard/therapist/training/page.tsx(142,54): error TS2339: Property 'split' does not exist on type 'string[]'.
+src/app/dashboard/therapist/training/page.tsx(142,69): error TS7006: Parameter 'cat' implicitly has an 'any' type.
+src/app/dashboard/therapy-admin/users/page.tsx(56,85): error TS2339: Property 'error' does not exist on type '{ success: boolean; message: string; }'.
+src/app/discover/page.tsx(51,26): error TS2345: Argument of type 'Therapist[] | null' is not assignable to parameter of type 'SetStateAction<Therapist[]>'.
+  Type 'null' is not assignable to type 'SetStateAction<Therapist[]>'.
+src/app/ecommerce/product/[id]/page.tsx(58,33): error TS2459: Module '"@/lib/pricing"' declares 'Offer' locally, but it is not exported.
+src/app/ecommerce/product/[id]/page.tsx(269,9): error TS18048: 'product.variants.length' is possibly 'undefined'.
+src/app/ecommerce/product/[id]/page.tsx(278,34): error TS2554: Expected 1-2 arguments, but got 4.
+src/app/ecommerce/product/[id]/page.tsx(299,40): error TS2554: Expected 2 arguments, but got 3.
+src/app/ecommerce/product/[id]/page.tsx(505,87): error TS18048: 'product.images' is possibly 'undefined'.
+src/app/ecommerce/product/[id]/page.tsx(513,72): error TS18048: 'product.images' is possibly 'undefined'.
+src/app/ecommerce/product/[id]/page.tsx(717,61): error TS2551: Property 'product_type' does not exist on type 'Product'. Did you mean 'productType'?
+src/app/pcr/[bookingId]/page.tsx(22,16): error TS2322: Type 'string' is not assignable to type 'number'.
+src/app/shop/checkout/order-summary.tsx(111,34): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/app/shop/checkout/order-summary.tsx(113,56): error TS2365: Operator '<' cannot be applied to types 'string | number' and 'number'.
+src/app/tp/[id]/page.tsx(18,48): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/app/training/[slug]/page.tsx(75,29): error TS2339: Property 'coverImageUrl' does not exist on type 'KnowledgeBase'.
+src/app/training/[slug]/page.tsx(84,108): error TS2551: Property 'categoryIds' does not exist on type 'KnowledgeBase'. Did you mean 'categories'?
+src/app/training/[slug]/page.tsx(98,17): error TS2339: Property 'attachments' does not exist on type 'KnowledgeBase'.
+src/app/training/[slug]/page.tsx(98,41): error TS2339: Property 'attachments' does not exist on type 'KnowledgeBase'.
+src/app/training/[slug]/page.tsx(104,27): error TS2339: Property 'attachments' does not exist on type 'KnowledgeBase'.
+src/app/training/[slug]/page.tsx(104,44): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/app/training/[slug]/page.tsx(104,50): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/components/admin/AdminUsersTable.tsx(235,36): error TS2551: Property 'address' does not exist on type 'CombinedUser'. Did you mean 'addresses'?
+src/components/admin/AdminUsersTable.tsx(235,54): error TS2551: Property 'address' does not exist on type 'CombinedUser'. Did you mean 'addresses'?
+src/components/admin/AdminUsersTable.tsx(235,76): error TS2551: Property 'address' does not exist on type 'CombinedUser'. Did you mean 'addresses'?
+src/components/admin/CouponForm.tsx(88,21): error TS2345: Argument of type 'Therapist[] | null' is not assignable to parameter of type 'SetStateAction<Therapist[]>'.
+  Type 'null' is not assignable to type 'SetStateAction<Therapist[]>'.
+src/components/admin/CouponForm.tsx(119,25): error TS2551: Property 'ownertype' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'ownerType'?
+src/components/admin/CouponForm.tsx(121,27): error TS2551: Property 'isstackable' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'isStackable'?
+src/components/admin/CouponForm.tsx(123,27): error TS2551: Property 'maxdiscount' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'maxDiscount'?
+src/components/admin/CouponForm.tsx(124,25): error TS2551: Property 'maxdiscount' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'maxDiscount'?
+src/components/admin/CouponForm.tsx(127,26): error TS2551: Property 'usagelimit' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'usageLimit'?
+src/components/admin/CouponForm.tsx(128,28): error TS2551: Property 'usageperuser' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'usagePerUser'?
+src/components/admin/CouponForm.tsx(129,29): error TS2551: Property 'minordervalue' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'minOrderValue'?
+src/components/admin/CouponForm.tsx(130,25): error TS2551: Property 'minordervalue' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'minOrderValue'?
+src/components/admin/CouponForm.tsx(133,25): error TS2551: Property 'validfrom' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'validFrom'?
+src/components/admin/CouponForm.tsx(134,27): error TS2551: Property 'validfrom' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'validFrom'?
+src/components/admin/CouponForm.tsx(137,23): error TS2551: Property 'validto' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'validTo'?
+src/components/admin/CouponForm.tsx(138,27): error TS2551: Property 'validto' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'validTo'?
+src/components/admin/CouponForm.tsx(141,27): error TS2551: Property 'therapistid' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'therapistId'?
+src/components/admin/CouponForm.tsx(142,25): error TS2551: Property 'therapistid' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'therapistId'?
+src/components/admin/CouponForm.tsx(146,29): error TS2551: Property 'internalnotes' does not exist on type 'Partial<{ code: string; status: "Active" | "Paused" | "Scheduled"; type: "percent" | "flat"; value: number; scope: "Product" | "Category" | "Global"; ownerType: "Therapist" | "Platform"; ... 10 more ...; internalNotes?: string | undefined; }>'. Did you mean 'internalNotes'?
+src/components/admin/CouponForm.tsx(168,9): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'Partial<Omit<Coupon, "id">>'.
+src/components/admin/CouponForm.tsx(274,377): error TS2322: Type 'number' is not assignable to type 'string'.
+src/components/admin/InvoicesTable.tsx(57,56): error TS2339: Property 'userId' does not exist on type 'Invoice'.
+src/components/admin/InvoicesTable.tsx(110,39): error TS2339: Property 'userId' does not exist on type 'Invoice'.
+src/components/bottom-nav.tsx(111,51): error TS2339: Property 'badgeCount' does not exist on type '{ href: string; label: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }'.
+src/components/consent-form.tsx(44,39): error TS2345: Argument of type '{ consentType: "terms" | "privacy" | "medical" | "marketing"; version: string; }' is not assignable to parameter of type 'LogConsentPayload'.
+  Property 'userId' is missing in type '{ consentType: "terms" | "privacy" | "medical" | "marketing"; version: string; }' but required in type 'LogConsentPayload'.
+src/components/dashboard-nav.tsx(229,22): error TS2339: Property 'type' does not exist on type '{ href: string; label: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; exact: boolean; } | { ...; } | { ...; } | { ...; } | { ...; }'.
+  Property 'type' does not exist on type '{ href: string; label: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; exact: boolean; }'.
+src/components/dashboard-nav.tsx(242,22): error TS2604: JSX element type 'item.icon' does not have any construct or call signatures.
+src/components/dashboard-nav.tsx(242,22): error TS2786: 'item.icon' cannot be used as a JSX component.
+  Its type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> | undefined' is not a valid JSX element type.
+    Type 'undefined' is not assignable to type 'ElementType'.
+src/components/ecommerce/bundle-components-list.tsx(21,90): error TS2551: Property 'product_type' does not exist on type 'Product'. Did you mean 'productType'?
+src/components/ecommerce/cart-sheet.tsx(98,130): error TS2554: Expected 2 arguments, but got 3.
+src/components/ecommerce/cart-sheet.tsx(107,130): error TS2554: Expected 2 arguments, but got 3.
+src/components/ecommerce/cart-sheet.tsx(115,60): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/components/ecommerce/cart-sheet.tsx(117,88): error TS2365: Operator '<' cannot be applied to types 'string | number' and 'number'.
+src/context/cart-context.tsx(15,33): error TS2459: Module '"@/lib/pricing"' declares 'Offer' locally, but it is not exported.
+src/lib/actions/consent.ts(13,23): error TS2304: Cannot find name 'getToken'.
+src/lib/repos/appointments.ts(205,68): error TS2339: Property 'error' does not exist on type 'ApiResponse<any>'.
+src/lib/repos/appointments.ts(266,68): error TS2339: Property 'error' does not exist on type 'ApiResponse<any>'.
+temp-product-form.tsx(431,53): error TS2345: Argument of type '{ productType: "Physical" | "Digital" | "Service" | "Bundle"; title: string; subtitle: string | undefined; tags: string[] | undefined; shortDescription: string; longDescription: string | undefined; ... 30 more ...; bundleItems: { ...; }[] | undefined; }' is not assignable to parameter of type '{ productType: string; title: string; subtitle?: string | undefined; tags?: string[] | undefined; shortDescription: string; longDescription?: string | undefined; brand?: string | undefined; ... 25 more ...; variants?: any[] | undefined; }'.
+  Types of property 'additional_features' are incompatible.
+    Type '{ title: string; value: string; is_highlighted: boolean; }[]' is not assignable to type 'string[]'.
+      Type '{ title: string; value: string; is_highlighted: boolean; }' is not assignable to type 'string'.
+temp-product-form.tsx(433,43): error TS2345: Argument of type '{ productType: "Physical" | "Digital" | "Service" | "Bundle"; title: string; subtitle: string | undefined; tags: string[] | undefined; shortDescription: string; longDescription: string | undefined; ... 30 more ...; bundleItems: { ...; }[] | undefined; }' is not assignable to parameter of type '{ productType: string; title: string; subtitle?: string | undefined; tags?: string[] | undefined; shortDescription: string; longDescription?: string | undefined; brand?: string | undefined; ... 25 more ...; variants?: any[] | undefined; }'.
+  Types of property 'additional_features' are incompatible.
+    Type '{ title: string; value: string; is_highlighted: boolean; }[]' is not assignable to type 'string[]'.
+      Type '{ title: string; value: string; is_highlighted: boolean; }' is not assignable to type 'string'.

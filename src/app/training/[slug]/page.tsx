@@ -14,7 +14,7 @@ import { listTrainings } from '@/lib/repos/content';
 export const dynamic = 'force-dynamic';
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata(
@@ -59,7 +59,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
              <BreadcrumbSeparator />
              <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                    <Link href="/dashboard/therapist/training/courses">Courses</Link>
+                    <Link href="/dashboard/therapist/training">Courses</Link>
                 </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -72,7 +72,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
         <header className="mb-8">
           <div className="relative h-72 w-full mb-8 rounded-lg overflow-hidden">
             <Image
-              src={training.coverImageUrl}
+              src={(training.coverImageUrl || training.featuredImage) as string}
               alt={training.title}
               fill
               className="object-cover"
@@ -81,7 +81,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
             />
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-            <div className="flex items-center gap-1.5"><Layers className="w-4 h-4"/> Categories: {training.categoryIds.join(', ')}</div>
+            <div className="flex items-center gap-1.5"><Layers className="w-4 h-4"/> Categories: {(training.categoryIds ?? []).join(', ')}</div>
             <div className="flex items-center gap-1.5"><BarChart className="w-4 h-4"/> <span className="capitalize">{training.difficulty}</span></div>
             <div className="flex items-center gap-1.5"><Clock className="w-4 h-4"/> {training.durationMin} min read</div>
           </div>
@@ -119,7 +119,7 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
 
        <div className="mt-8 flex gap-2">
          <Button asChild variant="outline">
-            <Link href="/dashboard/therapist/training/courses">
+            <Link href="/dashboard/therapist/training">
                 <ArrowLeft className="mr-2"/>
                 Back to Courses
             </Link>

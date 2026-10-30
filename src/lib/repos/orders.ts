@@ -7,11 +7,12 @@ interface ListOrdersResponse {
   data: Order[];
 }
 
-export async function listOrders(filters?: { userId?: number }): Promise<Order[] | null> {
+export async function listOrders(filters?: { userId?: number; couponCode?: string }): Promise<Order[] | null> {
 
   try {
     const params: any = {};
     if (filters?.userId) params.userId = filters.userId;
+    if (filters?.couponCode) params.couponCode = filters.couponCode;
      const token =await getToken();
      if (!token) {
         throw new Error('Token missing, please login again');
@@ -53,7 +54,7 @@ export async function getOrderById(id: number): Promise<Order | null> {
      if (!token) {
         throw new Error('Token missing, please login again');
       }
-    const { data } = await serverApi.get<{ data: any }>(`/api/orders/${id}`, {
+    const { data } = await serverApi.get<{ data: any }>(`/api/orders/order/${id}`, {
       withCredentials: true,
        headers: {
             Authorization: `Bearer ${token}`, 

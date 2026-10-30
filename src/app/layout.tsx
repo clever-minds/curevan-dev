@@ -1,5 +1,6 @@
 
 import type { Metadata } from 'next';
+import { PAGE_SEO, SITE_URL } from '@/lib/seo';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
@@ -16,11 +17,12 @@ import { LocationConsentDialog } from '@/components/location-consent-dialog';
 import { IncomingBookingModal } from '@/components/incoming-booking-modal';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),   // makes each page's canonical link absolute
   title: {
-    default: 'In-Home Physiotherapy & Care | Curevan',
+    default: PAGE_SEO.home.title,
     template: '%s | Curevan',
   },
-  description: 'Curevan offers professional, in-home physiotherapy, nursing, and wellness services. Find certified therapists, book appointments, and shop for medical supplies online.',
+  description: PAGE_SEO.home.description,
   keywords: ['physiotherapy at home', 'home nursing services', 'therapist booking', 'medical supplies online', 'Curevan', 'telehealth'],
   openGraph: {
     title: 'Curevan | In-Home Physiotherapy, Nursing Care & Wellness Products',

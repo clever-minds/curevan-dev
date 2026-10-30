@@ -34,6 +34,7 @@ import {
   FileText,
   GraduationCap,
   Library,
+  Bell,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { listSupportTickets } from '@/lib/repos/support';
@@ -64,6 +65,7 @@ const ecomNavItems = (openTicketCount: number) => [
         { href: '/dashboard/therapy-admin/trainings', label: 'Trainings', icon: GraduationCap },
         { href: '/dashboard/therapy-admin/documentation', label: 'Documentation', icon: Library },
         { href: '/dashboard/admin/support-tickets', label: 'Support Tickets', icon: Send, badgeCount: openTicketCount },
+        { href: '/dashboard/ecom-admin/notifications', label: 'Notifications', icon: Bell },
         { href: '/dashboard/ecom-admin/ai', label: 'AI Settings', icon: Sparkles },
     ]}
 ];

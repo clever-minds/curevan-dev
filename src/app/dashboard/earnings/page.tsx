@@ -1,5 +1,7 @@
 'use client';
 
+import { useAffiliateRules, referralText } from '@/components/affiliate/ReferralCard';
+
 import {
   Card,
   CardContent,
@@ -62,6 +64,7 @@ import Link from "next/link";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { listOrders } from "@/lib/repos/orders";
 import type { Therapist, Order } from '@/lib/types';
+import { downloadPayoutStatement } from '@/lib/repos/payouts';
 
 
 const SectionPills = () => (
@@ -78,6 +81,7 @@ const SectionPills = () => (
 
 
 export default function EarningsPage() {
+  const rules = useAffiliateRules();
   const { user } = useAuth();
   const { toast } = useToast();
   const nextPayoutDate = getNextPayoutDate();
@@ -102,7 +106,7 @@ export default function EarningsPage() {
 
         if (therapistData?.referralCode) {
           const orderData = await listOrders({ couponCode: therapistData.referralCode });
-          setReferralOrders(orderData);
+          setReferralOrders(orderData ?? []);
         }
       } catch (error) {
         console.error("Failed to load earnings data:", error);
@@ -140,6 +144,17 @@ export default function EarningsPage() {
 
   const isPremium = therapist?.membershipPlan === 'premium';
   const platformFeePct = isPremium ? (therapist?.platformFeePct || 0.1) * 100 : 0;
+
+  const downloadStatement = async (batchId: number) => {
+    const blob = await downloadPayoutStatement(batchId);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `curevan-payout-statement-${batchId}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const includedBookings = earningsData?.earningsHistory?.filter(e => e.status === 'Payout Scheduled') || [];
   const excludedBookings = earningsData?.earningsHistory?.filter(e => e.status === 'On-Hold') || [];
@@ -204,7 +219,7 @@ export default function EarningsPage() {
              <Card>
               <CardHeader>
                 <CardTitle>Share Your Code</CardTitle>
-                <CardDescription>Patients get 5% off products, you get 10% commission.</CardDescription>
+                <CardDescription>{referralText(rules)}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                  <div className="flex items-center justify-between p-4 pt-0 border rounded-md">
@@ -364,7 +379,7 @@ export default function EarningsPage() {
                     <TableBody>
                         {referralOrders.map(order => (
                              <TableRow key={order.id}>
-                                <TableCell>{new Date(order.createdAt as string).toLocaleDateString()}</TableCell>
+                                <TableCell>{new Date(order.createdAt as unknown as string).toLocaleDateString()}</TableCell>
                                 <TableCell>{order.id}</TableCell>
                                 <TableCell>{order.customerName}</TableCell>
                                 <TableCell><Price amount={(order.couponDiscount || 0)} showDecimals /></TableCell>
@@ -450,11 +465,11 @@ export default function EarningsPage() {
                     <div key={payout.payoutId} className="p-4 border rounded-md flex justify-between items-center">
                         <div>
                             <p className="font-semibold">{payout.period}</p>
-                            <p className="text-sm text-muted-foreground">Paid on {new Date(payout.payoutDate).toLocaleDateString()}</p>
+                            <p className="text-sm text-muted-foreground">{payout.status === 'Paid' ? `Paid on ${new Date(payout.payoutDate).toLocaleDateString()}${payout.utr ? ` (bank ref ${payout.utr})` : ''}` : `${payout.status} - ${payout.numberOfSessions} line(s)`}</p>
                         </div>
                         <div className="text-right">
                              <p className="font-bold text-lg text-green-600"><Price amount={payout.totalAmount} showDecimals /></p>
-                             <Button variant="link" size="sm" className="p-0 h-auto">Download Statement</Button>
+                             <Button variant="link" size="sm" className="p-0 h-auto" disabled={!payout.batchId} onClick={() => payout.batchId && downloadStatement(payout.batchId)}>Download Statement</Button>
                         </div>
                     </div>
                 ))}

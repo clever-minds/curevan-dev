@@ -2,17 +2,7 @@
 
 import type { UserProfile } from '@/lib/types';
 import { listAppointmentsForUser } from '@/lib/repos/appointments';
-import { getUserById as repoGetUserById,saveUserProfile as addUserProfile } from '@/lib/repos/users';
-
-/**
- * Creates a new user profile document in the `users` collection.
- * This is typically called after a user signs up via Firebase Authentication.
- */
-export async function createUserProfile(profileData: Omit<UserProfile, 'createdAt'>) {
-    console.log(`[SERVICE] Creating user profile for uid: ${profileData.uid}`);
-    await addUserProfile(profileData);
-    return;
-}
+import { getUserById as repoGetUserById } from '@/lib/repos/users';
 
 /**
  * Fetches a user's profile from the `users` collection.

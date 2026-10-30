@@ -1,6 +1,7 @@
 
 'use client';
 
+import { therapistPath } from '@/lib/slug';
 import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,10 +16,9 @@ export default function LegacyTherapistProfileRedirect() {
   useEffect(() => {
     const redirect = async () => {
       // Find the therapist to get their name for the slug
-      const therapist = await getTherapistById(id);
+      const therapist = await getTherapistById(Number(id));
       if (therapist) {
-          const slug = therapist.name.toLowerCase().replace(/ /g, '-');
-          router.replace(`/therapists/${slug}`);
+          router.replace(therapistPath(therapist));
       } else {
           // If therapist not found, redirect to the main therapists list
           router.replace('/therapists');

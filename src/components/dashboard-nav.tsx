@@ -72,10 +72,12 @@ import { listSosAlerts } from '@/lib/repos/alerts';
 import { listSupportTickets } from '@/lib/repos/support';
 import { listProfileChangeRequests } from '@/lib/repos/content';
 
-const allNavItems = {
+type NavEntry = { type?: 'header'; href?: string; label: string; icon?: any; exact?: boolean };
+const allNavItems: Record<'patient' | 'therapist', NavEntry[]> = {
   patient: [
     { href: '/dashboard/patient/my-dashboard', label: 'My Dashboard', icon: AreaChart, exact: true },
     { href: '/dashboard/patient/bookings', label: 'My Bookings', icon: CalendarDays },
+    { href: '/dashboard/patient/progress', label: 'My Progress', icon: HeartPulse },
     { href: '/dashboard/patient/health-records', label: 'Health Records', icon: FileText },
     { href: '/dashboard/patient/invoices', label: 'Invoices', icon: Receipt },
     { href: '/dashboard/patient/orders', label: 'Shop Orders', icon: Package },
@@ -83,6 +85,7 @@ const allNavItems = {
     { href: '/dashboard/support', label: 'My Tickets', icon: Send },
     { href: '/dashboard/account', label: 'Account Settings', icon: UserCog },
     { href: '/dashboard/account/security', label: 'Security', icon: KeyRound },
+    { href: '/dashboard/account/privacy', label: 'Privacy & Data', icon: ShieldAlert },
   ],
   therapist: [
     { type: 'header', label: 'Core' },
@@ -91,6 +94,7 @@ const allNavItems = {
     { href: '/dashboard/therapist/bookings', label: 'All Bookings', icon: Calendar },
     { href: '/dashboard/therapist/pcr', label: 'PCRs', icon: ClipboardPen },
     { href: '/dashboard/earnings', label: 'My Earnings', icon: Wallet },
+    { href: '/dashboard/therapist/affiliate', label: 'Referral Code', icon: HandCoins },
     { href: '/dashboard/therapist/shipments', label: 'My Shipments', icon: Truck },
     { type: 'header', label: 'Journal' },
     { href: '/dashboard/journal/new', label: 'New Entry', icon: FilePlus },
@@ -102,6 +106,7 @@ const allNavItems = {
     { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
     { href: '/dashboard/account', label: 'Profile Settings', icon: UserCog },
     { href: '/dashboard/account/security', label: 'Security', icon: KeyRound },
+    { href: '/dashboard/account/privacy', label: 'Privacy & Data', icon: ShieldAlert },
   ],
 };
 
@@ -134,6 +139,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
         { href: '/dashboard/admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
         { href: '/dashboard/admin/service-types', label: 'Service Types', icon: ClipboardCheck },
         { href: '/dashboard/admin/pcrs', label: 'All PCRs', icon: ClipboardCheck },
+        { href: '/dashboard/admin/outcome-measures', label: 'Outcome Measures', icon: HeartPulse },
         { href: '/dashboard/admin/payouts', label: 'Payouts', icon: HandCoins },
     ]},
     { type: 'group', label: 'Reports', icon: FileText, items: [
@@ -145,6 +151,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
         { href: '/dashboard/admin/sos-alerts', label: 'SOS Alerts', icon: ShieldAlert, badgeCount: activeAlertCount },
         { href: '/dashboard/admin/support-tickets', label: 'Support Tickets', icon: Send, badgeCount: openTicketCount },
         { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell },
+        { href: '/dashboard/admin/privacy-requests', label: 'Privacy Requests', icon: ShieldAlert },
         { href: '/dashboard/admin/ai', label: 'AI Settings', icon: Sparkles },
         { href: '/dashboard/admin/settings', label: 'Platform Settings', icon: Settings },
     ]},
@@ -239,7 +246,7 @@ export function DashboardNav() {
                     <SidebarMenuButton
                     isActive={checkActive(item.href, (item as any).exact)}
                     >
-                    <item.icon className="w-5 h-5"/>
+                    {item.icon && <item.icon className="w-5 h-5"/>}
                     <span>{item.label}</span>
                     </SidebarMenuButton>
                 </Link>
@@ -303,6 +310,14 @@ export function DashboardNav() {
                         <SidebarMenuButton isActive={checkActive('/dashboard/account/security', true)}>
                             <KeyRound className="w-5 h-5"/>
                             <span>Security</span>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <Link href="/dashboard/account/privacy">
+                        <SidebarMenuButton isActive={checkActive('/dashboard/account/privacy', true)}>
+                            <ShieldAlert className="w-5 h-5"/>
+                            <span>Privacy &amp; Data</span>
                         </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>

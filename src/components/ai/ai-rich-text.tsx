@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -126,6 +126,15 @@ export function AIRichText({
   const [library, setLibrary] = useState<MediaItem[]>([]);
   const [upload, setUpload] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   const fetchMedia = useCallback(async () => {
     try {
@@ -264,6 +273,7 @@ export function AIRichText({
     if (!lastInteractionId || feedbackGiven) return;
     await logAIFeedbackAction({
       context: 'pcr_refinement', // This could be more dynamic if needed
+      number: lastInteractionId,
       interactionId: lastInteractionId,
       rating,
       response: editor?.getHTML(),
@@ -280,7 +290,86 @@ export function AIRichText({
   const hasContent = editor.getText().trim().length >= minAIActionsChars;
 
   return (
-    <div className="rounded-md border bg-background">
+    <div 
+      className="rounded-md border bg-background"
+      onContextMenu={(e) => {
+        if (disabled || isSourceMode) return;
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
+      {contextMenu && (
+        <div 
+          className="fixed z-50 flex flex-col bg-background border shadow-xl rounded-md overflow-hidden"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()} // Prevent clicks inside from immediately closing it
+        >
+          <div className="flex flex-wrap items-center gap-1 border-b p-2">
+            <TooltipProvider>
+              {/* Text Formatting */}
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('bold') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBold().run()} disabled={disabled}><Bold className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Bold</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('italic') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleItalic().run()} disabled={disabled}><Italic className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Italic</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('underline') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleUnderline().run()} disabled={disabled}><UnderlineIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Underline</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('strike') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleStrike().run()} disabled={disabled}><Strikethrough className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Strikethrough</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('code') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleCode().run()} disabled={disabled}><Code className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Inline Code</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('link') ? 'secondary' : 'ghost'} onClick={() => {
+                const url = window.prompt('URL');
+                if (url) editor.chain().focus().setLink({ href: url }).run();
+              }} disabled={disabled}><LinkIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Link</p></TooltipContent></Tooltip>
+
+              {/* Headings */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('heading', { level: 1 }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} disabled={disabled}><Heading1 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Heading 1</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('heading', { level: 2 }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} disabled={disabled}><Heading2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Heading 2</p></TooltipContent></Tooltip>
+
+              {/* Lists */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('bulletList') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBulletList().run()} disabled={disabled}><List className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Bullet List</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('orderedList') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleOrderedList().run()} disabled={disabled}><ListOrdered className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Numbered List</p></TooltipContent></Tooltip>
+
+              {/* Block Elements */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('blockquote') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBlockquote().run()} disabled={disabled}><Quote className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Blockquote</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('codeBlock') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleCodeBlock().run()} disabled={disabled}><Code2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Code Block</p></TooltipContent></Tooltip>
+
+              {/* Alignment */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('left').run()} disabled={disabled}><AlignLeft className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Left</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'center' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('center').run()} disabled={disabled}><AlignCenter className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Center</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('right').run()} disabled={disabled}><AlignRight className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Right</p></TooltipContent></Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1 border-b p-2">
+            <TooltipProvider>
+              {/* Media */}
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)} disabled={disabled}><ImageIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Image from Library</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)} disabled={disabled}><VideoIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Video (YouTube or Library)</p></TooltipContent></Tooltip>
+
+              {/* Horizontal Rule */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().setHorizontalRule().run()} disabled={disabled}><HorizontalRuleIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Horizontal Rule</p></TooltipContent></Tooltip>
+
+              {/* History */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().undo().run()} disabled={disabled || !editor.can().undo()}><Undo2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Undo</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().redo().run()} disabled={disabled || !editor.can().redo()}><Redo2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Redo</p></TooltipContent></Tooltip>
+              
+              {/* Source Code Mode */}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={isSourceMode ? 'secondary' : 'ghost'} onClick={() => setIsSourceMode(!isSourceMode)} disabled={disabled}><Code2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Source Code</p></TooltipContent></Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 p-2">
+            <TooltipProvider>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="outline" onClick={() => handleAIAction("Refine for clarity and professional tone")} disabled={!hasContent || disabled || !!aiIsLoading}><Sparkles className={cn(aiIsLoading === "Refine" && 'animate-spin')} />Refine</Button></TooltipTrigger><TooltipContent><p>Improve grammar and clarity.</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="outline" onClick={() => handleAIAction("Compress the text to be about 30% shorter, while retaining the core meaning.")} disabled={!hasContent || disabled || !!aiIsLoading}><Minus className={cn(aiIsLoading === "Compress" && 'animate-spin')} />Compress</Button></TooltipTrigger><TooltipContent><p>Make the text more concise.</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="outline" onClick={() => handleAIAction("Expand on the text to add clarity and structure, without changing the core meaning or adding new facts.")} disabled={!hasContent || disabled || !!aiIsLoading}><Plus className={cn(aiIsLoading === "Expand" && 'animate-spin')} />Expand</Button></TooltipTrigger><TooltipContent><p>Elaborate on the existing points.</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="outline" onClick={handleUndo} disabled={history.length === 0 || disabled || !!aiIsLoading}><Undo />Undo</Button></TooltipTrigger><TooltipContent><p>Undo last AI action.</p></TooltipContent></Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-1 border-b p-2">
         <TooltipProvider>
           {/* Text Formatting */}
@@ -307,16 +396,19 @@ export function AIRichText({
           {/* Block Elements */}
           <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('blockquote') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBlockquote().run()} disabled={disabled}><Quote className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Blockquote</p></TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('codeBlock') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleCodeBlock().run()} disabled={disabled}><Code className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Code Block</p></TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive('codeBlock') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleCodeBlock().run()} disabled={disabled}><Code2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Code Block</p></TooltipContent></Tooltip>
 
           {/* Alignment */}
           <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('left').run()} disabled={disabled}><AlignLeft className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Left</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'center' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('center').run()} disabled={disabled}><AlignCenter className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Center</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant={editor.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().setTextAlign('right').run()} disabled={disabled}><AlignRight className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Align Right</p></TooltipContent></Tooltip>
+        </TooltipProvider>
+      </div>
 
+      <div className="flex flex-wrap items-center gap-1 border-b p-2">
+        <TooltipProvider>
           {/* Media */}
-          <div className="w-px h-6 bg-border mx-1" />
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)} disabled={disabled}><ImageIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Image from Library</p></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)} disabled={disabled}><VideoIcon className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Video (YouTube or Library)</p></TooltipContent></Tooltip>
 
@@ -365,7 +457,23 @@ export function AIRichText({
           />
         </div>
       ) : (
-        <EditorContent editor={editor} />
+        <>
+          {isMounted && editor && (
+            <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-background border shadow-lg rounded-md overflow-hidden p-1 gap-1">
+              <Button type="button" size="sm" variant={editor.isActive('bold') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('italic') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('underline') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('strike') ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('heading', { level: 2 }) ? 'secondary' : 'ghost'} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant={editor.isActive('link') ? 'secondary' : 'ghost'} onClick={() => {
+                const url = window.prompt('URL');
+                if (url) editor.chain().focus().setLink({ href: url }).run();
+              }}><LinkIcon className="w-4 h-4" /></Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setMediaModalOpen(true)}><ImageIcon className="w-4 h-4" /></Button>
+            </BubbleMenu>
+          )}
+          <EditorContent editor={editor} />
+        </>
       )}
       
       <p className="px-3 pb-2 text-xs text-muted-foreground mt-2">AI assistance may contain errors. Review before saving.</p>

@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           console.log("Calling requestFcmToken()...");
           const token = await requestFcmToken();
-          console.log("requestFcmToken() returned:", token);
+          console.log("requestFcmToken() returned a token:", !!token);
           
           if (token) {
             console.log("FCM Token Generated, sending to backend...");
@@ -100,6 +100,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const title = payload.notification?.title || "New Notification";
               const body = payload.notification?.body || "You have a new message.";
               
+              console.log("[FRONTEND_FCM_RECEIVED] Received foreground FCM notification payload:", payload);
+
               // Show Shadcn UI Toast
               toast({
                 title,

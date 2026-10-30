@@ -29,6 +29,7 @@ import {
   LifeBuoy,
   Banknote,
   ShieldAlert,
+  HeartPulse,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,15 +40,16 @@ import { Badge } from './ui/badge';
 const guestNav = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/therapists', label: 'Therapists', icon: Users },
-  { href: '/shop', label: 'Shop', icon: ShoppingBag },
+  { href: '/ecommerce', label: 'Shop', icon: ShoppingBag },
   { href: '/journal', label: 'Journal', icon: FileText },
   { href: '/auth/signin', label: 'Sign In', icon: User },
 ];
 
 const patientNav = [
   { href: '/dashboard/patient/my-dashboard', label: 'Home', icon: Home },
-  { href: '/book', label: 'Book', icon: MapPinned },
+  { href: '/discover', label: 'Book', icon: MapPinned },
   { href: '/dashboard/patient/bookings', label: 'Bookings', icon: CalendarDays },
+  { href: '/dashboard/patient/progress', label: 'Progress', icon: HeartPulse },
   { href: '/dashboard/patient/orders', label: 'Orders', icon: Package },
   { href: '/dashboard/patient/notifications', label: 'Alerts', icon: Bell, badgeCount: 2 },
 ];
@@ -57,7 +59,7 @@ const therapistNav = [
     { href: '/dashboard/therapist/schedule', label: 'Today', icon: Clock },
     { href: '/dashboard/therapist/pcr', label: 'PCRs', icon: ClipboardList },
     { href: '/dashboard/earnings', label: 'Earnings', icon: Wallet },
-    { href: '/dashboard/new-post', label: 'Write', icon: PenSquare },
+    { href: '/dashboard/journal/new', label: 'Write', icon: PenSquare },
 ];
 
 const ecomAdminNav = [
@@ -94,7 +96,7 @@ export default function BottomNav() {
     return null;
   }
   
-  let navItems = guestNav; // Default for logged-out users
+  let navItems: { href: string; label: string; icon: any; badgeCount?: number }[] = guestNav; // Default for logged-out users
   if (user) {
     const roles = user.roles || [];
     if(roles.includes('admin.super')) navItems = superAdminNav;

@@ -1,4 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LEGAL_SEO, seoMetadata } from '@/lib/seo';
+
+export const metadata = seoMetadata('/legal/therapist-conduct', LEGAL_SEO['therapist-conduct']);
+
 
 export default function TherapistConductPage() {
   return (
@@ -137,7 +141,7 @@ export default function TherapistConductPage() {
             <address className="not-italic">
               Himaya Care Pvt. Ltd.<br/>
               Email: <a href="mailto:care@curevan.com" className="text-primary hover:underline">care@curevan.com</a><br/>
-              Phone: +91 95144 46292<br/>
+              Phone: +91 951 444 6292<br/>
               Registered Address: Office 704, Time Square, Vasna - Bhayli Main Rd, Ashwamegh Nagar, Tandalja, Vadodara, Gujarat 390012
             </address>
           </section>

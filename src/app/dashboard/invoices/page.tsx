@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InvoiceList } from '@/components/patient/InvoiceList';
 
 export default function InvoicePage() {
   const searchParams = useSearchParams();
@@ -18,11 +19,7 @@ export default function InvoicePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!invoiceId) {
-      setError('No invoice ID provided.');
-      setLoading(false);
-      return;
-    }
+    if (!invoiceId) { setLoading(false); return; }
 
     const fetchInvoice = async () => {
       setLoading(true);
@@ -46,6 +43,8 @@ export default function InvoicePage() {
   const handlePrint = () => {
     window.print();
   };
+
+  if (!invoiceId) return <InvoiceList />;
 
   if (loading) {
     return (

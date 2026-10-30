@@ -44,14 +44,17 @@ export async function generateMetadata(
         return {
             title: 'Article Not Found',
             description: 'The article you are looking for does not exist.',
+            alternates: { canonical: `/journal/${slug}` },
+            robots: { index: false },
         }
     }
 
     const imageUrl = getMediaUrl(post.featuredImage as string);
 
     return {
-        title: `${post.title} | Curevan Journal`,
-        description: post.excerpt,
+        title: { absolute: `${post.title} | Curevan` },   // the /journal layout's plain title switches the root template off for article pages
+        description: String(post.excerpt || '').slice(0, 155),
+        alternates: { canonical: `/journal/${post.slug}` },
         keywords: post.tags,
         openGraph: {
             title: post.title,
@@ -137,7 +140,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     const faqs = post.faqs || [];
 
-    const author = await getTherapistById(post.authorId);
+    const author = await getTherapistById(Number(post.authorId));
     const youtubeVideoId = post.videoUrl ? new URL(post.videoUrl).searchParams.get('v') : null;
 
     const allPosts = await listPublicJournalEntries();

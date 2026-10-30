@@ -149,8 +149,29 @@ export function FilterSidebar({
 
                 <div className="space-y-3 pb-4 border-b">
                     <h3 className="font-semibold text-sm">Product Type</h3>
+                    {filterOptions?.productTypes?.length > 0 ? (
+                        <div className="space-y-2">
+                            {filterOptions.productTypes.map((pt: string) => (
+                                <div key={pt} className="flex items-center space-x-2 my-1.5">
+                                    <Checkbox 
+                                        id={`pt-${pt}`} 
+                                        className="mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                        checked={localFilters.productTypes?.includes(pt)}
+                                        onCheckedChange={(checked) => handleArrayFilterChange('productTypes', pt, checked as boolean)}
+                                    />
+                                    <Label htmlFor={`pt-${pt}`} className="font-normal text-sm cursor-pointer leading-tight">{pt}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">No product types available.</p>
+                    )}
+                </div>
+
+                <div className="space-y-3 pb-4 border-b">
+                    <h3 className="font-semibold text-sm">Sub Category</h3>
                     {localFilters.category === 'all' ? (
-                        <p className="text-xs text-muted-foreground">Select a department to narrow product types.</p>
+                        <p className="text-xs text-muted-foreground">Select a department to narrow sub categories.</p>
                     ) : filterOptions?.categorySubCategories?.[localFilters.category]?.length > 0 ? (
                         <div className="space-y-2">
                             {filterOptions.categorySubCategories[localFilters.category].map((sub: string) => (
@@ -166,7 +187,7 @@ export function FilterSidebar({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-xs text-muted-foreground">No product types available for this department.</p>
+                        <p className="text-xs text-muted-foreground">No sub categories available for this department.</p>
                     )}
                 </div>
                 
@@ -412,6 +433,7 @@ export function FilterSidebar({
                             price: [minPrice, maxPrice], 
                             rating: 0,
                             brands: [],
+                            productTypes: [],
                             subCategories: [],
                             colors: [],
                             sizes: [],

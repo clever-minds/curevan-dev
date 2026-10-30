@@ -1,5 +1,6 @@
 'use client';
 
+import { PENDING_COUPON_KEY } from '@/components/affiliate/CouponParamCapture';
 import { useCart } from "@/context/cart-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Price } from "@/components/money/price";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tag, X, Loader2 } from "lucide-react";
 import { imageUrl } from '@/lib/image';
@@ -21,7 +22,7 @@ export function OrderSummary() {
   const [couponLoading, setCouponLoading] = useState(false);
   const { toast } = useToast();
 
-  const { subtotal, discount, offerDiscount, couponDiscount, totalGst, total, totalWithTax, gstToPay, shippingCost, message } = getCartTotal();
+  const { subtotal, discount, offerDiscount, couponDiscount, totalGst, total, totalWithTax, gstToPay, shippingCost, freeShippingGap, message } = getCartTotal();
 
   const handleApplyCoupon = useCallback(async (codeToApply: string) => {
     if (!codeToApply.trim()) return;
@@ -66,6 +67,18 @@ export function OrderSummary() {
     }
   }, [applyCoupon, subtotal, toast]);
 
+  // a code that came in with /shop?coupon=CODE is applied once the cart has items
+  useEffect(() => {
+    if (appliedCoupon || subtotal <= 0) return;
+    try {
+      const pending = localStorage.getItem(PENDING_COUPON_KEY);
+      if (!pending) return;
+      localStorage.removeItem(PENDING_COUPON_KEY);
+      setCouponCode(pending);
+      handleApplyCoupon(pending);
+    } catch { /* storage blocked: the customer types the code */ }
+  }, [appliedCoupon, subtotal, handleApplyCoupon]);
+
   return (
     <Card>
       <CardHeader>
@@ -108,9 +121,9 @@ export function OrderSummary() {
               </div>
               <div className="flex flex-col items-end gap-1">
                 <p className="font-semibold text-base">
-                  <Price amount={(item.discountedPrice ?? item.price) * item.quantity} showDecimals />
+                  <Price amount={Number(item.discountedPrice ?? item.price) * item.quantity} showDecimals />
                 </p>
-                {item.discountedPrice !== undefined && item.discountedPrice < item.price && (
+                {item.discountedPrice !== undefined && Number(item.discountedPrice) < item.price && (
                     <span className="text-[11px] text-muted-foreground line-through font-medium">
                         <Price amount={item.price * item.quantity} showDecimals />
                     </span>
@@ -209,6 +222,11 @@ export function OrderSummary() {
               )}
             </span>
           </div>
+          {freeShippingGap > 0 && (
+            <p className="text-[11px] font-medium text-primary" data-testid="free-shipping-hint">
+              Add <Price amount={freeShippingGap} showDecimals /> more for free delivery
+            </p>
+          )}
 
           {gstToPay > 0 && (
             <div className="flex justify-between font-medium text-destructive">

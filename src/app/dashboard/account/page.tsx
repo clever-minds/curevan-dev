@@ -5,7 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TherapistOnboardingForm } from "@/app/auth/therapist-signup/therapist-onboarding-form";
+import { TherapistOnboardingForm } from "@/app/join-as-therapist/therapist-onboarding-form";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
 import { FileDown, Edit, TrendingUp, CalendarDays, Wallet, Star, FileText, Receipt, PackageOpen } from "lucide-react";
@@ -36,8 +36,8 @@ import type { Appointment, Product } from "@/lib/types";
 import { listAppointmentsForUser, submitReview } from "@/lib/repos/appointments";
 import { listOrders } from "@/lib/repos/orders";
 import { listProducts } from "@/lib/repos/products";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { PatientJourneyCard } from "../patient/patient-journey-card";
+import { ReminderPreferences } from '@/components/account/ReminderPreferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -170,13 +170,13 @@ export default function AccountPage() {
       const now = new Date();
 
       const upcomingCount = appointments.filter(appt => 
-        (appt.status === 'Pending' || appt.status === 'Confirmed') && 
+        (appt.status === 'pending_payment' || appt.status === 'confirmed') && 
         new Date(appt.date) >= now
       ).length;
 
       const servicesSpend = appointments
         .filter(appt => 
-          appt.status === 'Completed' && 
+          appt.status === 'completed' && 
           new Date(appt.date) >= ninetyDaysAgo
         )
         .reduce((sum, appt) => sum + (appt.totalAmount || appt.serviceAmount || 0), 0);
@@ -197,7 +197,7 @@ export default function AccountPage() {
             type: 'Service',
             amount: a.totalAmount || a.serviceAmount || 0,
             status: 'Paid',
-            link: `/dashboard/invoices?id=INV-${a.id}`
+            link: `/dashboard/invoices?id=BK-${a.id}`
           })),
         ...orders
           .filter(o => o.paymentStatus === 'Paid')
@@ -207,7 +207,7 @@ export default function AccountPage() {
             type: 'Product',
             amount: o.total || 0,
             status: 'Paid',
-            link: `/dashboard/invoices?id=${o.invoiceId || o.id}`
+            link: `/dashboard/invoices?id=${o.invoiceId ? o.invoiceId : `ORD-${o.id}`}`
           }))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5);
@@ -238,7 +238,7 @@ export default function AccountPage() {
       ];
 
       // Find the first active session for the patient
-      const activeSession = appointments.find(a => a.status !== 'Completed' && a.status !== 'Cancelled' && a.status !== 'No-Show' && a.status !== 'Confirmed');
+      const activeSession = appointments.find(a => ['therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'].includes(a.status));
 
       return (
         <div className="space-y-8">
@@ -265,16 +265,6 @@ export default function AccountPage() {
                 <KpiCard title="Services Spend (90d)" value={servicesSpend} icon={Wallet} isCurrency={true} />
                 <KpiCard title="Shop Spend (90d)" value={shopSpend} icon={PackageOpen} isCurrency={true} />
              </div>
-
-             <ReportAiSummary 
-                summaryText={[
-                    "Your last physiotherapy session focused on improving knee flexibility.",
-                    "Your recent payment of ₹2,500 for a Resistance Bands Set was successful.",
-                    "Your next appointment is with Dr. Evelyn Reed."
-                ]}
-                regenerate={() => console.log('regenerate')}
-                copy={() => console.log('copy')}
-             />
 
              {activeSession && (
                  <div className="mb-8">
@@ -313,7 +303,7 @@ export default function AccountPage() {
                                     <Button variant="link" size="sm" asChild>
                                         <Link href={`/pcr/${appointment.id}`}>View PCR</Link>
                                     </Button>
-                                    {appointment.status === 'Completed' && (
+                                    {appointment.status === 'completed' && (
                                         <>
                                             <Dialog open={reviewingId === appointment.id} onOpenChange={(open) => !open && setReviewingId(null)}>
                                               <DialogTrigger asChild>
@@ -396,6 +386,8 @@ export default function AccountPage() {
                     </CardContent>
                 </Card>
             </DashboardSection>
+
+             <ReminderPreferences />
 
              <CardFooter className="justify-end gap-2 pt-4">
                 <Button variant="outline" asChild><Link href="/dashboard/bookings">View all bookings</Link></Button>

@@ -41,8 +41,10 @@ export interface PayoutSummary {
     period: string;
     payoutDate: string;
     totalAmount: number;
-    status: 'Paid' | 'Processing';
+    status: 'Paid' | 'Scheduled' | 'Approved' | 'On-Hold' | 'Processing';
     numberOfSessions: number;
+    batchId?: number;
+    utr?: string;
 }
 
 export interface EarningsData {
@@ -55,7 +57,7 @@ export interface EarningsData {
 
 export async function fetchEarningsData(therapistId: string | number): Promise<EarningsData | null> {
     try {
-        const { data } = await clientApi.get(`/api/therapist/earnings/${therapistId}`);
+        const { data } = await clientApi.get(`/api/therapists/earnings/${therapistId}`);
         if (data?.success || data?.status) {
             return data.data;
         }

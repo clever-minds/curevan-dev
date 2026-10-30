@@ -5,12 +5,13 @@ import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert, PhoneOutgoing } from 'lucide-react';
+import { Menu, User, Search, ShoppingCart, LogIn, Mail, Phone, Facebook, Instagram, Linkedin, Youtube, ShieldAlert, PhoneOutgoing, Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn, getMediaUrl } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useCart } from '@/context/cart-context';
+import { listNotifications, getUnreadCount } from '@/lib/repos/notifications';
 import { CartSheet } from './ecommerce/cart-sheet';
 import Logo from './logo';
 import { resolveMyDashboardHref } from '@/lib/resolveDashboard';
@@ -24,7 +25,7 @@ import { listAppointmentsForUser } from '@/lib/repos/appointments';
 const navLinks = [
     { href: '/about', label: 'About Us' },
     { href: '/therapists', label: 'Therapists' },
-    { href: '/shop', label: 'Shop' },
+    { href: '/ecommerce', label: 'Shop' },
     { href: '/journal', label: 'Journal' },
     { href: '/contact', label: 'Contact' },
 ];
@@ -56,9 +57,18 @@ export default function Header() {
   const [activeAlertCount, setActiveAlertCount] = useState(0);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const { toast } = useToast();
   const [isSosSending, setIsSosSending] = useState(false);
+
+  useEffect(() => {
+    if (user && user.id) {
+      getUnreadCount(user.id).then(count => {
+        setUnreadCount(count);
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const handleSosTrigger = async () => {
     if (!user) return;
@@ -167,11 +177,11 @@ export default function Header() {
             <div className="flex items-center gap-x-8 sm:gap-x-12 text-[11px] sm:text-xs font-bold tracking-widest uppercase">
               <a href="mailto:care@curevan.com" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>care@curevan.com</span>
+                <span className="lowercase">care@curevan.com</span>
               </a>
               <a href="tel:+919514446292" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
                 <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>+91 95144 46292</span>
+                <span>+91 951 444 6292</span>
               </a>
             </div>
              <div className="hidden sm:flex items-center gap-4">
@@ -224,7 +234,7 @@ export default function Header() {
                               </a>
                               <a href="tel:+919514446292" className="flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors font-semibold text-lg">
                                 <Phone className="w-5 h-5" />
-                                <span>+91 95144 46292</span>
+                                <span>+91 951 444 6292</span>
                               </a>
                           </div>
                       </div>
@@ -275,6 +285,19 @@ export default function Header() {
                         <PhoneOutgoing className="w-4 h-4 sm:mr-1.5" />
                         <span className="hidden sm:inline">{isSosSending ? '...' : 'SOS'}</span>
                     </Button>
+                  )}
+                  
+                  {user && (
+                      <Button variant="ghost" size="icon" asChild aria-label="Notifications" className="relative p-0 h-8 w-8 sm:h-10 sm:w-10">
+                          <Link href="/dashboard/notifications">
+                             <Bell className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                             {isClient && unreadCount > 0 && (
+                                 <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                                     {unreadCount}
+                                 </span>
+                             )}
+                          </Link>
+                      </Button>
                   )}
                   
                   <CartSheet>
@@ -353,6 +376,19 @@ export default function Header() {
             
             {/* SOS button moved to after Book Now */}
             
+            {user && (
+                <Button variant="ghost" size="icon" asChild aria-label="Notifications" className="relative">
+                    <Link href="/dashboard/notifications">
+                        <Bell />
+                        {isClient && unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </Link>
+                </Button>
+            )}
+
             <CartSheet>
                 <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
                     <ShoppingCart />
@@ -411,7 +447,7 @@ export default function Header() {
 
             {/* {(user && (!user.roles || user.roles.includes('patient'))) && (
               <Button asChild className="hidden sm:inline-flex bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:opacity-90 transition-opacity">
-                <Link href="/book">Book Now</Link>
+                <Link href="/discover">Book Now</Link>
               </Button>
             )} */}
 

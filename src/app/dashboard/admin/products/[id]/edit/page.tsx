@@ -46,6 +46,7 @@ export default function EditProductPage() {
             productId={product.id}
             initialData={{
               title: product.title,
+              slug: product.slug,
               productType: (() => {
                 const pt = product.product_type || product.productType;
                 if (!pt) return undefined;
@@ -60,6 +61,7 @@ export default function EditProductPage() {
               sacCode: product.sac_code || product.sacCode,
               gstSlab: product.gst_slab || product.gstSlab,
               isTaxInclusive: product.is_tax_inclusive !== undefined ? product.is_tax_inclusive : (product.isTaxInclusive !== undefined ? product.isTaxInclusive : true),
+              nonReturnable: Boolean(product.non_returnable),
               isCouponExcluded: product.is_coupon_excluded !== undefined ? product.is_coupon_excluded : (product.isCouponExcluded !== undefined ? product.isCouponExcluded : false),
               tags: product.tags || [],
               subtitle: product.subtitle,
@@ -94,11 +96,17 @@ export default function EditProductPage() {
               batchNumber: product.batch_number || product.batchNumber,
               mfgDate: (product.manufacturing_date || product.mfgDate) ? new Date(product.manufacturing_date || product.mfgDate) : undefined,
               expiryDate: (product.expiry_date || product.expiryDate) ? new Date(product.expiry_date || product.expiryDate) : undefined,
-              additionalFeatures: (product.additional_features || product.additionalFeatures)?.map((f: any) => ({
-                title: f.title,
-                value: f.value,
-                isHighlighted: f.is_highlighted || f.isHighlighted,
-              })) || [],
+              additionalFeatures: (product.additional_features || product.additionalFeatures)?.map((f: any) => {
+                let feature = f;
+                if (typeof f === 'string') {
+                  try { feature = JSON.parse(f); } catch (e) {}
+                }
+                return {
+                  title: feature.title,
+                  value: feature.value,
+                  isHighlighted: feature.is_highlighted || feature.isHighlighted,
+                };
+              }) || [],
               isRecommended: product.is_recommended || product.isRecommended,
               serviceTypeId: product.service_type_id || product.serviceTypeId,
               hasVariants: (product.variants && product.variants.length > 0) ? true : false,

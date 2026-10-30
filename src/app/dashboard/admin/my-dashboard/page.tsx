@@ -23,9 +23,10 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
 import { FilterBar } from "@/components/admin/FilterBar";
+import { PayoutReleasePanel } from "@/components/admin/PayoutReleasePanel";
+import { ReconciliationCard } from "@/components/admin/ReconciliationCard";
 import type { KnowledgeBase, ProfileChangeRequest, Appointment, Order, PayoutItem, SupportTicket, SOSAlert } from "@/lib/types";
 import { listDocumentation, listProfileChangeRequests, listTrainings } from "@/lib/repos/content";
 import { getPublicStats } from "@/lib/repos/stats";
@@ -154,10 +155,10 @@ export default function AdminDashboardPage() {
             if (!date) return;
             if (!dataMap.has(date)) dataMap.set(date, { revenue: 0, refunds: 0 });
             const entry = dataMap.get(date)!;
-            if (order.status !== 'Refunded') {
-                entry.revenue += (order.total || 0) / 100;
+            if (String(order.status).toLowerCase() !== 'refunded') {
+                if (order.paymentStatus === 'Paid') entry.revenue += Number(order.total || 0);      // only money received; amounts are in rupees and arrive as strings
             } else {
-                entry.refunds += (order.total || 0) / 100;
+                entry.refunds += Number(order.total || 0);
             }
         });
         return Array.from(dataMap.entries()).map(([date, values]) => ({ date, ...values }));
@@ -175,11 +176,11 @@ export default function AdminDashboardPage() {
     const topServicesData = useMemo(() => {
         const serviceMap = new Map<string, number>();
         appointments.forEach(appt => {
-            const revenue = appt.totalAmount || 0;
+            const revenue = Number(appt.totalAmount || 0);
             serviceMap.set(appt.therapyType, (serviceMap.get(appt.therapyType) || 0) + revenue);
         });
         return Array.from(serviceMap.entries())
-            .map(([name, revenue]) => ({ name, revenue: revenue / 100 }))
+            .map(([name, revenue]) => ({ name, revenue }))
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 10);
     }, [appointments]);
@@ -192,9 +193,9 @@ export default function AdminDashboardPage() {
             const week = `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
             if (!statusMap.has(week)) statusMap.set(week, { onHold: 0, inBatch: 0, paid: 0 });
             const entry = statusMap.get(week)!;
-            if (item.state === 'onHold') entry.onHold += item.netAmount;
-            if (item.state === 'inBatch') entry.inBatch += item.netAmount;
-            if (item.state === 'paid') entry.paid += item.netAmount;
+            if (item.state === 'onHold') entry.onHold += Number(item.netAmount || 0);
+            if (item.state === 'inBatch') entry.inBatch += Number(item.netAmount || 0);
+            if (item.state === 'paid') entry.paid += Number(item.netAmount || 0);
         });
         console.log("statusMap", statusMap);
 
@@ -203,8 +204,8 @@ export default function AdminDashboardPage() {
 
     const totalRefunds = useMemo(() => {
         return orders
-            .filter(o => o.status === 'Refunded')
-            .reduce((sum, o) => sum + (o.total || 0), 0);
+            .filter(o => String(o.status).toLowerCase() === 'refunded')
+            .reduce((sum, o) => sum + Number(o.total || 0), 0);
     }, [orders]);
 
     return (
@@ -278,16 +279,6 @@ export default function AdminDashboardPage() {
                     <KpiCard title="Refunds (90d)" value={totalRefunds} icon={DollarSign} loading={loading} />
                 </div>
 
-                <ReportAiSummary
-                    summaryText={[
-                        "Product sales are up 15% WoW, driven by the new Resistance Bands promotion.",
-                        "Therapist onboarding has slowed; consider a new recruitment campaign.",
-                        "High refund rate for 'Online Consultations' from new patients. Investigate service quality or expectation mismatch."
-                    ]}
-                    regenerate={() => console.log('regenerate')}
-                    copy={() => console.log('copy')}
-                />
-
                 <div className="space-y-6 w-full overflow-hidden">
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 w-full">
                         <DashboardCard title="Revenue vs Refunds (90d)" type="line" data={revenueData} categoryKey="date" valueKey="revenue" className="lg:col-span-2" loading={loading} isCurrency={true} />
@@ -297,6 +288,33 @@ export default function AdminDashboardPage() {
                         <DashboardCard title="Top 10 Services by Revenue (90d)" type="bar" data={topServicesData} categoryKey="name" valueKey="revenue" loading={loading} isCurrency={true} />
                         <DashboardCard title="Payout Pipeline (Last 4 Weeks)" type="bar" data={payoutPipelineData} categoryKey="week" valueKey="paid" loading={loading} isCurrency={true} />
                     </div>
+                </div>
+
+                {/* Friday Payout Release & Payment Reconciliation (P23) */}
+                <div className="space-y-6 w-full">
+                    <PayoutReleasePanel />
+                    <ReconciliationCard />
+
+                    {/* AI Escalations Placeholder (available after P26) */}
+                    <Card className="shadow-sm border-dashed">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-base font-headline flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-primary" />
+                                    AI Escalations
+                                </CardTitle>
+                                <CardDescription className="text-xs">
+                                    Automated incident and clinical dispute escalation queue
+                                </CardDescription>
+                            </div>
+                            <Badge variant="outline" className="text-xs">Phase 5 (P26)</Badge>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="py-6 text-center text-sm text-muted-foreground font-medium">
+                                AI escalations – available after P26
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6 w-full">
