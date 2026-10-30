@@ -9,3 +9,9 @@ export const categorySlug = (c: { name: string; slug?: string | null }) => c.slu
 
 /** The link text of a product: its slug, else its id (an old row without a slug still opens). */
 export const productPath = (p: { id: number | string; slug?: string | null }) => `/ecommerce/product/${p.slug || p.id}`;
+
+/** The name-only link used before therapist slugs existed ("dr-meera-sharma"). Old links keep working through a redirect. */
+export const oldTherapistSlug = (name: string) => name.toLowerCase().replace(/ /g, '-');
+
+/** The link of a therapist: the API's slug (name + city), else the old name-only one. */
+export const therapistPath = (t: { name: string; slug?: string | null }) => `/therapists/${t.slug || oldTherapistSlug(t.name)}`;

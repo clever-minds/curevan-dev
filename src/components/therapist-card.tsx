@@ -1,6 +1,7 @@
         'use client';
 
-        import Link from 'next/link';
+        import { therapistPath } from '@/lib/slug';
+import Link from 'next/link';
         import Image from 'next/image';
         import type { Therapist } from '@/lib/types';
         import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +26,7 @@
             selectedService = searchParams.get('specialty') || '';
         }
 
-        const href = `/therapists/${therapist.name.toLowerCase().replace(/ /g, '-')}${selectedService ? `?service=${encodeURIComponent(selectedService)}` : ''}`;
+        const href = `${therapistPath(therapist)}${selectedService ? `?service=${encodeURIComponent(selectedService)}` : ''}`;
 
         return (
             <CardComponent className={cn(

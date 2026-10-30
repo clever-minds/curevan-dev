@@ -57,3 +57,12 @@ describe('product title', () => {
     expect(long.endsWith('| Curevan')).toBe(true);
   });
 });
+
+import { therapistPath, oldTherapistSlug } from '@/lib/slug';
+describe('therapist links', () => {
+  it('use the name + city slug from the API, the old name-only link until a row has one', () => {
+    expect(therapistPath({ name: 'Dr Meera Sharma', slug: 'dr-meera-sharma-vadodara' })).toBe('/therapists/dr-meera-sharma-vadodara');
+    expect(therapistPath({ name: 'Dr Meera Sharma' })).toBe('/therapists/dr-meera-sharma');
+    expect(oldTherapistSlug('Dr Meera Sharma')).toBe('dr-meera-sharma');
+  });
+});

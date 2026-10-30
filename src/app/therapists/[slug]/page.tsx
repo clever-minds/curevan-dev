@@ -1,4 +1,5 @@
 
+import { therapistPath } from '@/lib/slug';
 import { notFound } from 'next/navigation';
 import { TherapistProfileClient } from './therapist-profile';
 import type { Therapist } from '@/lib/types';
@@ -40,7 +41,7 @@ export async function generateMetadata(
   return {
     title,
     description: `${intro} ${therapist.bio || ''}`.replace(/[#*_`>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
-    alternates: { canonical: `/therapists/${slug}` },
+    alternates: { canonical: therapistPath(therapist) },
     openGraph: {
       title: `${therapist.name} | Curevan Therapist Profile`,
       description: therapist.bio.substring(0, 160),
