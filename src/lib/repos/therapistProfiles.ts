@@ -13,7 +13,6 @@ export async function getTherapistProfileById(id: number): Promise<Therapist | n
     if (!id) return null;
     console.log("Therapist ID :", id);
     const token = await getToken();
-    console.log("Therapist Token :", token);
 
     const { data } = await serverApi.get(`/api/therapists/profile/${id}`, {
       headers: {

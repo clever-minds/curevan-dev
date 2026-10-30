@@ -35,7 +35,6 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { Price } from "@/components/money/price";
 import { getPublicStats } from "@/lib/repos/stats";
@@ -241,16 +240,6 @@ export default function TherapyAdminDashboardPage() {
                     <KpiCard title="No-Show Rate" value={kpis.noShowRate} icon={Calendar} loading={loading} />
                 </div>
 
-                <ReportAiSummary 
-                    summaryText={[
-                        "High number of pending PCRs is delaying ~₹18,000 in payouts. Send reminders.",
-                        "Dr. Evelyn Reed has the highest patient satisfaction rating this month.",
-                        "Consider recruiting more Speech Therapists due to high demand in Vadodara.",
-                    ]}
-                    regenerate={() => console.log('regenerate')}
-                    copy={() => console.log('copy')}
-                />
-                
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
                     <DashboardCard title="Sessions per day (90d)" type="line" data={sessionsData} categoryKey="date" valueKey="sessionCount" loading={loading} isCurrency={false} />
                     <DashboardCard title="Bookings by Mode (90d)" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" loading={loading} isCurrency={false} />

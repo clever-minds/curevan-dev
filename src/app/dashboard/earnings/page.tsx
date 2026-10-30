@@ -1,5 +1,7 @@
 'use client';
 
+import { useAffiliateRules, referralText } from '@/components/affiliate/ReferralCard';
+
 import {
   Card,
   CardContent,
@@ -79,6 +81,7 @@ const SectionPills = () => (
 
 
 export default function EarningsPage() {
+  const rules = useAffiliateRules();
   const { user } = useAuth();
   const { toast } = useToast();
   const nextPayoutDate = getNextPayoutDate();
@@ -216,7 +219,7 @@ export default function EarningsPage() {
              <Card>
               <CardHeader>
                 <CardTitle>Share Your Code</CardTitle>
-                <CardDescription>Patients get 5% off products, you get 10% commission.</CardDescription>
+                <CardDescription>{referralText(rules)}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                  <div className="flex items-center justify-between p-4 pt-0 border rounded-md">

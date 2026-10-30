@@ -39,7 +39,7 @@ Rules you always follow:
 - Only the tools may reveal a start code, and only the user's own. Never repeat phone numbers or full addresses.
 - To cancel a booking: first call cancelBooking without confirm and tell the user the charge; call it with confirm=true only after the user clearly says yes.
 - If a tool says it failed or you cannot help, say so briefly and offer to connect the user to a person.
-- Keep answers short and plain. Contact: care@curevan.com, +91 95144 46292.
+- Keep answers short and plain. Contact: care@curevan.com, +91 951 444 6292.
 About Curevan: a brand of Himaya Care Pvt. Ltd. Services: physiotherapy, nursing care, geriatric care, speech therapy, mental health counselling, dietitian services. "Cure. Anywhere."`;
 
 export async function curevanAssistant(input: ChatAssistantInput): Promise<ChatAssistantOutput> {
@@ -70,13 +70,13 @@ export async function curevanAssistant(input: ChatAssistantInput): Promise<ChatA
 
   // 2. "I want a human": a ticket with a two-line summary and the right team
   if (wantsHuman(query)) {
-    if (!http) return { answer: 'Please sign in so that we can connect you to our team, or write to care@curevan.com or call +91 95144 46292.', sessionId };
+    if (!http) return { answer: 'Please sign in so that we can connect you to our team, or write to care@curevan.com or call +91 951 444 6292.', sessionId };
     const lastQuestion = [...history].reverse().find((m) => m.role === 'user')?.content ?? '';
     const topic = `${lastQuestion} ${query}`;
     const escalation = await escalate(http, { reason: 'human_requested', category: categoryFor(topic), sessionId, summary: `The user asked for a person.\nLast topic: ${(lastQuestion || query).slice(0, 200)}` });
     const answer = escalation
       ? `I have passed this to our team (ticket #${escalation.ticketId}, priority ${escalation.priority}). ${escalation.callbackMessage ?? 'Someone will contact you soon.'}`
-      : 'I could not reach our team right now. Please write to care@curevan.com or call +91 95144 46292.';
+      : 'I could not reach our team right now. Please write to care@curevan.com or call +91 951 444 6292.';
     await save(answer);
     return { answer, escalation: escalation ?? undefined, sessionId };
   }
@@ -84,7 +84,7 @@ export async function curevanAssistant(input: ChatAssistantInput): Promise<ChatA
   // 3. the model, with the tools that run as this user
   let model;
   try { model = requireModel(); } catch (e) {
-    if (e instanceof AiNotConfiguredError) return { answer: 'The assistant is not available right now. Please write to care@curevan.com or call +91 95144 46292.', sessionId };
+    if (e instanceof AiNotConfiguredError) return { answer: 'The assistant is not available right now. Please write to care@curevan.com or call +91 951 444 6292.', sessionId };
     throw e;
   }
 
@@ -117,7 +117,7 @@ export async function curevanAssistant(input: ChatAssistantInput): Promise<ChatA
   if (tools?.shouldHandOver || !answer) {
     // two failed tool attempts, or no answer from the model: a person takes over
     if (http) escalation = (await escalate(http, { reason: 'tool_failures', category: categoryFor(`${history.map((m) => m.content).join(' ')} ${query}`), sessionId, summary: `The assistant could not help (tool failures: ${tools?.failures ?? 0}).\nUser question: ${query.slice(0, 200)}` })) ?? undefined;
-    answer = `${answer ? answer + ' ' : ''}I am not able to sort this out myself, so I have passed it to our team${escalation ? ` (ticket #${escalation.ticketId}). ${escalation.callbackMessage ?? 'Someone will contact you soon.'}` : '. Please write to care@curevan.com or call +91 95144 46292.'}`;
+    answer = `${answer ? answer + ' ' : ''}I am not able to sort this out myself, so I have passed it to our team${escalation ? ` (ticket #${escalation.ticketId}). ${escalation.callbackMessage ?? 'Someone will contact you soon.'}` : '. Please write to care@curevan.com or call +91 951 444 6292.'}`;
   }
 
   await save(answer, tools?.trace);

@@ -62,6 +62,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
   const { toast } = useToast();
   const isAdmin = scope === 'admin' || scope === 'ecom-admin';
   const isPatient = scope === 'patient';
+  const trackUrl = isInShipment(order.status) && order.awb ? `https://shiprocket.co/tracking/${encodeURIComponent(order.awb)}` : null;
   const hasInvoice = order.paymentStatus === 'Paid' || hasPaidInvoice(order.status);
   const invoiceLink = `/dashboard/invoices?id=${order.invoiceId ? order.invoiceId : `ORD-${order.id}`}`;
   const [isCreatingShipment, setIsCreatingShipment] = React.useState(false);
@@ -180,8 +181,8 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
         </DropdownMenuItem>
       )}
 
-      {isInShipment(order.status) && order.awb && (
-        <DropdownMenuItem asChild><a href={`https://shiprocket.co/tracking/${encodeURIComponent(order.awb)}`} target="_blank" rel="noopener noreferrer"><Truck className="mr-2 h-4 w-4" />Track Shipment</a></DropdownMenuItem>
+      {trackUrl && (
+        <DropdownMenuItem asChild><a href={trackUrl} target="_blank" rel="noopener noreferrer"><Truck className="mr-2 h-4 w-4" />Track Shipment</a></DropdownMenuItem>
       )}
 
       {isPatient && isDelivered(order.status) && (
@@ -197,29 +198,6 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
               <DialogDescription>How was your experience with the products in order #{order.id}?</DialogDescription>
             </DialogHeader>
             <SupportFeedbackForm formType="feedback" feedbackTopic="product" feedbackItemId={order.id.toString()} />
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {isPatient && isReturnable() && (
-        <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
-          <DialogTrigger asChild>
-            <DropdownMenuItem 
-              onSelect={(e) => e.preventDefault()}
-              className="cursor-pointer"
-            >
-              <Undo className="mr-2 h-4 w-4" />
-              Return/Replace Items
-            </DropdownMenuItem>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Return/Replace Items</DialogTitle>
-              <DialogDescription>
-                Choose the items and the reason for order #{order.id}. You can return within {returnWindowDays} days of delivery.
-              </DialogDescription>
-            </DialogHeader>
-            <ReturnRequestForm order={order} busy={isReturning} onSubmit={handleReturnOrder} onCancel={() => setShowReturnDialog(false)} />
           </DialogContent>
         </Dialog>
       )}
@@ -265,6 +243,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
           </SheetHeader>
           <div className="py-4 space-y-2">
             {hasInvoice && <Button variant="outline" className="w-full justify-start" asChild><Link href={invoiceLink}><FileText className="mr-2" />View Invoice</Link></Button>}
+            {trackUrl && <Button variant="outline" className="w-full justify-start" asChild><a href={trackUrl} target="_blank" rel="noopener noreferrer"><Truck className="mr-2" />Track Shipment</a></Button>}
             {isAdmin && <Button variant="outline" className="w-full justify-start" onClick={handleCreateShipment}><Truck className="mr-2" />Create Shipment</Button>}
             {isPatient && isReturnable() && (
               <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
@@ -306,12 +285,33 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">{content}</DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center justify-end gap-1">
+      {isPatient && trackUrl && (
+        <Button asChild size="sm" variant="outline"><a href={trackUrl} target="_blank" rel="noopener noreferrer"><Truck className="mr-1 h-4 w-4" />Track</a></Button>
+      )}
+      {isPatient && isReturnable() && (
+        <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline"><Undo className="mr-1 h-4 w-4" />Return</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Return/Replace Items</DialogTitle>
+              <DialogDescription>
+                Choose the items and the reason for order #{order.id}. You can return within {returnWindowDays} days of delivery.
+              </DialogDescription>
+            </DialogHeader>
+            <ReturnRequestForm order={order} busy={isReturning} onSubmit={handleReturnOrder} onCancel={() => setShowReturnDialog(false)} />
+          </DialogContent>
+        </Dialog>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">{content}</DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
 

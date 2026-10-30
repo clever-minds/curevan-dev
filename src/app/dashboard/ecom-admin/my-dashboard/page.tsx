@@ -14,7 +14,6 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { DollarSign, ShoppingBag, RotateCcw, Package, Percent, Truck, FileDown, Printer, AlertTriangle, TrendingUp, HandCoins, CheckCircle, Hourglass } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Price } from "@/components/money/price";
@@ -211,16 +210,6 @@ export default function EcomAdminDashboardPage() {
                     <KpiCard title="Refund Rate" value={kpis.refundRate} icon={RotateCcw} loading={loading} />
                     <KpiCard title="On-time Delivery" value={kpis.onTimeRate} icon={Truck} loading={loading} />
                 </div>
-
-                <ReportAiSummary
-                    summaryText={[
-                        "Revenue is up 15% WoW, driven by strong sales in the 'Physiotherapy' category.",
-                        "Coupon 'SAVE10' has high usage but low AOV; consider making it product-specific.",
-                        "Several SKUs for 'Resistance Bands' are nearing their reorder point. Plan procurement."
-                    ]}
-                    regenerate={() => console.log('regenerate')}
-                    copy={() => console.log('copy')}
-                />
 
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
                     <DashboardCard title="Revenue vs Refunds (90d)" type="line" data={revenueRefundsData} categoryKey="date" valueKey="revenue" loading={loading} isCurrency={true} />

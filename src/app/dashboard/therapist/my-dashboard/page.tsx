@@ -24,7 +24,6 @@ import Link from "next/link";
 import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
 import { listAppointmentsForUser, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
@@ -181,6 +180,9 @@ export default function TherapistDashboard() {
 
             <div className="flex flex-wrap gap-4">
                <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/account">Working Hours</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/leaves">Manage Leaves</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
@@ -215,18 +217,6 @@ export default function TherapistDashboard() {
                 <KpiCard title="Unique Patients (90d)" value={stats?.kpis?.uniquePatients ?? 0} icon={Users} isCurrency={false} />
                 <KpiCard title="Avg. Rating (90d)" value={stats?.kpis?.avgRating ?? "0.0"} icon={Star} />
             </div>
-
-            <ReportAiSummary 
-                summaryText={[
-                    "Your session volume is highest on Fridays. Consider opening more slots.",
-                    stats?.kpis?.pcrAlert?.pendingCount > 0
-                      ? `You have ${stats.kpis.pcrAlert.pendingCount} pending PCRs older than 48 hours. Locking these will unlock ₹${Number(stats.kpis.pcrAlert.pendingAmount).toLocaleString('en-IN')} in earnings for the next payout.`
-                      : "All completed PCRs older than 48 hours are locked and eligible for payout.",
-                    "Your most frequent service is post-op knee rehab. A new training module on advanced techniques is available."
-                ]}
-                regenerate={() => console.log('regenerate')}
-                copy={() => console.log('copy')}
-             />
 
             <DashboardSection id="charts" title="Insights (Last 90 Days)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">

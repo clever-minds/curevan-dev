@@ -14,7 +14,7 @@ export const PAGE_SEO = {
   ecommerce: { title: "Shop Medical Devices & Therapy Equipment", description: "Buy TENS/EMS electrode pads, balance boards, rehab equipment, therapist kits and medical apparel online. Used by Curevan therapists, delivered to you." },
   journal: { title: "Health Journal – Exercises & Home Care Tips", description: "Expert articles from Curevan therapists: exercises for back and knee pain, post-surgery recovery, elder care tips and guides to using therapy devices at home." },
   contact: { title: "Contact Us – Home Therapy & Care, Vadodara", description: "Call +91 951 444 6292 or email care@curevan.com to book home therapy, nursing or order medical devices. Office: Time Square, Vasna-Bhayli Road, Vadodara." },
-  joinAsTherapist: { title: "Join as a Therapist – Earn with Home Visits", description: "Physiotherapists, nurses and therapists: join Curevan free, keep 100% of patient payments and get home-visit bookings near you. Premium plans available." },
+  joinAsTherapist: { title: "Join as a Therapist – Earn with Home Visits", description: "Physiotherapists, nurses and therapists: join Curevan free, keep 100% of patient payments* and get home-visit bookings near you. Premium plans available." },
 } satisfies Record<string, Seo>;
 
 /** Therapy category pages, by category slug. */
@@ -49,4 +49,12 @@ export function seoMetadata(path: string, seo: Seo, opts: { absoluteTitle?: bool
     alternates: { canonical: path },
     openGraph: { title: seo.title, description: seo.description, url: `${SITE_URL}${path}`, siteName: 'Curevan', type: 'website' },
   };
+}
+
+// 60 characters in all (the sheet's limit): "[name] – Buy Online | Curevan", else without "Buy Online", else the name cut with "…"
+export function productTitle(name: string) {
+  const full = `${name} – Buy Online | Curevan`;
+  if (full.length <= 60) return full;
+  const short = `${name} | Curevan`;
+  return short.length <= 60 ? short : `${name.slice(0, 60 - ' | Curevan'.length - 1).trimEnd()}… | Curevan`;
 }

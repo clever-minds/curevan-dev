@@ -58,7 +58,7 @@ const faqs = [
 
 const plans = [
     { feature: 'Joining Fee', free: '₹0 (No cost to join)', premium: '₹0 (No upfront fee)' },
-    { feature: 'Earnings', free: '100% of what your patient pays goes directly to you', premium: <strong>90% (10% platform fee)</strong> },
+    { feature: 'Earnings', free: '100% of what your patient pays goes directly to you*', premium: <strong>90% (10% platform fee)</strong> },
     { feature: 'Patient Access', free: 'Standard patient matching', premium: <strong>Priority matching – you’ll be recommended first to new patients</strong> },
     { feature: 'Visibility', free: 'Listed on Curevan platform', premium: <strong>Highlighted as a Premium Therapist in search & listings</strong> },
     { feature: 'Flexibility', free: 'Continue your clinic or job without any changes', premium: <strong>Option to build full-time practice with Curevan support</strong> },
@@ -293,6 +293,7 @@ export default  function HomePage() {
                                   </li>
                               ))}
                           </ul>
+                          <p className="text-xs text-muted-foreground">* TDS, payment-gateway charges and applicable taxes are deducted from your earnings.</p>
                       </CardContent>
                       <CardFooter>
                           <Button asChild className="w-full" variant="outline">

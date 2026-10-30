@@ -45,3 +45,15 @@ describe('clean links', () => {
     expect(productPath({ id: 81 })).toBe('/ecommerce/product/81');
   });
 });
+
+import { productTitle } from '@/lib/seo';
+describe('product title', () => {
+  it('stays within 60 characters with the brand, shortening a long name', () => {
+    expect(productTitle('Balance Board')).toBe('Balance Board – Buy Online | Curevan');
+    const mid = productTitle('Self-Adhesive Electrode Pad Reusable Gel (2" X 4") Pack of 10');
+    expect(mid.length).toBeLessThanOrEqual(60);
+    const long = productTitle('A'.repeat(120));
+    expect(long.length).toBeLessThanOrEqual(60);
+    expect(long.endsWith('| Curevan')).toBe(true);
+  });
+});

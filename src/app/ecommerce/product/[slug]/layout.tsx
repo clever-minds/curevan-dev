@@ -4,7 +4,7 @@ import { cache } from 'react';
 import type { ReactNode } from 'react';
 import { fetchProductById } from '@/lib/repos/products';
 import { productPath } from '@/lib/slug';
-import { seoMetadata } from '@/lib/seo';
+import { productTitle, seoMetadata } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -20,9 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const intro = plain(p.description || p.longDescription || '').slice(0, 120);
   // the /ecommerce layout above sets a plain title, which switches the root " | Curevan" template off for pages under it: add the brand here
   return seoMetadata(productPath(p), {
-    title: `${p.name} – Buy Online | Curevan`,
+    title: productTitle(p.name),
     // no price sentence while the product has no price yet ("Price ₹0" would show in Google)
-    description: `${intro}${intro ? ' ' : ''}${p.price > 0 ? `Price ₹${p.price}. ` : ''}Order online from Curevan.`,
+    description: `${intro}${intro ? ' ' : ''}${p.price > 0 ? `Price ₹${p.price}. ` : ''}Order online from Curevan.`.slice(0, 160),
   }, { absoluteTitle: true });
 }
 

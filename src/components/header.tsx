@@ -181,7 +181,7 @@ export default function Header() {
               </a>
               <a href="tel:+919514446292" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
                 <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>+91 95144 46292</span>
+                <span>+91 951 444 6292</span>
               </a>
             </div>
              <div className="hidden sm:flex items-center gap-4">
@@ -234,7 +234,7 @@ export default function Header() {
                               </a>
                               <a href="tel:+919514446292" className="flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors font-semibold text-lg">
                                 <Phone className="w-5 h-5" />
-                                <span>+91 95144 46292</span>
+                                <span>+91 951 444 6292</span>
                               </a>
                           </div>
                       </div>

@@ -15,6 +15,7 @@ export default function TherapistSignupPage() {
                 <CardDescription>
                     Join our network of trusted healthcare professionals.
                 </CardDescription>
+                <p className="text-xs text-muted-foreground">Free plan: you keep 100% of what your patient pays*. * TDS, payment-gateway charges and applicable taxes are deducted from your earnings.</p>
             </CardHeader>
             <CardContent>
                 <TherapistOnboardingForm />

@@ -36,7 +36,6 @@ import type { Appointment, Product } from "@/lib/types";
 import { listAppointmentsForUser, submitReview } from "@/lib/repos/appointments";
 import { listOrders } from "@/lib/repos/orders";
 import { listProducts } from "@/lib/repos/products";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { PatientJourneyCard } from "../patient/patient-journey-card";
 import { ReminderPreferences } from '@/components/account/ReminderPreferences';
 
@@ -266,16 +265,6 @@ export default function AccountPage() {
                 <KpiCard title="Services Spend (90d)" value={servicesSpend} icon={Wallet} isCurrency={true} />
                 <KpiCard title="Shop Spend (90d)" value={shopSpend} icon={PackageOpen} isCurrency={true} />
              </div>
-
-             <ReportAiSummary 
-                summaryText={[
-                    "Your last physiotherapy session focused on improving knee flexibility.",
-                    "Your recent payment of ₹2,500 for a Resistance Bands Set was successful.",
-                    "Your next appointment is with Dr. Evelyn Reed."
-                ]}
-                regenerate={() => console.log('regenerate')}
-                copy={() => console.log('copy')}
-             />
 
              {activeSession && (
                  <div className="mb-8">
