@@ -28,6 +28,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { addDays, isBefore } from 'date-fns';
 import { ReturnRequestForm, type ReturnPayload } from '@/components/shop/ReturnRequestForm';
+import { trackingUrl } from '@/lib/tracking';
 import { hasPaidInvoice, isDelivered, isInShipment, orderStatusClass, orderStatusLabel } from '@/lib/order-status';
 import { DEFAULT_SHOP_RULES, getShopRules } from '@/lib/repos/publicConfig';
 import Link from 'next/link';
@@ -62,7 +63,7 @@ const ActionsMenu = ({ order, scope, onRefresh, asSheetItems = false, existingRe
   const { toast } = useToast();
   const isAdmin = scope === 'admin' || scope === 'ecom-admin';
   const isPatient = scope === 'patient';
-  const trackUrl = isInShipment(order.status) && order.awb ? `https://shiprocket.co/tracking/${encodeURIComponent(order.awb)}` : null;
+  const trackUrl = isInShipment(order.status) && order.awb ? trackingUrl(order.awb) : null;
   const hasInvoice = order.paymentStatus === 'Paid' || hasPaidInvoice(order.status);
   const invoiceLink = `/dashboard/invoices?id=${order.invoiceId ? order.invoiceId : `ORD-${order.id}`}`;
   const [isCreatingShipment, setIsCreatingShipment] = React.useState(false);
