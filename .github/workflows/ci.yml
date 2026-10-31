@@ -38,3 +38,94 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1"
           NEXT_PUBLIC_FIREBASE_APP_ID: 1:1:web:ci
+
+  # The browser tests: the real website against the API of curevan-node (stubbed Razorpay / Firebase / mail) and a real PostgreSQL.
+  # Five role logins, the ten cross-role journeys (a patient books, the therapist and the admins see it, visit, report, payout,
+  # shop, follow-up, support), the registration certificate, role access and 375 px screens.
+  # The API comes from the main branch of curevan-node: merge the API pull request first.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: curevan
+          POSTGRES_PASSWORD: testpw
+          POSTGRES_DB: curevan_test
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U curevan -d curevan_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "54329"
+      DB_NAME: curevan_test
+      DB_USER: curevan
+      DB_PASSWORD: testpw
+      E2E_API_DIR: ${{ github.workspace }}/curevan-node
+      JWT_SECRET: ui-test-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: clever-minds/curevan-node
+          ref: main
+          path: curevan-node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: API - install, empty database, test users
+        working-directory: curevan-node
+        run: |
+          npm ci
+          npm run test:db
+          npm run test:users
+      - name: API - start (stubbed Razorpay / Firebase / mail) on :5000
+        working-directory: curevan-node
+        run: |
+          mkdir -p "$RUNNER_TEMP/private"
+          PRIVATE_STORAGE_DIR="$RUNNER_TEMP/private" nohup node tests/integration/dev_server.js > "$RUNNER_TEMP/api.log" 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:5000/api/config/public > /dev/null && exit 0; sleep 2; done
+          cat "$RUNNER_TEMP/api.log"; exit 1
+      - name: Website - install and build
+        run: |
+          npm ci
+          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1"
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:1:web:ci
+      - name: Website - start on :3000
+        run: |
+          nohup npx next start -p 3000 > "$RUNNER_TEMP/web.log" 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/ > /dev/null && exit 0; sleep 2; done
+          cat "$RUNNER_TEMP/web.log"; exit 1
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1"
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:1:web:ci
+      - name: Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests
+        run: npx playwright test --reporter=list
+      - name: Test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
