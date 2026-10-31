@@ -30,7 +30,12 @@ npm run test:e2e
 | `e2e/rbac.spec.ts` | role guards (API 401/403) and pages a role may not open |
 | `e2e/mobile.spec.ts` | project "Mobile 375": every dashboard home has no horizontal scroll (go-live item 19) |
 | `e2e/journeys.spec.ts` | orders list, return on an undelivered order refused, legal entity config |
+| `e2e/certificate.spec.ts` | P22: the therapist uploads the registration certificate in the browser, the therapy admin's queue shows it and the API serves the same file, a patient gets 403 |
+| `e2e/cross-role.spec.ts` | P29: ten journeys across the roles (a patient books through the form, the therapist and the admins see the same booking, the visit flow and start code, report and lock, weekly payout, cancellation and refund, shop with return and commission, follow-up, support / SOS / privacy, leave). Takes about 5 minutes; start from a freshly seeded database (`npm run test:db` and `npm run test:users` in curevan-node) |
 
 The booking -> pay -> OTP -> PCR -> lock -> payout and shop -> coupon -> webhook -> return journeys are asserted rule by rule
 in the API suite (`npm test` in curevan-node; mapping in its `docs/TESTING.md`). The Razorpay popup itself is third-party and
 is replaced by a signed test payment there; check it once by hand with the Razorpay test keys before go-live.
+
+## In CI
+The `e2e` job of `.github/workflows/ci.yml` runs all of the above on every pull request: PostgreSQL service, the API of curevan-node (main branch, stubbed Razorpay / Firebase / mail) on :5000, the built website on :3000, Playwright with Chromium. Merge the API pull request first, because the job takes the API from `main`.
