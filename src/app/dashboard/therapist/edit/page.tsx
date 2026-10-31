@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import serverApi from "@/lib/repos/axios.server";
 import { getToken } from "@/lib/auth";
 import MediaPicker from "@/components/MediaPicker";
+import { CertificateUpload } from "@/components/therapist/CertificateUpload";
 
 export default function TherapistEditProfile() {
   const { user } = useAuth();
@@ -219,6 +220,7 @@ export default function TherapistEditProfile() {
             <CardDescription>Upload URLs for your medical licenses and ID proofs.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <CertificateUpload />
             <div className="mt-4">
               <MediaPicker 
                 multiple={true}

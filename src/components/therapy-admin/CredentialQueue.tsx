@@ -12,7 +12,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Award, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getCredentialQueue } from '@/lib/repos/therapyAdmin';
+import { openCertificate } from '@/lib/repos/certificate';
 
 export function CredentialQueue() {
   const [items, setItems] = React.useState<any[]>([]);
@@ -80,6 +82,7 @@ export function CredentialQueue() {
                 <TableHead>Reg. Number</TableHead>
                 <TableHead>Valid Until</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Certificate</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,6 +105,11 @@ export function CredentialQueue() {
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(item.credential_status, item.days_remaining)}
+                  </TableCell>
+                  <TableCell>
+                    {item.has_certificate
+                      ? <Button size="sm" variant="outline" onClick={() => openCertificate(item.user_id)}>View</Button>
+                      : <span className="text-xs text-muted-foreground">Not uploaded</span>}
                   </TableCell>
                 </TableRow>
               ))}
