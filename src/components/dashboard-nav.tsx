@@ -144,6 +144,7 @@ const superAdminRootNav = (activeAlertCount: number, openTicketCount: number, pe
         { href: '/dashboard/admin/users', label: 'User Management', icon: UserCog },
         { href: '/dashboard/admin/sos-alerts', label: 'SOS Alerts', icon: ShieldAlert, badgeCount: activeAlertCount },
         { href: '/dashboard/admin/support-tickets', label: 'Support Tickets', icon: Send, badgeCount: openTicketCount },
+        { href: '/dashboard/admin/notification-log', label: 'Notification Log', icon: Bell },
         { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell },
         { href: '/dashboard/admin/ai', label: 'AI Settings', icon: Sparkles },
         { href: '/dashboard/admin/settings', label: 'Platform Settings', icon: Settings },
