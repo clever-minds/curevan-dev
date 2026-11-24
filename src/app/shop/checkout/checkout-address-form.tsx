@@ -71,6 +71,7 @@ const addressSchema = z.object({
   shippingAddressId: z.string().min(1, "Please select a shipping address"),
   billingAddressId: z.string().optional(),
   useShippingAsBilling: z.boolean().default(true),
+  whatsapp_opt_in: z.boolean().default(false),
   newShippingAddress: z.object({
     line1: z.string().min(1, "Street address is required"),
     city: z.string().min(1, "City is required").refine((val) => /^[a-zA-Z\s]*$/.test(val), {
@@ -521,6 +522,7 @@ export function CheckoutAddressForm() {
       customerEmail: user?.email || '',
       customerPhone: user?.phone || '',
       useShippingAsBilling: true,
+      whatsapp_opt_in: false,
       shippingAddressId: '',
       billingAddressId: '',
     },
@@ -648,6 +650,7 @@ export function CheckoutAddressForm() {
               paymentRef: paymentResponse.razorpay_payment_id,
               paymentGateway: "razorpay",
               shippingCharges: shippingCost,
+              whatsapp_opt_in: Boolean(data.whatsapp_opt_in),
             });
 
             if (!orderResult.success || !orderResult.orderId) {
@@ -986,6 +989,28 @@ export function CheckoutAddressForm() {
               </div>
             )}
           </div>
+
+          {/* WhatsApp updates consent (P30: optional, not pre-ticked) */}
+          <FormField
+            control={form.control}
+            name="whatsapp_opt_in"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 rounded-lg bg-gray-50 border border-gray-200">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-1"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm font-normal cursor-pointer">
+                    Send me booking and order updates on WhatsApp from Curevan
+                  </FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
 
           {/* Submit Button */}
           <Button type="submit" className="w-full" size="lg" disabled={!isLoaded || isPending}>
