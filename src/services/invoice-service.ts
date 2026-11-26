@@ -9,7 +9,7 @@ const supplierDetails = {
   legalName: "Himaya Care Pvt. Ltd.",
   tradeName: "Curevan",
   address: {
-    line1: "Office 704, Time Square, Vasna-Bhayli Main Rd",
+    line1: "Office 407, Time Square, Vasna-Bhayli Main Rd",
     city: "Vadodara",
     state: "Gujarat",
     pin: "390012",
