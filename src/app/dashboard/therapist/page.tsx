@@ -1,6 +1,8 @@
 
 'use client';
 
+import { useAffiliateRules, referralText } from '@/components/affiliate/ReferralCard';
+
 import {
   Table,
   TableBody,
@@ -24,11 +26,12 @@ import Link from "next/link";
 import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { fetchEarningsData, EarningsData } from "@/services/earnings-service";
-import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, getAvailableRequests, acceptBookingRequest, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
+import { CancelBookingDialog } from '@/components/cancel-booking-dialog';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +59,7 @@ const KpiCard = ({ title, value, icon: Icon, description }: { title: string, val
 )
 
 export default function TherapistDashboard() {
+  const rules = useAffiliateRules();
   const [activeSession, setActiveSession] = useState<Appointment | null>(null);
   const [verifyingAppointment, setVerifyingAppointment] = useState<Appointment | null>(null);
   const { user } = useAuth();
@@ -101,11 +105,8 @@ export default function TherapistDashboard() {
             setStats(results[4]);
             setEarningsData(results[5]);
             
-            const fetchedCats = results[3] || [];
-            setTopServicesData(fetchedCats.slice(0,3).map((cat: string) => ({
-                name: cat.split(" ")[0],
-                count: Math.floor(Math.random() * 20) + 5,
-            })))
+            // real counts of this therapist's completed sessions per service (last 90 days)
+            setTopServicesData((results[4] as any)?.charts?.topServicesData ?? []);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -150,28 +151,39 @@ export default function TherapistDashboard() {
       setAvailableRequests(prev => prev.filter(r => r.id !== appointmentId));
   };
   
-  const handleVerificationSuccess = async (appointment: Appointment) => {
-    // This simulates creating a `sessions` row and starting the timer (B3 in DFD)
-    await updateAppointmentStatus(appointment.id, 'Session Started');
-    setActiveSession({ ...appointment, status: 'Session Started' });
+  // statuses in which the therapist is in the middle of a visit (restored after a page reload)
+  const JOURNEY_STATUSES = ['therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'];
+  useEffect(() => {
+    if (activeSession) return;
+    const live = appointments.find((a) => JOURNEY_STATUSES.includes(a.status));
+    if (live) setActiveSession(live);
+  }, [appointments, activeSession]);
+
+  // the list buttons open the visit card; every real step is then checked by the server
+  const handleOpenJourney = (appointment: Appointment) => {
+    setActiveSession(appointment);
+  };
+
+  // the server has already moved the booking to in_progress when this runs
+  const handleVerificationSuccess = (appointment: Appointment) => {
+    setActiveSession(appointment);
     setVerifyingAppointment(null);
-  }
+    setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? { ...a, status: appointment.status, sessionStartedAt: appointment.sessionStartedAt } : a)));
+  };
 
   const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
-      const success = await updateAppointmentStatus(appointmentId, newStatus);
-      if (success && activeSession && activeSession.id === appointmentId) {
-          setActiveSession({ ...activeSession, status: newStatus });
-      }
+    const result = await transitionAppointment(appointmentId, newStatus);
+    if (result.success) {
+      const stamp = new Date().toISOString();
+      setActiveSession((prev) => (prev && prev.id === appointmentId ? { ...prev, status: newStatus } : prev));
+      setAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus, travelStartedAt: newStatus === 'therapist_on_the_way' ? stamp : a.travelStartedAt, arrivedAt: newStatus === 'arrived' ? stamp : a.arrivedAt } : a)));
+    }
+    return result;
   };
 
   const handleEndSession = () => {
-    // This simulates closing the session and preparing for PCR documentation (P3 in DFD)
-    toast({
-        title: 'Session Complete',
-        description: `You have successfully checked out from your session with ${activeSession?.patientName}. Please complete the PCR now.`,
-    });
+    // the session is over; the PCR submission is what completes the booking
     router.push(`/pcr/${activeSession?.id}`);
-    setActiveSession(null);
   };
 
   const handleShareCode = () => {
@@ -207,15 +219,18 @@ export default function TherapistDashboard() {
 
             <div className="flex flex-wrap gap-4">
                <Button asChild variant="outline" className="w-full sm:w-auto">
-                 <Link href="/dashboard/therapist/availability">Manage Availability</Link>
+                 <Link href="/dashboard/therapist/leaves">Manage Leaves</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/edit">Edit Profile & Documents</Link>
                </Button>
                <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/support">Contact Support</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
                  <Link href="/dashboard/therapist/reviews">My Ratings & Reviews</Link>
                </Button>
-            </div>
+             </div>
 
             {activeSession && (
                 <ActiveSessionCard 
@@ -235,16 +250,6 @@ export default function TherapistDashboard() {
                 <KpiCard title="Unique Patients" value={stats?.kpis?.uniquePatients ?? 0} icon={Users} />
                 <KpiCard title="Avg. Rating" value={stats?.kpis?.avgRating ?? "0.0"} icon={Star} />
             </div>
-
-            <ReportAiSummary 
-                summaryText={[
-                    "Your session volume is highest on Fridays. Consider opening more slots.",
-                    "You have 3 pending PCRs older than 48 hours. Locking these will unlock ₹4,500 in earnings for the next payout.",
-                    "Your most frequent service is post-op knee rehab. A new training module on advanced techniques is available."
-                ]}
-                regenerate={() => console.log('regenerate')}
-                copy={() => console.log('copy')}
-            />
 
             <DashboardSection id="charts" title="Insights (Dynamic)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
@@ -301,7 +306,7 @@ export default function TherapistDashboard() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {appointments.filter(a => new Date(a.date) >= todayStart && new Date(a.date) <= todayEnd && a.status !== 'Completed' && a.status !== 'Cancelled').map((appointment) => (
+                            {appointments.filter(a => new Date(a.date) >= todayStart && new Date(a.date) <= todayEnd && !isFinished(a.status)).map((appointment) => (
                             <TableRow key={appointment.id}>
                                 <TableCell>{appointment.time}</TableCell>
                                 <TableCell>{appointment.patientName}</TableCell>
@@ -311,12 +316,18 @@ export default function TherapistDashboard() {
                                      <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        onClick={() => handleStartSessionRequest(appointment)} 
-                                        disabled={!!activeSession}
+                                        onClick={() => handleOpenJourney(appointment)} 
+                                        disabled={!!activeSession || !['confirmed', 'therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'].includes(appointment.status)}
                                     >
                                         <PlayCircle className="mr-2 h-4 w-4"/>
-                                        Start Journey
+                                        Start
                                     </Button>
+                                    <CancelBookingDialog
+                                        appointment={appointment}
+                                        role="therapist"
+                                        onCancelled={() => setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status: 'cancelled_by_therapist' } : a))}
+                                        trigger={<Button variant="outline" size="sm" className="text-destructive border-destructive">Cancel</Button>}
+                                    />
                                     <Button variant="ghost" size="sm" asChild>
                                         <Link href={`/pcr/${appointment.id}`}>PCR</Link>
                                     </Button>
@@ -343,15 +354,21 @@ export default function TherapistDashboard() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {appointments.filter(a => new Date(a.date) > todayEnd && a.status !== 'Completed' && a.status !== 'Cancelled').slice(0, 5).map((appointment) => (
+                            {appointments.filter(a => new Date(a.date) > todayEnd && !isFinished(a.status)).slice(0, 5).map((appointment) => (
                             <TableRow key={appointment.id}>
                                 <TableCell>{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</TableCell>
                                 <TableCell>{appointment.patientName}</TableCell>
                                 <TableCell>{appointment.therapyType}</TableCell>
                                 <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right flex justify-end gap-2">
+                                    <CancelBookingDialog
+                                        appointment={appointment}
+                                        role="therapist"
+                                        onCancelled={() => setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status: 'cancelled_by_therapist' } : a))}
+                                        trigger={<Button variant="outline" size="sm" className="text-destructive border-destructive">Cancel</Button>}
+                                    />
                                     <Button variant="ghost" size="sm" asChild>
-                                        <Link href={`/pcr/${appointment.id}`}>View Details</Link>
+                                        <Link href={`/pcr/${appointment.id}`}>Details</Link>
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -375,7 +392,7 @@ export default function TherapistDashboard() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {appointments.filter(a => a.status === 'Completed' || a.status === 'Cancelled' || a.status === 'No-Show').slice(0, 5).map((appointment) => (
+                            {appointments.filter(a => isFinished(a.status)).slice(0, 5).map((appointment) => (
                             <TableRow key={appointment.id}>
                                 <TableCell>{new Date(appointment.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{appointment.patientName}</TableCell>
@@ -473,7 +490,7 @@ export default function TherapistDashboard() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Grow Your Earnings</CardTitle>
-                        <CardDescription>Share your permanent code with patients. They get 5% off products, and you earn a 10% commission on every sale.</CardDescription>
+                        <CardDescription>Share your permanent code with patients. {referralText(rules)}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-lg bg-muted border">

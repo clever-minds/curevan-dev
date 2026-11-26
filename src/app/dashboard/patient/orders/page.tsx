@@ -42,8 +42,8 @@ export default function PatientOrdersPage() {
     useEffect(() => {
         if (!user) return;
         const fetchData = async () => {
-            const data = await listOrders({ userId: user.uid });
-            setOrders(data);
+            const data = await listOrders({ userId: Number(user.uid) });
+            setOrders(data ?? []);
         };
         fetchData();
     }, [user]);

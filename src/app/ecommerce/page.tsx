@@ -42,6 +42,7 @@ function EcommerceContent() {
     suitableUsers: [] as string[],
     useTypes: [] as string[],
     stockStatus: [] as string[],
+    productTypes: [] as string[],
   });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -57,11 +58,11 @@ function EcommerceContent() {
             fetchPublicProductCategories(),
             getCoupons(),
         ]);
-        setProducts(productsData);
-        setProductCategories(categoriesData);
-        setCoupons(couponsData);
+        setProducts(productsData || []);
+        setProductCategories(categoriesData || []);
+        setCoupons(couponsData || []);
 
-        if (productsData.length > 0) {
+        if (productsData?.length > 0) {
             const prices = productsData.map(p => p.price);
             const min = Math.floor(Math.min(...prices));
             const max = Math.ceil(Math.max(...prices));
@@ -85,6 +86,7 @@ function EcommerceContent() {
 
   const filterOptions = useMemo(() => {
     const brands = new Set<string>();
+    const productTypes = new Set<string>();
     const subCategories = new Set<string>();
     const categorySubCategories: Record<string, Set<string>> = {};
     const colors = new Set<string>();
@@ -96,6 +98,7 @@ function EcommerceContent() {
 
     products.forEach(p => {
       if (p.brand) brands.add(p.brand);
+      if (p.productType) productTypes.add(p.productType);
       if (p.subCategoryName) {
           subCategories.add(p.subCategoryName);
           const catKey = p.categoryId?.toString() || 'unknown';
@@ -104,7 +107,7 @@ function EcommerceContent() {
       }
       
       p.additionalFeatures?.forEach(f => {
-        const title = f.title.toLowerCase();
+        const title = f.title?.toLowerCase() || '';
         if (title.includes('colour') || title.includes('color')) colors.add(f.value);
         if (title.includes('size')) sizes.add(f.value);
         if (title.includes('body part')) bodyParts.add(f.value);
@@ -133,6 +136,7 @@ function EcommerceContent() {
 
     return {
       brands: Array.from(brands),
+      productTypes: Array.from(productTypes),
       subCategories: Array.from(subCategories),
       categorySubCategories: categorySubCategoriesFormatted,
       colors: Array.from(colors),
@@ -169,8 +173,8 @@ function EcommerceContent() {
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesCategory = filters.category === 'all' || product.categoryId.toString().toLowerCase().replace(/ /g, '-') === filters.category;
+      const matchesSearch = (product.name || '').toLowerCase().includes((filters.search || '').toLowerCase());
+      const matchesCategory = filters.category === 'all' || product.categoryId?.toString().toLowerCase().replace(/ /g, '-') === filters.category;
       const matchesPrice = product.price >= filters.price[0] && product.price <= filters.price[1];
       const matchesRating = filters.rating === 0 || product.rating >= filters.rating;
       const matchesBrand = filters.brands.length === 0 || (product.brand && filters.brands.includes(product.brand));
@@ -181,7 +185,7 @@ function EcommerceContent() {
 
       const hasFeature = (titleMatch: string, selectedValues: string[]) => {
         if (selectedValues.length === 0) return true;
-        const feature = product.additionalFeatures?.find(f => f.title.toLowerCase().includes(titleMatch));
+        const feature = product.additionalFeatures?.find(f => (f.title || '').toLowerCase().includes(titleMatch));
         if (feature && selectedValues.includes(feature.value)) return true;
 
         const hasVariantFeature = (product as any).variants?.some((v: any) => {
@@ -198,8 +202,9 @@ function EcommerceContent() {
       const matchesIntendedUse = hasFeature('intended use', filters.intendedUses);
       const matchesSuitableUser = hasFeature('suitable user', filters.suitableUsers);
       const matchesUseType = hasFeature('use type', filters.useTypes);
+      const matchesProductType = filters.productTypes?.length === 0 || (product.productType && filters.productTypes?.includes(product.productType));
 
-      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesBrand && matchesSubCategory && matchesStock && matchesColor && matchesSize && matchesBodyPart && matchesIntendedUse && matchesSuitableUser && matchesUseType;
+      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesBrand && matchesSubCategory && matchesStock && matchesColor && matchesSize && matchesBodyPart && matchesIntendedUse && matchesSuitableUser && matchesUseType && matchesProductType;
     });
   }, [filters, products]);
 

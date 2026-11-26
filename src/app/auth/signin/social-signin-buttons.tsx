@@ -68,7 +68,7 @@ export function SocialSigninButtons() {
           });
 
           // Resolve role-specific dashboard link
-          const roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[];
+          const roles = Array.isArray(userProfile.roles) && userProfile.roles.length ? userProfile.roles as string[] : (Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role].filter(Boolean) as string[]);      // the generic 'admin' in .role says nothing about which admin
           const dashboardHref = resolveMyDashboardHref(roles);
 
           // Clean URL and redirect

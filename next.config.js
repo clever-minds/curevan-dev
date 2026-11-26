@@ -2,10 +2,10 @@
 const nextConfig = {
   /* config options here */
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   images: {
     unoptimized: true,   
@@ -73,7 +73,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://www.google.com https://www.gstatic.com https://maps.googleapis.com https://www.googletagmanager.com;",
+            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://cdn.razorpay.com https://www.google.com https://www.gstatic.com https://maps.googleapis.com https://www.googletagmanager.com;",
           },
         ],
       },
@@ -81,14 +81,20 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // one address per page (Curevan_SEO_Page_Titles.xlsx): the duplicates point to the real pages, the query string (?coupon=, ?ref=) is kept
       {
-        source: '/discover',
-        destination: '/book',
+        source: '/book',
+        destination: '/discover',
         permanent: true,
       },
       {
-        source: '/ecommerce',
-        destination: '/shop',
+        source: '/shop',
+        destination: '/ecommerce',
+        permanent: true,
+      },
+      {
+        source: '/auth/therapist-signup',
+        destination: '/join-as-therapist',
         permanent: true,
       },
       {

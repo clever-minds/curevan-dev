@@ -66,7 +66,7 @@ export function NotificationItem({ notification: initialNotification }: { notifi
       onClick={notification.link ? handleNotificationClick : undefined}
       className={cn(
         "flex items-start gap-4 p-4 transition-colors",
-        !notification.read && "bg-primary/5",
+        !notification.read && "bg-muted",
         notification.link && "hover:bg-muted/50 cursor-pointer"
       )}
     >

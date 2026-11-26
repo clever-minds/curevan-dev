@@ -40,7 +40,6 @@ export function ForgotPasswordForm() {
   async function onSubmit(data: ForgotPasswordFormValues) {
 
     try {
-      console.log("send email data", data);
       await sendPasswordResetEmail(data.email);
       setSubmitted(true);
       toast({

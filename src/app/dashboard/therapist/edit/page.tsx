@@ -12,17 +12,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import serverApi from "@/lib/repos/axios.server";
 import { getToken } from "@/lib/auth";
+import MediaPicker from "@/components/MediaPicker";
 
 export default function TherapistEditProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fullProfile, setFullProfile] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     bio: '',
     qualification: '',
     experienceYears: 0,
+    council: '',
+    registrationNo: '',
+    registrationValidUntil: '',
     documents: [] as string[]
   });
 
@@ -34,10 +39,14 @@ export default function TherapistEditProfile() {
       try {
         const profile = await getTherapistById(user.id);
         if (profile) {
+          setFullProfile(profile);
           setFormData({
             bio: profile.bio || '',
-            qualification: profile.qualifications || '',
+            qualification: profile.qualifications || (profile as any).qualification || '',
             experienceYears: profile.experience_years || 0,
+            council: (profile as any).council || '',
+            registrationNo: (profile as any).registrationNo || (profile as any).registration_no || '',
+            registrationValidUntil: (profile as any).registration_valid_until ? new Date((profile as any).registration_valid_until).toISOString().slice(0, 10) : '',
             documents: profile.documents || []
           });
         }
@@ -72,15 +81,44 @@ export default function TherapistEditProfile() {
     setSaving(true);
     try {
       const token = await getToken();
-      await serverApi.put(`/api/therapists/profile/${user?.id}`, {
+      await serverApi.post(`/api/auth/change-profile-request`, {
+        email: fullProfile?.email,
+        fullName: fullProfile?.name,
+        mobile: fullProfile?.phone,
+        line1: fullProfile?.address_line1,
+        line2: fullProfile?.address_line2,
+        city: fullProfile?.city,
+        state: fullProfile?.state,
+        pin: fullProfile?.pin,
+        fullAddress: fullProfile?.fullAddress || fullProfile?.full_address,
+        lat: fullProfile?.lat || fullProfile?.latitude,
+        lng: fullProfile?.lng || fullProfile?.longitude,
+        
         bio: formData.bio,
         qualification: formData.qualification,
+        qualifications: formData.qualification,
         experienceYears: Number(formData.experienceYears),
-        documents: formData.documents
+        experience: Number(formData.experienceYears),
+        
+        council: formData.council,
+        registrationValidUntil: formData.registrationValidUntil,
+        registrationNo: formData.registrationNo || fullProfile?.registration_no,
+        hourlyRate: fullProfile?.hourly_rate,
+        membershipPlan: fullProfile?.membership_plan,
+        panNumber: fullProfile?.pan_number,
+        bankAccountNumber: fullProfile?.bank_account_number,
+        bankIfscCode: fullProfile?.bank_ifsc_code,
+        serviceRadiusKm: fullProfile?.service_radius_km,
+        specialty: fullProfile?.specialtyIds || fullProfile?.specialty,
+        documents: formData.documents,
+        
+        section: "Therapist Profile",
+        role: "therapist",
+        userId: user?.id
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast({ title: "Profile saved", description: "Your details have been updated." });
+      toast({ title: "Profile update requested", description: "Your changes have been submitted for admin approval." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
@@ -95,16 +133,46 @@ export default function TherapistEditProfile() {
     <div className="space-y-6 max-w-4xl mx-auto py-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Edit Profile & Documents</h1>
-        <p className="text-muted-foreground">Manage your experience details and uploaded certificates.</p>
+        <p className="text-muted-foreground">Manage your credentials, experience details, and uploaded certificates.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle>Experience Details</CardTitle>
-            <CardDescription>Tell patients about your background.</CardDescription>
+            <CardTitle>Professional Credentials</CardTitle>
+            <CardDescription>Tell patients and councils about your qualifications.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="council">Professional Council</Label>
+              <Input 
+                id="council" 
+                name="council" 
+                value={formData.council} 
+                onChange={handleChange} 
+                placeholder="e.g. NCAHP, State Allied Council, RCI" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="registrationNo">Registration Number</Label>
+              <Input 
+                id="registrationNo" 
+                name="registrationNo" 
+                value={formData.registrationNo} 
+                onChange={handleChange} 
+                placeholder="e.g. GSCPT/12345" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="registrationValidUntil">Registration Valid Until</Label>
+              <Input 
+                id="registrationValidUntil" 
+                name="registrationValidUntil" 
+                type="date"
+                value={formData.registrationValidUntil} 
+                onChange={handleChange} 
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
               <Textarea 
@@ -113,7 +181,7 @@ export default function TherapistEditProfile() {
                 value={formData.bio} 
                 onChange={handleChange} 
                 placeholder="Write a short bio..."
-                className="min-h-[120px]"
+                className="min-h-[100px]"
               />
             </div>
             <div className="space-y-2">
@@ -151,27 +219,12 @@ export default function TherapistEditProfile() {
             <CardDescription>Upload URLs for your medical licenses and ID proofs.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex space-x-2">
-              <Input 
-                placeholder="Enter Document URL..." 
-                value={newDocumentUrl}
-                onChange={(e) => setNewDocumentUrl(e.target.value)}
+            <div className="mt-4">
+              <MediaPicker 
+                multiple={true}
+                value={formData.documents.map(d => ({ id: d, url: d, type: 'image' })) as any[]}
+                onChange={(media) => setFormData(prev => ({ ...prev, documents: media.map(m => m.url) }))}
               />
-              <Button type="button" onClick={handleAddDocument}>Add</Button>
-            </div>
-            
-            <div className="space-y-2 mt-4">
-              {formData.documents.map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
-                  <a href={doc} target="_blank" rel="noreferrer" className="text-sm text-blue-600 truncate max-w-[250px] hover:underline">
-                    {doc}
-                  </a>
-                  <Button variant="destructive" size="sm" onClick={() => handleRemoveDocument(index)}>Remove</Button>
-                </div>
-              ))}
-              {formData.documents.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded yet.</p>
-              )}
             </div>
           </CardContent>
         </Card>

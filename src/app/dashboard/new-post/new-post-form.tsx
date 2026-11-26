@@ -30,7 +30,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIRichText } from '@/components/ai/ai-rich-text';
-import { getTherapyCategories } from '@/lib/repos/categories';
+import { getTherapyCategories, getJournalCategoriesFull } from '@/lib/repos/categories';
 import MediaPicker from "@/components/MediaPicker";
 import type { MediaItem } from "@/types/media";
 import { submitEditorForm, updateKnowledgeBase } from "@/lib/repos/journal";
@@ -124,8 +124,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const cats = await getTherapyCategories();
-      setAllCategories(cats.map(c => ({ id: c.toLowerCase().replace(/ /g, '-'), name: c })));
+      const cats = await getJournalCategoriesFull();
+      setAllCategories(cats.filter(c => c.isActive).map(c => ({ id: c.slug, name: c.name })));
     };
     const fetchTags = async () => {
       const { getJournalTagsFull } = await import('@/lib/repos/categories');
@@ -166,8 +166,8 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
 
     const loadPost = async () => {
       try {
-        const cats = await getTherapyCategories();
-        const categoryIds = cats.map(c => c.toLowerCase().replace(/ /g, '-'));
+        const cats = await getJournalCategoriesFull();
+        const categoryIds = cats.map(c => c.slug);
 
         const post = await getKnowledgeBaseById(postId);
         if (!post) return;
@@ -604,10 +604,6 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                         {role === 'admin' && (
                           <>
                             <FormItem className="flex items-center space-x-3 space-y-0">
-                              <FormControl><RadioGroupItem value="published" /></FormControl>
-                              <FormLabel className="font-normal">Published</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl><RadioGroupItem value="archived" /></FormControl>
                               <FormLabel className="font-normal">Archived</FormLabel>
                             </FormItem>
@@ -838,22 +834,27 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
             <div className="container mx-auto">
               <div className="mb-8">
                 {/* Featured Image Preview */}
-                {watchedValues.coverImageUrl && (
-                  <div className="relative h-64 w-full mb-8 rounded-lg overflow-hidden border">
-                    <Image
-                      src={(() => {
-                        const img = watchedValues.coverImageUrl;
-                        if (Array.isArray(img) && img.length > 0) return img[0].url;
-                        if (img instanceof File) return URL.createObjectURL(img);
-                        return '';
-                      })()}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const img = watchedValues.coverImageUrl;
+                  let src = '';
+                  if (Array.isArray(img) && img.length > 0) src = getMediaUrl(img[0].url);
+                  else if (img instanceof File) src = URL.createObjectURL(img);
+                  else if (typeof img === 'string' && img) src = getMediaUrl(img);
+                  
+                  if (!src) return null;
+                  
+                  return (
+                    <div className="relative h-64 w-full mb-8 rounded-lg overflow-hidden border">
+                      <Image
+                        src={src}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Categories */}
                 {watchedValues.categories && watchedValues.categories.length > 0 && (
@@ -890,7 +891,11 @@ export function NewPostForm({ contentType = 'post', postId }: NewPostFormProps) 
                 {/* Content */}
                 <div
                   className="prose dark:prose-invert max-w-none text-lg"
-                  dangerouslySetInnerHTML={{ __html: watchedValues.content || '<p className="text-muted-foreground italic">No content written yet...</p>' }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: (watchedValues.content && watchedValues.content.replace(/<[^>]*>?/gm, '').trim().length > 0) 
+                      ? watchedValues.content 
+                      : '<p class="text-muted-foreground italic">No content written yet...</p>' 
+                  }}
                 />
 
                 {/* Video Preview */}

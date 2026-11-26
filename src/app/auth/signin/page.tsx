@@ -5,7 +5,6 @@ import { Separator } from "@/components/ui/separator";
 import { SocialSigninButtons } from "./social-signin-buttons";
 import { Button } from "@/components/ui/button";
 import { Phone } from "lucide-react";
-import { DebugLoginButtons } from "./debug-login-buttons";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { resolveMyDashboardHref } from "@/lib/resolveDashboard";

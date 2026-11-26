@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlayCircle, FileText, Phone, MapPin, Video, User, Star, Ban, MessageSquareWarning } from 'lucide-react';
+import { CalendarPlus, MoreHorizontal, PlayCircle, FileText, Phone, MapPin, Video, User, Star, Ban, MessageSquareWarning } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
 import type { Appointment } from '@/lib/types';
@@ -23,9 +23,17 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
-import { listAppointments, listAppointmentsForUser ,cancelAppointments} from '@/lib/repos/appointments';
+import { listAppointments, listAppointmentsForUser, acceptBookingRequest, rejectBookingRequest } from '@/lib/repos/appointments';
 import { format, parseISO } from 'date-fns';
+import { RescheduleDialog } from '@/components/patient/RescheduleDialog';
 import { ReviewDialog } from '@/components/patient/ReviewDialog';
+import useRazorpay from '@/hooks/use-razorpay';
+import serverApi from '@/lib/repos/axios.server';
+import { startAppointmentPayment, verifyBookingPayment } from '@/lib/actions/booking';
+import { getToken } from '@/lib/auth';
+import { ManualPaymentDialog } from '@/components/admin/ManualPaymentDialog';
+import { isCancelled, isFinished, statusLabel } from '@/lib/appointment-status';
+import { CancelBookingDialog } from '@/components/cancel-booking-dialog';
 
 interface AppointmentsTableProps {
   scope: 'admin' | 'therapyAdmin' | 'therapist' | 'patient';
@@ -35,17 +43,23 @@ interface AppointmentsTableProps {
 
 const getStatusBadgeVariant = (status: Appointment['status'] | string) => {
   switch (status) {
-    case 'Completed': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-    case 'Session Started': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
-    case 'Arrived': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
-    case 'On The Way': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
-    case 'Accepted': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300';
-    case 'Assigned': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-    case 'Confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-    case 'Searching Therapist': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
-    case 'Pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-    case 'Cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-    case 'No-Show': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+    case 'in_progress': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+    case 'pcr_pending': return 'bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-300';
+    case 'arrived': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
+    case 'therapist_on_the_way': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+    case 'accepted_unpaid': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300';
+    case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+    case 'searching_therapist': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    case 'proposed': return 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300';
+    case 'proposal_expired':
+    case 'proposal_declined': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    case 'pending_payment': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+    case 'cancelled_by_patient':
+    case 'cancelled_by_therapist':
+    case 'cancelled_by_admin':
+    case 'cancelled_unpaid': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+    case 'no_show': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     default: return 'secondary';
   }
 }
@@ -72,7 +86,9 @@ const getPaymentBadgeVariant = (status: Appointment['paymentStatus']) => {
 }
 
 const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { appointment: Appointment, scope: AppointmentsTableProps['scope'], context: AppointmentsTableProps['context'], asSheetItems?: boolean }) => {
+  const { isLoaded, openPayment } = useRazorpay();
   const { toast } = useToast();
+  const { user } = useAuth();
   const isAdmin = scope === 'admin' || scope === 'therapyAdmin';
   const isTherapist = scope === 'therapist';
   const isPatient = scope === 'patient';
@@ -86,42 +102,134 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
           description: "Your request to unlock this PCR has been sent to the admin team for review.",
       });
   }
-   const handleCancelAppointment = async () => {
-    if (!confirm("Are you sure you want to cancel this appointment?")) return;
-
-        try {
-          setLoading(true);
-          // Call repo function
-          await cancelAppointments(appointment.id);
-          toast({
-            title: "Appointment Cancelled",
-            description: `Appointment #${appointment.id} has been cancelled.`,
-          });
-          if (oncancel) cancelAppointments(appointment.id);
-        } catch (error) {
-          console.error(error);
-          toast({
-            title: "Error",
-            description: "Failed to cancel the appointment.",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
+   
+    const handlePayNow = async () => {
+        // The server creates the Razorpay order and decides the amount; it re-checks the signature afterwards.
+        setLoading(true);
+        const started = await startAppointmentPayment(appointment.id);
+        setLoading(false);
+        if (!started.success || !started.razorpayOrderId || !started.amountPaise) {
+            toast({ title: 'Payment', description: started.error || 'Could not start the payment.', variant: 'destructive' });
+            return;
         }
-      };
-  
+        openPayment({
+            amount: started.amountPaise,
+            currency: 'INR',
+            receipt: `appt-${appointment.id}`,
+            orderId: started.razorpayOrderId,
+            keyId: started.keyId,
+            productName: `Session with ${appointment.therapist}`,
+            productDescription: `A ${appointment.therapyType} session on ${formatDateSafe(appointment.date)} at ${appointment.time}.`,
+            prefill: { name: appointment.patientName || 'Patient' },
+            onSuccess: async (paymentResponse) => {
+                setLoading(true);
+                const verified = await verifyBookingPayment({
+                    razorpay_order_id: paymentResponse.razorpay_order_id,
+                    razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                    razorpay_signature: paymentResponse.razorpay_signature,
+                });
+                setLoading(false);
+                if (verified.success) {
+                    toast({ title: 'Payment Successful', description: 'Your appointment is now confirmed.' });
+                    window.location.reload();
+                } else {
+                    toast({ title: 'Payment not confirmed', description: verified.error || 'We could not confirm your payment.', variant: 'destructive' });
+                }
+            },
+            onFailure: (err) => {
+                toast({ title: 'Payment Failed', description: err.reason || 'Please try again.', variant: 'destructive' });
+            },
+        });
+    };
+
+    const handleAcceptRequest = async () => {
+        if (!user) return;
+        try {
+            setLoading(true);
+            const res = await acceptBookingRequest(appointment.id, { therapistId: user.id, therapistName: user.name, therapistPhone: user.phone });
+            if (res && typeof res === 'object' && res.success) {
+                toast({ title: 'Accepted', description: 'Booking request accepted.' });
+                window.location.reload();
+            } else {
+                toast({ title: 'Error', description: res?.error || 'Failed to accept booking request.', variant: 'destructive' });
+            }
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to accept booking request.', variant: 'destructive' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRejectRequest = async () => {
+        try {
+            setLoading(true);
+            const res = await rejectBookingRequest(appointment.id);
+            if (res && typeof res === 'object' && res.success) {
+                toast({ title: 'Rejected', description: 'Booking request rejected.' });
+                window.location.reload();
+            } else {
+                toast({ title: 'Error', description: res?.error || 'Failed to reject booking request.', variant: 'destructive' });
+            }
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to reject booking request.', variant: 'destructive' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+  const cancelRole: 'patient' | 'therapist' | 'admin' = isAdmin ? 'admin' : isTherapist ? 'therapist' : 'patient';
+  const canCancel = !isFinished(appointment.status) && appointment.status !== 'pcr_pending';
+
   const content = (
     <>
-        <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=BK-${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link href={`/pcr/${appointment.id}`} className="w-full flex items-center"><FileText className="mr-2" />View PCR</Link></DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link href={`/dashboard/admin/users?search=${appointment.patientId}`} className="w-full flex items-center"><User className="mr-2"/>View Patient</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link href={`/therapists/${appointment.therapist.toLowerCase().replace(/ /g, '-')}`} className="w-full flex items-center"><User className="mr-2"/>View Therapist</Link></DropdownMenuItem>
         <DropdownMenuSeparator />
-        {isPatient && appointment.status === 'Completed' && (
+        {isPatient && appointment.status === 'completed' && (
           <ReviewDialog appointmentId={appointment.id} />
         )}
-        <DropdownMenuItem className="text-destructive focus:text-destructive"><Ban className="mr-2" /> Cancel</DropdownMenuItem>
+        {isPatient && appointment.status === 'completed' && appointment.therapistId && (
+          <DropdownMenuItem asChild><Link href={`/booking/${appointment.therapistId}?followUp=${appointment.id}`} className="w-full flex items-center"><CalendarPlus className="mr-2" />Book follow-up</Link></DropdownMenuItem>
+        )}
+        {isTherapist && appointment.status === 'searching_therapist' && (
+            <DropdownMenuItem className="text-green-600 focus:text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</DropdownMenuItem>
+        )}
+
+
+        {isPatient && appointment.status === 'accepted_unpaid' && appointment.paymentStatus !== 'Paid' && (
+          <DropdownMenuItem onClick={handlePayNow} className="text-green-600 focus:text-green-600"><PlayCircle className="mr-2" /> Pay Now</DropdownMenuItem>
+        )}
+        {isAdmin && appointment.paymentStatus !== 'Paid' && (
+          <ManualPaymentDialog
+            mode="appointment"
+            sourceId={appointment.id}
+            grossAmount={((appointment.totalAmount || appointment.serviceAmount || 0) * 100)}
+            therapistName={appointment.therapist}
+            patientName={appointment.patientName}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-emerald-600 focus:text-emerald-600 cursor-pointer">
+                <PlayCircle className="mr-2" /> Record Manual Payment
+              </DropdownMenuItem>
+            }
+            onPaymentSuccess={() => {
+              window.location.reload();
+            }}
+          />
+        )}
+        {!isFinished(appointment.status) && (
+          <RescheduleDialog appointmentId={appointment.id} />
+        )}
+        {canCancel && (
+          <CancelBookingDialog
+            appointment={appointment}
+            role={cancelRole}
+            onCancelled={() => window.location.reload()}
+            trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive cursor-pointer"><Ban className="mr-2" /> Cancel</DropdownMenuItem>}
+          />
+        )}
     </>
   );
 
@@ -138,8 +246,42 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
           </SheetHeader>
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start" asChild><Link href={`/pcr/${appointment.id}`}><FileText className="mr-2" /> Open PCR</Link></Button>
-             <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
-             <Button variant="destructive" className="w-full justify-start"><Ban className="mr-2" /> Cancel</Button>
+             <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=BK-${appointment.id}`}><FileText className="mr-2"/>View Invoice</Link></Button>
+             {isTherapist && appointment.status === 'searching_therapist' && (
+                 <Button variant="outline" className="w-full justify-start text-green-600" onClick={handleAcceptRequest}><PlayCircle className="mr-2" /> Accept</Button>
+             )}
+
+             {isPatient && appointment.status === 'accepted_unpaid' && appointment.paymentStatus !== 'Paid' && (
+               <Button variant="outline" className="w-full justify-start text-green-600" onClick={handlePayNow} disabled={!isLoaded}><PlayCircle className="mr-2" /> Pay Now</Button>
+            )}
+             {isAdmin && appointment.paymentStatus !== 'Paid' && (
+               <ManualPaymentDialog
+                 mode="appointment"
+                 sourceId={appointment.id}
+                 grossAmount={((appointment.totalAmount || appointment.serviceAmount || 0) * 100)}
+                 therapistName={appointment.therapist}
+                 patientName={appointment.patientName}
+                 trigger={
+                   <Button variant="outline" className="w-full justify-start text-emerald-600">
+                     <PlayCircle className="mr-2" /> Record Manual Payment
+                   </Button>
+                 }
+                 onPaymentSuccess={() => {
+                   window.location.reload();
+                 }}
+               />
+             )}
+             {!isFinished(appointment.status) && (
+                 <RescheduleDialog appointmentId={appointment.id} />
+             )}
+             {canCancel && (
+               <CancelBookingDialog
+                 appointment={appointment}
+                 role={cancelRole}
+                 onCancelled={() => window.location.reload()}
+                 trigger={<Button variant="destructive" className="w-full justify-start"><Ban className="mr-2" /> Cancel</Button>}
+               />
+             )}
           </div>
         </SheetContent>
       </Sheet>
@@ -156,8 +298,15 @@ const ActionsMenu = ({ appointment, scope, context, asSheetItems = false }: { ap
   );
 };
 
-const formatDateSafe = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
+const formatDateSafe = (dateInput: string | Date) => {
+  if (!dateInput) return 'N/A';
+  
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return 'N/A';
+    return format(dateInput, 'MMM dd, yyyy');
+  }
+  
+  const dateStr = String(dateInput);
   
   // If it's a simple YYYY-MM-DD string, handle it manually to avoid ANY UTC interpretation
   if (dateStr.length >= 10 && dateStr.includes('-')) {
@@ -190,13 +339,13 @@ const AppointmentCard = ({ appointment, scope, context }: { appointment: Appoint
                     <p className="font-bold">{formatDateSafe(appointment.date)} at {appointment.time}</p>
                     <p className="text-sm text-muted-foreground">{scope === 'patient' ? appointment.therapist : appointment.patientName}</p>
                 </div>
-                {context === 'bookings' && <Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{appointment.status}</Badge>}
+                {context === 'bookings' && <Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{statusLabel(appointment.status)}</Badge>}
                 {context === 'pcr' && <Badge className={cn(getPcrBadgeVariant(appointment.pcrStatus))} variant="secondary">{appointment.pcrStatus}</Badge>}
             </div>
             <div className="mt-4 space-y-1 text-sm">
                 <p><strong>Service:</strong> {appointment.therapyType}</p>
                 <p><strong>Mode:</strong> {appointment.mode}</p>
-                 {appointment.mode === 'home' && appointment.serviceAddress && (
+                 {appointment.mode === 'home' && appointment.serviceAddress && typeof appointment.serviceAddress === 'object' && (
                     <p className="text-xs text-muted-foreground">
                         <strong>Location:</strong> {appointment.serviceAddress.line1}, {appointment.serviceAddress.city}
                     </p>
@@ -281,9 +430,9 @@ React.useEffect(() => {
                   <TableCell>{formatDateSafe(appointment.date)} at {appointment.time}</TableCell>
                   <TableCell>{scope === 'patient' ? appointment.therapist : appointment.patientName}</TableCell>
                   <TableCell>{appointment.therapyType}</TableCell>
-                  <TableCell>{appointment.serviceAddress ? `${appointment.serviceAddress.city}` : 'N/A'}</TableCell>
+                  <TableCell>{appointment.serviceAddress && typeof appointment.serviceAddress === 'object' ? `${appointment.serviceAddress.city}` : 'N/A'}</TableCell>
                   <TableCell><Badge variant="outline">{appointment.mode}</Badge></TableCell>
-                  <TableCell><Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{appointment.status}</Badge></TableCell>
+                  <TableCell><Badge className={cn(getStatusBadgeVariant(appointment.status))} variant="secondary">{statusLabel(appointment.status)}</Badge></TableCell>
                   <TableCell><Badge className={cn(getPaymentBadgeVariant(appointment.paymentStatus))} variant="secondary">{appointment.paymentStatus}</Badge></TableCell>
                   <TableCell><Badge className={cn(getPcrBadgeVariant(appointment.pcrStatus))} variant="secondary">{appointment.pcrStatus}</Badge></TableCell>
                   <TableCell className="text-right">

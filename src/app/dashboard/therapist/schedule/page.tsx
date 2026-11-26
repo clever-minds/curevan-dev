@@ -1,5 +1,6 @@
 'use client';
 
+import { referralText, useAffiliateRules } from '@/components/affiliate/ReferralCard';
 import {
   Table,
   TableBody,
@@ -24,8 +25,10 @@ import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { isSameDay, addDays } from "date-fns";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
+import { isFinished, statusLabel } from '@/lib/appointment-status';
+import { CalendarFeedCard } from '@/components/calendar/CalendarFeedCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +55,7 @@ const GrowthCTA = ({title, description, button1Text, button1Href, button2Text, b
 );
 
 export default function TherapistSchedulePage() {
+  const affiliateRules = useAffiliateRules();
   const [activeSession, setActiveSession] = useState<Appointment | null>(null);
   const [verifyingAppointment, setVerifyingAppointment] = useState<Appointment | null>(null);
   const { user } = useAuth();
@@ -96,18 +100,39 @@ export default function TherapistSchedulePage() {
     setVerifyingAppointment(appointment);
   };
   
+  // statuses in which the therapist is in the middle of a visit (restored after a page reload)
+  const JOURNEY_STATUSES = ['therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'];
+  useEffect(() => {
+    if (activeSession) return;
+    const live = allAppointments.find((a) => JOURNEY_STATUSES.includes(a.status));
+    if (live) setActiveSession(live);
+  }, [allAppointments, activeSession]);
+
+  // the list buttons open the visit card; every real step is then checked by the server
+  const handleOpenJourney = (appointment: Appointment) => {
+    setActiveSession(appointment);
+  };
+
+  // the server has already moved the booking to in_progress when this runs
   const handleVerificationSuccess = (appointment: Appointment) => {
     setActiveSession(appointment);
     setVerifyingAppointment(null);
-  }
+    setAllAppointments((prev) => prev.map((a) => (a.id === appointment.id ? { ...a, status: appointment.status, sessionStartedAt: appointment.sessionStartedAt } : a)));
+  };
+
+  const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
+    const result = await transitionAppointment(appointmentId, newStatus);
+    if (result.success) {
+      const stamp = new Date().toISOString();
+      setActiveSession((prev) => (prev && prev.id === appointmentId ? { ...prev, status: newStatus } : prev));
+      setAllAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus, travelStartedAt: newStatus === 'therapist_on_the_way' ? stamp : a.travelStartedAt, arrivedAt: newStatus === 'arrived' ? stamp : a.arrivedAt } : a)));
+    }
+    return result;
+  };
 
   const handleEndSession = () => {
-    toast({
-        title: 'Session Complete',
-        description: `You have successfully checked out from your session with ${activeSession?.patientName}. Please complete the PCR now.`,
-    });
+    // the session is over; the PCR submission is what completes the booking
     router.push(`/pcr/${activeSession?.id}`);
-    setActiveSession(null);
   };
 
   const handleCopyCode = () => {
@@ -143,7 +168,7 @@ export default function TherapistSchedulePage() {
 
       {activeSession && (
           <div className="sticky top-[calc(var(--header-height)+1rem)] z-20">
-              <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} />
+              <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} onStatusUpdate={handleStatusUpdate} onVerifyRequest={handleStartSessionRequest} />
           </div>
       )}
 
@@ -160,6 +185,7 @@ export default function TherapistSchedulePage() {
                             <TableHead>Patient</TableHead>
                             <TableHead>Service</TableHead>
                             <TableHead>Mode</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -170,8 +196,9 @@ export default function TherapistSchedulePage() {
                                 <TableCell>{appt.patientName}</TableCell>
                                 <TableCell>{appt.therapyType}</TableCell>
                                 <TableCell><Badge variant="outline">{appt.mode}</Badge></TableCell>
+                                <TableCell><Badge variant={appt.status === 'proposed' ? 'secondary' : 'default'}>{appt.status === 'proposed' ? 'Proposed (tentative)' : statusLabel(appt.status)}</Badge></TableCell>
                                 <TableCell className="space-x-2">
-                                     <Button variant="outline" size="sm" onClick={() => handleStartSessionRequest(appt)} disabled={!!activeSession}><PlayCircle className="mr-2"/>Start</Button>
+                                     <Button variant="outline" size="sm" onClick={() => handleOpenJourney(appt)} disabled={!!activeSession || !['confirmed', 'therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'].includes(appt.status)}><PlayCircle className="mr-2"/>Start</Button>
                                      <Button variant="ghost" size="sm" asChild><Link href={`/pcr/${appt.id}`}><ExternalLink className="mr-2"/>PCR</Link></Button>
                                 </TableCell>
                             </TableRow>
@@ -186,19 +213,21 @@ export default function TherapistSchedulePage() {
         </CardContent>
       </Card>
       
+       <CalendarFeedCard />
+
        <div className="grid md:grid-cols-2 gap-6 pt-8">
             <GrowthCTA 
                 title="Write a Case Study" 
                 description="Use free time to publish de-identified case insights or knowledge posts. More posts → higher visibility → more bookings."
                 icon={BookOpen}
                 button1Text="Write Post"
-                button1Href="/dashboard/new-post"
+                button1Href="/dashboard/journal/new"
                 button2Text="View Writing Tips"
                 button2Href="/dashboard/therapist/training"
             />
             <GrowthCTA 
                 title="Earn with Your Referral Code" 
-                description="Share your code: patients get 5% off, you earn 10% commission on every purchase. Simple, recurring income."
+                description={`Share your code. ${referralText(affiliateRules)}`}
                 icon={HandCoins}
                 button1Text="Share Code"
                 button1Href="#"

@@ -18,7 +18,7 @@ export function BundleComponentsList({ productId, initialBundleItems }: { produc
         const fetchItems = async () => {
             try {
                 const product = await fetchProductById(String(productId));
-                if (isMounted && product && (product.productType === 'Bundle' || product.product_type === 'Bundle') && product.bundleItems) {
+                if (isMounted && product && (product.productType === 'Bundle' || (product as any).product_type === 'Bundle') && product.bundleItems) {
                     setBundleItems(product.bundleItems);
                 }
             } catch (error) {

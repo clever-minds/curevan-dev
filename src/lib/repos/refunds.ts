@@ -5,14 +5,14 @@ import { getToken } from "@/lib/auth";
 
 /**
  * List all refunds (Admin).
- * GET /api/refunds
+ * GET /api/orders/refunds
  */
 export async function listRefunds(filters?: any): Promise<any[]> {
   try {
     const token = await getToken();
     if (!token) throw new Error('Token missing, please login again');
 
-    const { data } = await serverApi.get('/api/refunds', {
+    const { data } = await serverApi.get('/api/orders/refunds', {
       params: filters,
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -26,14 +26,14 @@ export async function listRefunds(filters?: any): Promise<any[]> {
 
 /**
  * List user's own refunds.
- * GET /api/my-refunds
+ * GET /api/orders/my-refunds
  */
 export async function getMyRefunds(): Promise<any[]> {
   try {
     const token = await getToken();
     if (!token) throw new Error('Token missing, please login again');
 
-    const { data } = await serverApi.get('/api/my-refunds', {
+    const { data } = await serverApi.get('/api/orders/my-refunds', {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -46,7 +46,7 @@ export async function getMyRefunds(): Promise<any[]> {
 
 /**
  * Initiate a refund (Admin).
- * POST /api/refunds
+ * POST /api/orders/refunds
  * 
  * Standardizes the refund payload and initiates the request via backend API.
  * Uses Paise (conversion from Rupees) for direct gateway compatibility.
@@ -73,7 +73,7 @@ export async function initiateRefund(data: {
     console.log('Initiating refund with standardized payload:', payload);
 
     // Call the collection endpoint (/api/refunds) confirmed by backend route snippet
-    const response = await serverApi.post('/api/refunds', payload, {
+    const response = await serverApi.post('/api/orders/refunds', payload, {
       headers: { 
         Authorization: `Bearer ${token}` 
       }

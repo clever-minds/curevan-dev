@@ -47,3 +47,10 @@ database-debug.log
 /playwright-report/
 /test-results/
 playwright/.auth/
+
+# secrets
+.env
+.env.*
+!.env.local.example
+*service-account*.json
+firebase-service-account.json

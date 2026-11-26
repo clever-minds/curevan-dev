@@ -16,22 +16,24 @@ import { useToast } from '@/hooks/use-toast';
 import { usePathname } from 'next/navigation';
 import { logAIFeedbackAction } from '@/lib/actions';
 import { nanoid } from 'nanoid';
+import { DISCLAIMER } from '@/ai/safety';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   feedback?: 'positive' | 'negative' | 'none';
+  emergency?: boolean;
 }
 
 const getContextualWelcomeMessage = (pathname: string, name: string): string => {
-    if (pathname.startsWith('/ecommerce') || pathname.startsWith('/shop')) return "Need help choosing the right product?";
+    if (pathname.startsWith('/ecommerce')) return "Need help choosing the right product?";
     if (pathname.startsWith('/booking')) return "May I help you with your booking?";
     if (pathname.startsWith('/shop/checkout')) return "Need any help to complete your purchase?";
     if (pathname.startsWith('/dashboard/bookings')) return "Want an update on your booking?";
     if (pathname.startsWith('/therapists/')) return "Would you like to book this therapist?";
     if (pathname.startsWith('/journal') || pathname.startsWith('/dashboard/admin/journal') || pathname.startsWith('/dashboard/my-journal')) return "Need help writing, researching, or summarizing a journal article?";
-    if (pathname.startsWith('/dashboard/new-post')) return "Shall I help you draft your new post or choose a catchy title?";
+    if (pathname.startsWith('/dashboard/journal/new')) return "Shall I help you draft your new post or choose a catchy title?";
     
     return `Welcome, ${name}! How can I help you today?
 e.g., "What are my upcoming appointments?"`;
@@ -44,6 +46,8 @@ export function AIChatAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<number | undefined>(undefined);
+  const [emergency, setEmergency] = useState(false);
   const { toast } = useToast();
 
   const welcomeMessage = useMemo(() => {
@@ -58,19 +62,21 @@ export function AIChatAssistant() {
   }, [isOpen, welcomeMessage, messages.length]);
 
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const send = async (text: string) => {
+    if (!text.trim() || isLoading) return;
 
-    const userMessage: Message = { id: nanoid(), role: 'user', content: input };
+    const userMessage: Message = { id: nanoid(), role: 'user', content: text };
+    const history = messages.slice(1).map((m) => ({ role: m.role, content: m.content }));      // the first message is the welcome text
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const result = await curevanAssistant({ query: input });
+      const result = await curevanAssistant({ query: text, sessionId, history });
+      if (result.sessionId) setSessionId(result.sessionId);
+      if (result.emergency) setEmergency(true);
       if (result.answer) {
-        const assistantMessage: Message = { id: nanoid(), role: 'assistant', content: result.answer, feedback: 'none' };
+        const assistantMessage: Message = { id: nanoid(), role: 'assistant', content: result.answer, feedback: 'none', emergency: result.emergency };
         setMessages((prev) => [...prev, assistantMessage]);
       } else {
         throw new Error('AI did not return an answer.');
@@ -87,6 +93,8 @@ export function AIChatAssistant() {
       setIsLoading(false);
     }
   };
+
+  const handleSendMessage = (e: React.FormEvent) => { e.preventDefault(); send(input); };
 
   const handleFeedback = async (messageId: string, rating: 'positive' | 'negative') => {
     const message = messages.find(m => m.id === messageId);
@@ -128,6 +136,11 @@ export function AIChatAssistant() {
             Curevan Assistant
           </SheetTitle>
         </SheetHeader>
+        {emergency && (
+          <div role="alert" data-testid="emergency-banner" className="rounded-md border-2 border-red-600 bg-red-50 p-3 text-sm font-semibold text-red-700">
+            Dial 108 / 112 or go to the nearest hospital now. Our team has been told.
+          </div>
+        )}
         <ScrollArea className="flex-1 -mx-6 my-4">
           <div className="px-6 space-y-4">
             {messages.map((message) => (
@@ -189,7 +202,8 @@ export function AIChatAssistant() {
             )}
           </div>
         </ScrollArea>
-        <SheetFooter>
+        <SheetFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+          <Button type="button" variant="outline" size="sm" className="self-start" disabled={isLoading} onClick={() => send('I want to talk to a human')}>Talk to a person</Button>
           <form onSubmit={handleSendMessage} className="flex w-full items-center space-x-2">
             <Input
               type="text"
@@ -202,6 +216,7 @@ export function AIChatAssistant() {
               <Send className="h-4 w-4" />
             </Button>
           </form>
+          <p className="text-[11px] leading-tight text-muted-foreground" data-testid="ai-disclaimer">{DISCLAIMER}</p>
         </SheetFooter>
       </SheetContent>
     </Sheet>

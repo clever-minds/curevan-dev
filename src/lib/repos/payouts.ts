@@ -1,6 +1,6 @@
 
 import serverApi from "@/lib/repos/axios.server";
-import type { PayoutItem, PayoutBatch } from '../types';
+import type { PayoutItem, PayoutBatchRow } from '../types';
 import { getSafeDate } from '../utils';
 import { getToken } from '@/lib/auth';
 
@@ -84,30 +84,78 @@ export async function listPayoutItems(filters?: any): Promise<PayoutItem[]> {
   }
 }
 
-/**
- * List payout batches with optional filters via API
- */
-export async function listPayoutBatches(filters?: any): Promise<PayoutBatch[]> {
+/** Weekly payout batches (admins: everyone's, a therapist: their own). */
+export async function listPayoutBatches(filters?: { week?: string; status?: string; therapistId?: number | string }): Promise<PayoutBatchRow[]> {
   try {
-    const token =await getToken();
-      if (!token) {
-        throw new Error('Token missing, please login again');
-      }
-    const { data } = await serverApi.get('/api/payout-batches/list', {
-      params: filters,
-      headers: {
-        Authorization: `Bearer ${token}`, // <-- pass your token here
-        withCredentials: true,            // optional if server needs cookies
-      },
-    });
-    return (data || []).map((item: any) => ({
-      ...item,
-      payoutDate: item.payoutDate ? new Date(item.payoutDate).toISOString() : '',
-      weekStart: item.weekStart ? new Date(item.weekStart).toISOString() : '',
-      weekEnd: item.weekEnd ? new Date(item.weekEnd).toISOString() : '',
-    })) as PayoutBatch[];
+    const token = await getToken();
+    if (!token) throw new Error('Token missing, please login again');
+    const { data } = await serverApi.get('/api/payout-batches/list', { params: filters, headers: { Authorization: `Bearer ${token}` } });
+    return (data?.data ?? []) as PayoutBatchRow[];
   } catch (error: any) {
-    console.error('Failed to list payout batches via API:', error?.response || error?.message);
+    console.error('Failed to list payout batches via API:', error?.response?.status || error?.message);
     return [];
   }
 }
+
+/** The bank-upload CSV for the approved batches of a week (the Monday, YYYY-MM-DD). */
+export async function exportPayoutCsv(week: string): Promise<Blob | null> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.get('/api/payout-batches/export.csv', { params: { week }, headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+    return res.data as Blob;
+  } catch { return null; }
+}
+
+/** The therapist's (or an admin's) PDF statement for one batch. */
+export async function downloadPayoutStatement(batchId: number): Promise<Blob | null> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.get(`/api/payout-batches/${batchId}/statement.pdf`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+    return res.data as Blob;
+  } catch { return null; }
+}
+
+/** Approve a scheduled payout batch (Super Admin). */
+export async function approvePayoutBatch(batchId: number): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to approve batch' };
+  }
+}
+
+/** Put a payout batch on hold with a reason (Super Admin). */
+export async function holdPayoutBatch(batchId: number, reason: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/hold`, { reason }, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to hold batch' };
+  }
+}
+
+/** Release a held batch back to scheduled (Super Admin). */
+export async function releasePayoutBatch(batchId: number): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/release`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to release batch' };
+  }
+}
+
+/** Mark an approved batch as paid with bank reference UTR (Super Admin). */
+export async function markPayoutBatchPaid(batchId: number, data: { utr: string; paidAt?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const token = await getToken();
+    const res = await serverApi.post(`/api/payout-batches/${batchId}/mark-paid`, data, { headers: { Authorization: `Bearer ${token}` } });
+    return { success: true, data: res.data?.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.error || error?.message || 'Failed to mark batch paid' };
+  }
+}
+

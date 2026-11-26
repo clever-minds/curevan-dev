@@ -149,33 +149,6 @@ export async function getUserById(
   }
 }
 
-/**
- * Create or Update User
- */
-export async function saveUserProfile(
-  payload: Omit<UserProfile, "createdAt">
-): Promise<UserProfile | null> {
-  try {
-    const token = getToken();
-    if (!token) return null;
-
-    const { data } = await serverApi.post(
-      "/api/users/save",
-      payload,
-      {
-        // headers: {
-        //          Authorization: `Bearer ${token}`,
-        //       // },
-      }
-    );
-
-    return data.data || null;
-
-  } catch (error: any) {
-    console.error("USER SAVE ERROR:", error?.message);
-    return null;
-  }
-}
 
 
 
