@@ -2,6 +2,7 @@
 
 'use client';
 
+import { productPath } from '@/lib/slug';
 import Image from 'next/image';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <Card className="flex flex-col overflow-hidden group transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="p-0">
-        <Link href={`/ecommerce/product/${product.id}`} className="block relative h-48 w-full cursor-pointer overflow-hidden">
+        <Link href={productPath(product)} className="block relative h-48 w-full cursor-pointer overflow-hidden">
           <Image
             src={product.featuredImage ? `${process.env.NEXT_PUBLIC_API_URL}${product.featuredImage}` : "/images/no-image.png"}
             alt={product.name}
@@ -73,15 +74,17 @@ export default function ProductCard({ product }: { product: Product }) {
         </Link>
       </CardHeader>
       <CardContent className="p-4 flex-1 flex flex-col">
-        <Link href={`/ecommerce/product/${product.id}`} className="hover:text-primary transition-colors cursor-pointer">
+        <Link href={productPath(product)} className="hover:text-primary transition-colors cursor-pointer">
           <CardTitle className="text-lg font-bold font-headline mb-1 line-clamp-1">{product.name}</CardTitle>
         </Link>
         <CardDescription className="text-sm line-clamp-2">{product.description}</CardDescription>
-        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
-          <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-          <span className="font-semibold text-foreground">4.5</span>
-          <span>(150 reviews)</span>
-        </div>
+        {product.rating > 0 && (
+          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+            <span className="font-semibold text-foreground">{product.rating}</span>
+            <span>({(product as any).reviewCount || 0} reviews)</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

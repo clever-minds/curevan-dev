@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay?: any;
   }
 }
 
@@ -15,7 +15,8 @@ interface RazorpayOptions {
   amount: number;
   currency: string;
   receipt: string;
-  orderId?: string; // Razorpay's order_id
+  orderId?: string; // Razorpay's order_id (created by the server)
+  keyId?: string; // public key id returned by the server for this order
   productName: string;
   productDescription: string;
   prefill?: {
@@ -62,6 +63,7 @@ const useRazorpay = () => {
   }, [toast]);
 
   const openPayment = (options: RazorpayOptions) => {
+    const keyToUse = options.keyId || razorpayKey;
     if (!isLoaded) {
       toast({
         variant: 'destructive',
@@ -71,7 +73,7 @@ const useRazorpay = () => {
       return;
     }
     
-    if (!razorpayKey) {
+    if (!keyToUse) {
         toast({
             variant: 'destructive',
             title: 'Configuration Error',
@@ -82,7 +84,7 @@ const useRazorpay = () => {
     }
 
     const rzp = new window.Razorpay({
-      key: razorpayKey,
+      key: keyToUse,
       amount: options.amount,
       currency: options.currency,
       name: 'Curevan',
@@ -90,8 +92,8 @@ const useRazorpay = () => {
       order_id: options.orderId,
       handler: (response: any) => {
         console.log('Payment successful', response);
-        // The server-side webhook will handle order status updates.
-        // We just need to call the client-side success callback.
+        // Success here is not proof of payment: the caller must send the response to the
+        // server (/api/payments/verify) which checks the signature.
         if (options.onSuccess) {
             options.onSuccess(response);
         }

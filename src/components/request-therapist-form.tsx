@@ -24,13 +24,15 @@ import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
 import { useAuth } from '@/context/auth-context';
-import { createBookingAndInvoice } from '@/lib/actions/booking';
+import { requestTherapist } from '@/lib/actions/booking';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { AddressFormModal, AddressPickerModal } from '@/app/booking/[id]/booking-form';
 import { createAddress, deleteAddress, listAddresses, updateAddress } from '@/lib/repos/address';
 import { getIndianStates } from '@/lib/repos/meta';
 import { Checkbox } from '@/components/ui/checkbox';
+import { GuardianFields } from '@/components/booking/GuardianFields';
+import { consentPayload, guardianIssues } from '@/lib/booking-consent';
 import Link from 'next/link';
 
 const timeSlots = [
@@ -52,6 +54,12 @@ const requestTherapistSchema = z.object({
   consent_medical: z.boolean().refine(val => val === true, { message: 'You must agree to the Medical Consent Terms.' }),
   consent_privacy: z.boolean().refine(val => val === true, { message: 'You must agree to the Privacy Policy.' }),
   consent_refund: z.boolean().refine(val => val === true, { message: 'You must agree to the Refund, Cancellation & Return Policy.' }),
+  guardianName: z.string().optional(),
+  guardianRelation: z.string().optional(),
+  guardianPhone: z.string().optional(),
+  guardianConsent: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  for (const i of guardianIssues(data)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: i.message, path: i.path });
 }).refine(data => {
     if (data.sessionMode === 'home') return !!data.addressId;
     return true;
@@ -90,6 +98,10 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
       consent_medical: false,
       consent_privacy: false,
       consent_refund: false,
+      guardianName: '',
+      guardianRelation: '',
+      guardianPhone: '',
+      guardianConsent: false,
       addressId: '',
     },
   });
@@ -215,10 +227,11 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
       startTransition(async () => {
         const selectedCat = therapyCategories.find(c => c.name === data.therapyType);
         
-        const result = await createBookingAndInvoice({
+        const result = await requestTherapist({
           patientId: user!.id,
           patientName: data.patientFullName || user!.name || 'N/A',
           dateofBirth: data.dob,
+          ...consentPayload(data),
           therapistId: null as any,
           therapist: 'Unassigned',
           serviceTypeId: selectedCat ? selectedCat.id : (null as any),
@@ -231,9 +244,9 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
           notes: data.description,
           reports: processedReports,
           addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,
-          status: 'Pending',
+          status: 'searching_therapist',
           verificationStatus: 'Not Verified',
-        }, { paymentId: 'pay-later', gateway: 'none' });
+        });
 
         if (result.success) {
           toast({
@@ -331,6 +344,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               </FormItem>
             )}
           />
+          <GuardianFields />
           
           <FormField
               control={form.control}
@@ -463,7 +477,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/terms-of-use" className="text-primary hover:underline">Terms of Use</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/terms-of-use" className="text-primary hover:underline">Terms of Use</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />
@@ -471,7 +485,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/medical-consent" className="text-primary hover:underline">Medical Consent Terms</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/medical-consent" className="text-primary hover:underline">Medical Consent Terms</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />
@@ -479,7 +493,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />
@@ -487,7 +501,7 @@ export function RequestTherapistForm({ onClose }: { onClose?: () => void }) {
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I agree to the <Link href="/refund-policy" className="text-primary hover:underline">Refund, Cancellation & Return Policy</Link>.</FormLabel>
+                  <FormLabel>I agree to the <Link href="/legal/refund-policy" className="text-primary hover:underline">Refund, Cancellation & Return Policy</Link>.</FormLabel>
                 </div>
               </FormItem>
             )} />

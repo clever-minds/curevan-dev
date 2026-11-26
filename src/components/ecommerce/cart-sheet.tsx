@@ -112,9 +112,9 @@ console.log("CartSheet render - cart items:", cart);
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className="font-bold text-lg text-foreground">
-                                                    <Price amount={item.discountedPrice ?? item.price} showDecimals />
+                                                    <Price amount={Number(item.discountedPrice ?? item.price)} showDecimals />
                                                 </span>
-                                                {item.discountedPrice !== undefined && item.discountedPrice < item.price && (
+                                                {item.discountedPrice !== undefined && Number(item.discountedPrice) < item.price && (
                                                     <span className="text-xs text-muted-foreground line-through font-medium">
                                                         <Price amount={item.price} showDecimals />
                                                     </span>
@@ -199,7 +199,7 @@ console.log("CartSheet render - cart items:", cart);
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center">
                         <p className="text-muted-foreground">Your cart is empty.</p>
-                        <Button variant="link" asChild><Link href="/shop">Start Shopping</Link></Button>
+                        <Button variant="link" asChild><Link href="/ecommerce">Start Shopping</Link></Button>
                     </div>
                 )}
             </SheetContent>

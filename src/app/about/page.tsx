@@ -3,12 +3,10 @@ import { ShieldCheck, HeartHandshake, Package, FileText, Users, GitCommit, Zap, 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { PAGE_SEO, seoMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Our Mission: Fixing Home Healthcare | Curevan',
-  description: 'Learn about Curevan\'s mission to fix home healthcare with a system of continuous care, standardized protocols, and verified professionals. Discover what makes us different.',
-};
+export const metadata: Metadata = seoMetadata('/about', PAGE_SEO.about);
 
 const values = [
     { icon: Heart, title: "Compassion", description: "We care with empathy and respect for every patient. Our team is dedicated to understanding each individual's unique needs and providing support with kindness and consideration." },
@@ -302,7 +300,7 @@ export default function AboutPage() {
             <p className="mt-8 text-lg text-muted-foreground">A simple promise inside our name: <span className="font-bold text-primary">Cure. Anywhere.</span></p>
             <p className="max-w-2xl mx-auto mt-2 text-muted-foreground">Think of a <span className="font-semibold">Cure</span> - Treatment & <span className="font-semibold">Van</span> – Mobility that brings trained people, the right tools, and the right plan to your space—on time, every time.</p>
             <Button asChild size="lg" className="mt-8">
-            <Link href="/book">Get Started</Link>
+            <Link href="/discover">Get Started</Link>
             </Button>
         </div>
       </section>

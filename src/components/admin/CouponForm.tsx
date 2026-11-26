@@ -85,7 +85,7 @@ console.log("Initializing form with coupon:", coupon);
         listTherapists(),
         listProductCategories()
       ]);
-      setTherapists(therapistData);
+      setTherapists(therapistData ?? []);
       setProductCategories(categoryData);
     };
     fetchData();
@@ -111,39 +111,40 @@ console.log("Initializing form with coupon:", coupon);
   useEffect(() => {
     if (!coupon) return;
 
+    const c: any = coupon; // API returns lower-case column names
     const mappedCoupon: Partial<CouponFormValues> = {
-      code: coupon.code ?? '',
-      type: coupon.type ?? 'percent',
-      value: Number(coupon.value) ?? 0,
+      code: c.code ?? '',
+      type: c.type ?? 'percent',
+      value: Number(c.value) ?? 0,
 
-      ownerType: coupon.ownertype ?? 'Platform',
-      scope: coupon.scope ?? 'Global',
-      isStackable: coupon.isstackable ?? false,
+      ownerType: c.ownertype ?? 'Platform',
+      scope: c.scope ?? 'Global',
+      isStackable: c.isstackable ?? false,
 
-      maxDiscount: coupon.maxdiscount
-        ? Number(coupon.maxdiscount)
+      maxDiscount: c.maxdiscount
+        ? Number(c.maxdiscount)
         : undefined,
 
-      usageLimit: coupon.usagelimit ?? undefined,
-      usagePerUser: coupon.usageperuser ?? undefined,
-      minOrderValue: coupon.minordervalue
-        ? Number(coupon.minordervalue)
+      usageLimit: c.usagelimit ?? undefined,
+      usagePerUser: c.usageperuser ?? undefined,
+      minOrderValue: c.minordervalue
+        ? Number(c.minordervalue)
         : undefined,
 
-      validFrom: coupon.validfrom
-        ? new Date(coupon.validfrom)
+      validFrom: c.validfrom
+        ? new Date(c.validfrom)
         : undefined,
 
-      validTo: coupon.validto
-        ? new Date(coupon.validto)
+      validTo: c.validto
+        ? new Date(c.validto)
         : undefined,
 
-      therapistId: coupon.therapistid
-        ? String(coupon.therapistid)
+      therapistId: c.therapistid
+        ? String(c.therapistid)
         : undefined,
 
-      status: coupon.status ?? 'Active',
-      internalNotes: coupon.internalnotes ?? '',
+      status: c.status ?? 'Active',
+      internalNotes: c.internalnotes ?? '',
     };
 
     console.log('Mapped coupon →', mappedCoupon);
@@ -181,7 +182,7 @@ async function onSubmit(data: CouponFormValues) {
         applicable_categories: data.applicableCategories?.map(Number),
         applicable_products: data.applicableProducts?.map(Number),
         internal_notes: data.internalNotes,
-      });
+      } as any);
     } else {
       res = await createCoupon({
         status: data.status,
@@ -271,7 +272,7 @@ async function onSubmit(data: CouponFormValues) {
             <div className="grid md:grid-cols-3 gap-6">
                 <FormField control={form.control} name="ownerType" render={({ field }) => (<FormItem><FormLabel>Owner</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Platform">Platform</SelectItem><SelectItem value="Therapist">Therapist</SelectItem></SelectContent></Select></FormItem>)}/>
                 {ownerType === 'Therapist' && (
-                    <FormField control={form.control} name="therapistId" render={({ field }) => (<FormItem><FormLabel>Select Therapist</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a therapist"/></SelectTrigger></FormControl><SelectContent>{therapists.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="therapistId" render={({ field }) => (<FormItem><FormLabel>Select Therapist</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a therapist"/></SelectTrigger></FormControl><SelectContent>{therapists.map(t => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 )}
             </div>
              <div className="grid md:grid-cols-3 gap-6 items-end">

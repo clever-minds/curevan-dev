@@ -36,6 +36,7 @@ import {
   Settings,
   FileText,
   Banknote,
+  Bell,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { listSosAlerts } from '@/lib/repos/alerts';
@@ -47,6 +48,7 @@ const therapyNavItems = (activeAlertCount: number, openTicketCount: number, pend
         { href: '/dashboard/therapy-admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
         { href: '/dashboard/admin/service-types', label: 'Service Types', icon: ClipboardCheck },
         { href: '/dashboard/admin/pcrs', label: 'All PCRs', icon: ClipboardCheck },
+        { href: '/dashboard/therapy-admin/outcome-measures', label: 'Outcome Measures', icon: ClipboardCheck },
         { href: '/dashboard/therapy-admin/payouts', label: 'Payouts', icon: HandCoins },
     ]},
     { type: 'group', label: 'Team & Governance', icon: Users, items: [
@@ -64,6 +66,7 @@ const therapyNavItems = (activeAlertCount: number, openTicketCount: number, pend
     ]},
     { type: 'group', label: 'System & Support', icon: Settings, items: [
         { href: '/dashboard/admin/support-tickets', label: 'Support Tickets', icon: Send, badgeCount: openTicketCount },
+        { href: '/dashboard/therapy-admin/notifications', label: 'Notifications', icon: Bell },
         { href: '/dashboard/therapy-admin/ai', label: 'AI Settings', icon: Sparkles },
     ]},
 ];

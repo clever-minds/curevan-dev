@@ -1,5 +1,6 @@
 'use client';
 
+import { ReferralCard } from '@/components/affiliate/ReferralCard';
 import {
   Table,
   TableBody,
@@ -11,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { PlayCircle, Clock, FilePlus, Share2, TrendingUp, Users, Percent, Wallet, Star, FileDown, Edit, GitBranch, AlertCircle, CheckCircle, Hourglass, ArrowRight } from "lucide-react";
+import { PlayCircle, Clock, FilePlus, TrendingUp, Users, Percent, Wallet, Star, FileDown, Edit, GitBranch, AlertCircle, CheckCircle, Hourglass, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import type { Appointment, Therapist } from "@/lib/types";
@@ -23,31 +24,15 @@ import Link from "next/link";
 import { OtpDialog } from "@/components/otp-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardCard } from "@/components/ui/dashboard-card";
-import ReportAiSummary from "@/components/report/report-ai-summary";
 import { Price } from "@/components/money/price";
-import { listAppointmentsForUser } from "@/lib/repos/appointments";
+import { listAppointmentsForUser, updateAppointmentStatus, transitionAppointment } from "@/lib/repos/appointments";
 import { getTherapistById } from "@/lib/repos/therapists";
 import { getTherapyCategories } from "@/lib/repos/meta";
+import { isFinished } from '@/lib/appointment-status';
+import { getTherapistDashboardStats } from "@/lib/repos/therapyAdmin";
+import { MyPatientsProgress } from "@/components/therapist/MyPatientsProgress";
 
 export const dynamic = 'force-dynamic';
-
-const sessionData = [
-    { date: '2024-07-22', sessionCount: 20, cancelled: 2 },
-    { date: '2024-07-23', sessionCount: 30, cancelled: 5 },
-    { date: '2024-07-24', sessionCount: 15, cancelled: 1 },
-    { date: '2024-07-25', sessionCount: 40, cancelled: 3 },
-];
-const modeSplitData = [
-    { name: 'Home Visit', value: 9 },
-    { name: 'Online', value: 3 },
-    { name: 'Clinic', value: 1 },
-];
-const weeklyEarningsData = [
-  { week: 'Jul 1-7', Service: 6500, Product: 400 },
-  { week: 'Jul 8-14', Service: 7200, Product: 650 },
-  { week: 'Jul 15-21', Service: 8100, Product: 300 },
-  { week: 'Jul 22-28', Service: 7500, Product: 800 },
-];
 
 const DashboardSection = ({ id, title, children, className }: { id: string, title: string, children: React.ReactNode, className?: string }) => (
     <section id={id} className={cn("scroll-mt-24 space-y-4 avoid-break", className)}>
@@ -80,6 +65,7 @@ export default function TherapistDashboard() {
   const { toast } = useToast();
   const [topServicesData, setTopServicesData] = useState<any[]>([]);
   const [earningsData, setEarningsData] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
 
   const earningsHistory = earningsData?.earningsHistory || [];
   const excludedItems = earningsHistory.filter((e: any) => e.status === 'On-Hold');
@@ -99,17 +85,23 @@ export default function TherapistDashboard() {
                 listAppointmentsForUser(user.id, 'therapist'),
                 getTherapistById(user.id),
                 getTherapyCategories(),
-                import("@/services/earnings-service").then(m => m.fetchEarningsData(user.id))
+                import("@/services/earnings-service").then(m => m.fetchEarningsData(user.id)),
+                getTherapistDashboardStats(user.id)
             ]);
             setAppointments(results[0]);
             setTherapist(results[1]);
             setEarningsData(results[3]);
+            setStats(results[4]);
             
             const fetchedCats = results[2] || [];
-            setTopServicesData(fetchedCats.slice(0,3).map((cat: string) => ({
-                name: cat.split(" ")[0],
-                count: Math.floor(Math.random() * 20) + 5,
-            })))
+            if (results[4]?.charts?.topServicesData?.length) {
+              setTopServicesData(results[4].charts.topServicesData);
+            } else {
+              setTopServicesData(fetchedCats.slice(0,3).map((cat: string) => ({
+                  name: cat.split(" ")[0],
+                  count: 0,
+              })));
+            }
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -128,30 +120,41 @@ export default function TherapistDashboard() {
     setVerifyingAppointment(appointment);
   };
   
+  // statuses in which the therapist is in the middle of a visit (restored after a page reload)
+  const JOURNEY_STATUSES = ['therapist_on_the_way', 'arrived', 'in_progress', 'pcr_pending'];
+  useEffect(() => {
+    if (activeSession) return;
+    const live = appointments.find((a) => JOURNEY_STATUSES.includes(a.status));
+    if (live) setActiveSession(live);
+  }, [appointments, activeSession]);
+
+  // the list buttons open the visit card; every real step is then checked by the server
+  const handleOpenJourney = (appointment: Appointment) => {
+    setActiveSession(appointment);
+  };
+
+  // the server has already moved the booking to in_progress when this runs
   const handleVerificationSuccess = (appointment: Appointment) => {
-    // This simulates creating a `sessions` row and starting the timer (B3 in DFD)
     setActiveSession(appointment);
     setVerifyingAppointment(null);
-  }
+    setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? { ...a, status: appointment.status, sessionStartedAt: appointment.sessionStartedAt } : a)));
+  };
+
+  const handleStatusUpdate = async (appointmentId: number, newStatus: Appointment['status']) => {
+    const result = await transitionAppointment(appointmentId, newStatus);
+    if (result.success) {
+      const stamp = new Date().toISOString();
+      setActiveSession((prev) => (prev && prev.id === appointmentId ? { ...prev, status: newStatus } : prev));
+      setAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus, travelStartedAt: newStatus === 'therapist_on_the_way' ? stamp : a.travelStartedAt, arrivedAt: newStatus === 'arrived' ? stamp : a.arrivedAt } : a)));
+    }
+    return result;
+  };
 
   const handleEndSession = () => {
-    // This simulates closing the session and preparing for PCR documentation (P3 in DFD)
-    toast({
-        title: 'Session Complete',
-        description: `You have successfully checked out from your session with ${activeSession?.patientName}. Please complete the PCR now.`,
-    });
+    // the session is over; the PCR submission is what completes the booking
     router.push(`/pcr/${activeSession?.id}`);
-    setActiveSession(null);
   };
 
-  const handleShareCode = () => {
-    const shareUrl = `https://curevan.com/ecommerce?ref=${therapist?.referralCode}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-      title: "Link Copied!",
-      description: "Your referral link is ready to be shared.",
-    });
-  };
   
   if (loading || !user || user.role !== 'therapist') {
     return <Skeleton className="w-full h-screen" />;
@@ -175,35 +178,51 @@ export default function TherapistDashboard() {
                 <p className="text-muted-foreground">For period: Jan 1, 2024 - Jul 31, 2024</p>
             </div>
 
+            <div className="flex flex-wrap gap-4">
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/account">Working Hours</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/leaves">Manage Leaves</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/edit">Edit Profile & Documents</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/support">Contact Support</Link>
+               </Button>
+               <Button asChild variant="outline" className="w-full sm:w-auto">
+                 <Link href="/dashboard/therapist/reviews">My Ratings & Reviews</Link>
+               </Button>
+             </div>
+
             {activeSession && (
-                <ActiveSessionCard session={activeSession} onEndSession={handleEndSession} />
+                <ActiveSessionCard 
+                    session={activeSession} 
+                    onEndSession={handleEndSession} 
+                    onStatusUpdate={handleStatusUpdate}
+                    onVerifyRequest={(session) => setVerifyingAppointment(session)}
+                />
             )}
+
+            {/* My Patients Recovery & Treatment Plans */}
+            <MyPatientsProgress />
 
             {/* KPIs */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <KpiCard title="Sessions Completed (90d)" value="128" icon={TrendingUp} isCurrency={false} />
-                <KpiCard title="PCR Lock Rate (90d)" value="92%" icon={Percent} />
-                <KpiCard title="Net Payout (90d)" value={128500} icon={Wallet} isCurrency={true} />
-                <KpiCard title="Product Commissions (90d)" value={8750} icon={Wallet} isCurrency={true} />
-                <KpiCard title="Unique Patients (90d)" value="42" icon={Users} isCurrency={false} />
-                <KpiCard title="Avg. Rating (90d)" value="4.9" icon={Star} />
+                <KpiCard title="Sessions Completed (90d)" value={stats?.kpis?.sessionsCompleted ?? 0} icon={TrendingUp} isCurrency={false} />
+                <KpiCard title="PCR Lock Rate (90d)" value={`${stats?.kpis?.pcrLockRate ?? 0}%`} icon={Percent} />
+                <KpiCard title="Net Payout (90d)" value={stats?.kpis?.netPayout ?? 0} icon={Wallet} isCurrency={true} />
+                <KpiCard title="Product Commissions (90d)" value={stats?.kpis?.productCommissions ?? 0} icon={Wallet} isCurrency={true} />
+                <KpiCard title="Unique Patients (90d)" value={stats?.kpis?.uniquePatients ?? 0} icon={Users} isCurrency={false} />
+                <KpiCard title="Avg. Rating (90d)" value={stats?.kpis?.avgRating ?? "0.0"} icon={Star} />
             </div>
-
-            <ReportAiSummary 
-                summaryText={[
-                    "Your session volume is highest on Fridays. Consider opening more slots.",
-                    "You have 3 pending PCRs older than 48 hours. Locking these will unlock ₹4,500 in earnings for the next payout.",
-                    "Your most frequent service is post-op knee rehab. A new training module on advanced techniques is available."
-                ]}
-                regenerate={() => console.log('regenerate')}
-                copy={() => console.log('copy')}
-             />
 
             <DashboardSection id="charts" title="Insights (Last 90 Days)">
                 <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DashboardCard title="Sessions Per Day" type="line" data={sessionData} categoryKey="date" valueKey="sessionCount" isCurrency={false} />
-                    <DashboardCard title="Session Mode Split" type="pie" data={modeSplitData} categoryKey="name" valueKey="value" isCurrency={false} />
-                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={weeklyEarningsData} categoryKey="week" valueKey="Service" className="lg:col-span-2" isCurrency={true} />
+                    <DashboardCard title="Sessions Per Day" type="line" data={stats?.charts?.sessionData || []} categoryKey="date" valueKey="sessionCount" isCurrency={false} />
+                    <DashboardCard title="Session Mode Split" type="pie" data={stats?.charts?.modeSplitData || []} categoryKey="name" valueKey="value" isCurrency={false} />
+                    <DashboardCard title="Weekly Earnings (Net)" type="bar" data={stats?.charts?.weeklyEarningsData || []} categoryKey="week" valueKey="Service" className="lg:col-span-2" isCurrency={true} />
                     <DashboardCard title="Top Services by Count" type="bar" data={topServicesData} categoryKey="name" valueKey="count" className="lg:col-span-2" isCurrency={false} />
                 </div>
             </DashboardSection>
@@ -261,7 +280,7 @@ export default function TherapistDashboard() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {earningsHistory.map((item) => (
+                        {earningsHistory.map((item: any) => (
                             <TableRow key={item.source}>
                                 <TableCell>{new Date(item.sessionDate).toLocaleDateString()}</TableCell>
                                 <TableCell><Badge variant={item.type === 'service' ? 'default' : 'secondary'}>{item.type}</Badge></TableCell>
@@ -293,7 +312,7 @@ export default function TherapistDashboard() {
                     <CardContent>
                         {excludedItems.length > 0 ? (
                             <div className="space-y-3">
-                            {excludedItems.map(item => (
+                            {excludedItems.map((item: any) => (
                                 <div key={item.source} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
                                     <div className="flex items-center gap-3">
                                         <Hourglass className="text-yellow-600"/>
@@ -319,24 +338,7 @@ export default function TherapistDashboard() {
             </DashboardSection>
 
             <DashboardSection id="referral" title="Referral Program">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Grow Your Earnings</CardTitle>
-                        <CardDescription>Share your permanent code with patients. They get 5% off products, and you earn a 10% commission on every sale.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-lg bg-muted border">
-                            <div className="text-center sm:text-left">
-                            <p className="text-sm text-muted-foreground">Your Referral Code</p>
-                            <p className="text-2xl font-bold font-mono tracking-widest">{therapist?.referralCode || "N/A"}</p>
-                            </div>
-                            <Button onClick={handleShareCode}>
-                            <Share2 className="mr-2"/>
-                            Share Code
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                 <ReferralCard />
             </DashboardSection>
 
         </div>

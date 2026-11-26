@@ -11,13 +11,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { MoreVertical, CheckCircle, XCircle, PlusCircle, FileDown, Loader2, Trash2, Edit } from "lucide-react";
+import { MoreVertical, CheckCircle, XCircle, PlusCircle, FileDown, Loader2, Trash2, Edit, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { cn, getSafeDate, downloadCsv } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import type { KnowledgeBase } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listJournalEntries } from "@/lib/repos/content";
@@ -34,6 +36,8 @@ export default function AdminJournalPage() {
   const [posts, setPosts] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [schedulePostId, setSchedulePostId] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState<string>('');
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const router = useRouter();
@@ -53,7 +57,7 @@ export default function AdminJournalPage() {
     init();
   }, []);
   
-  const handleStatusUpdate = async (postId: string, title: string, status: "published" | "draft") => {
+  const handleStatusUpdate = async (postId: string, title: string, status: "published" | "draft" | "scheduled", publishedAt?: string) => {
       setProcessingId(postId);
       try {
           const token = await getToken();
@@ -65,12 +69,16 @@ export default function AdminJournalPage() {
               });
               return;
           }
-          const result = await updateJournalStatus(postId, status, token);
+          const result = await updateJournalStatus(postId, status, token, publishedAt);
           if (result.success) {
               toast({ 
-                  title: status === 'published' ? "Post Published" : "Post Rejected", 
-                  description: `"${title}" has been ${status === 'published' ? 'published' : 'returned to draft'}.` 
+                  title: status === 'published' ? "Post Published" : status === 'scheduled' ? "Post Scheduled" : "Post Rejected", 
+                  description: `"${title}" has been ${status === 'published' ? 'published' : status === 'scheduled' ? 'scheduled' : 'returned to draft'}.` 
               });
+              if (status === 'scheduled') {
+                  setSchedulePostId(null);
+                  setScheduleDate('');
+              }
               // Refetch to get updated list
               fetchPosts();
           } else {
@@ -89,6 +97,13 @@ export default function AdminJournalPage() {
       } finally {
           setProcessingId(null);
       }
+  }
+
+  const handleScheduleSubmit = async () => {
+      if (!schedulePostId || !scheduleDate) return;
+      const post = posts.find(p => p.id === schedulePostId);
+      if (!post) return;
+      handleStatusUpdate(schedulePostId, post.title, 'scheduled', new Date(scheduleDate).toISOString());
   }
 
   const handleApprove = (postId: string, title: string) => {
@@ -262,6 +277,9 @@ export default function AdminJournalPage() {
                                 <DropdownMenuItem onClick={() => handleApprove(post.id, post.title)} className="text-green-600 focus:text-green-700">
                                 <CheckCircle className="mr-2 h-4 w-4" /> Approve & Publish
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSchedulePostId(post.id)} className="text-blue-600 focus:text-blue-700">
+                                <CalendarClock className="mr-2 h-4 w-4" /> Schedule Post
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleReject(post.id, post.title)} className="text-destructive focus:text-destructive">
                                 <XCircle className="mr-2 h-4 w-4" /> Reject
                                 </DropdownMenuItem>
@@ -360,6 +378,32 @@ export default function AdminJournalPage() {
             <JournalCategoriesTab />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!schedulePostId} onOpenChange={(open) => !open && setSchedulePostId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Post</DialogTitle>
+            <DialogDescription>
+              Choose a date and time for this post to be automatically published.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="datetime-local"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSchedulePostId(null)}>Cancel</Button>
+            <Button onClick={handleScheduleSubmit} disabled={!scheduleDate || processingId === schedulePostId}>
+              {processingId === schedulePostId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

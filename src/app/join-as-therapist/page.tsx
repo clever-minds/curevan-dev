@@ -1,0 +1,32 @@
+
+import { PAGE_SEO, seoMetadata } from "@/lib/seo";
+import { TherapistOnboardingForm } from "./therapist-onboarding-form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+
+export const metadata = seoMetadata("/join-as-therapist", PAGE_SEO.joinAsTherapist);
+
+export default function TherapistSignupPage() {
+  return (
+    <div className="container mx-auto py-12">
+        <Card className="w-full max-w-4xl mx-auto">
+            <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold font-headline">Therapist Onboarding</CardTitle>
+                <CardDescription>
+                    Join our network of trusted healthcare professionals.
+                </CardDescription>
+                <p className="text-xs text-muted-foreground">Free plan: you keep 100% of what your patient pays*. * TDS, payment-gateway charges and applicable taxes are deducted from your earnings.</p>
+            </CardHeader>
+            <CardContent>
+                <TherapistOnboardingForm />
+                 <p className="mt-4 text-center text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <Link href="/auth/signin" className="font-semibold text-primary hover:underline">
+                        Sign In
+                    </Link>
+                </p>
+            </CardContent>
+        </Card>
+    </div>
+  );
+}

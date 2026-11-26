@@ -1,0 +1,40 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { categorySlug, oldTherapistSlug } from '@/lib/slug';
+
+// Old links go to the clean link with a real 308 before the page renders (a redirect thrown inside a streamed page is only a 200 with a script):
+//   /therapists/category/Post-Surgery%20Rehab  ->  /therapists/category/post-surgery-rehab
+//   /ecommerce/product/81                      ->  /ecommerce/product/tens-electrode-pads
+//   /therapists/dr-meera-sharma                ->  /therapists/dr-meera-sharma-vadodara
+export const config = { matcher: ['/therapists/category/:slug', '/ecommerce/product/:slug', '/therapists/:slug'] };
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const last = decodeURIComponent(pathname.slice(pathname.lastIndexOf('/') + 1));
+  let clean: string | null = null;
+
+  if (pathname.startsWith('/therapists/category/')) {
+    const slug = categorySlug({ name: last });
+    if (slug !== last) clean = slug;
+  } else if (pathname.startsWith('/therapists/')) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/therapists/list`, { signal: AbortSignal.timeout(3000), next: { revalidate: 300 } });
+      const list: { name: string; slug?: string }[] = res.ok ? ((await res.json())?.data ?? []) : [];
+      const wanted = last.toLowerCase();
+      if (!list.some((t) => t.slug && t.slug.toLowerCase() === wanted)) {
+        const old = list.find((t) => t.slug && oldTherapistSlug(t.name) === wanted);   // the old name-only link
+        if (old) clean = old.slug as string;
+      }
+    } catch { /* the page itself still opens by the old link */ }
+  } else if (/^\d+$/.test(last)) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/frontend/${last}`, { signal: AbortSignal.timeout(3000) });
+      const slug = res.ok ? (await res.json())?.data?.slug : null;
+      if (slug) clean = slug;
+    } catch { /* the page itself still opens by id */ }
+  }
+
+  if (!clean) return NextResponse.next();
+  const url = req.nextUrl.clone();
+  url.pathname = pathname.slice(0, pathname.lastIndexOf('/') + 1) + clean;
+  return NextResponse.redirect(url, 308);
+}

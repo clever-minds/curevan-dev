@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Cookie } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { logConsent } from '@/lib/actions/consent';
 
 export function CookieConsentBanner() {
   const [showBanner, setShowBanner] = useState(false);
@@ -23,12 +24,14 @@ export function CookieConsentBanner() {
   const handleAccept = () => {
     localStorage.setItem('cookie-consent', 'granted');
     setShowBanner(false);
+    void logConsent({ consentType: 'cookies', version: '1', granted: true }); // recorded for the legal trail; failures never block the visitor
     // Here you would typically initialize analytics scripts like Google Analytics
     // For example: window.gtag('consent', 'update', { 'analytics_storage': 'granted' });
   };
 
   const handleDecline = () => {
     localStorage.setItem('cookie-consent', 'denied');
+    void logConsent({ consentType: 'cookies', version: '1', granted: false });
     setShowBanner(false);
      // Here you would deny analytics scripts
     // For example: window.gtag('consent', 'update', { 'analytics_storage': 'denied' });

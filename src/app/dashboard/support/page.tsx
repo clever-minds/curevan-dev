@@ -95,7 +95,7 @@ export default function PatientSupportPage() {
            </div>
         </CardContent>
         <CardFooter>
-            <p className="text-xs text-muted-foreground">Need help? You can also check our <Link href="/faq" className="underline">FAQ page</Link>.</p>
+            <p className="text-xs text-muted-foreground">Need help? Create a ticket and our team will reply here.</p>
         </CardFooter>
       </Card>
     </div>

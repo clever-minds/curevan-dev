@@ -101,9 +101,7 @@ export async function createUserWithEmailAndPassword(
 }
 
 export async function loginWithOTP(data: {
-  phoneNumber: string;
-  otp?: string;
-  verifyOtp?: boolean;
+  firebaseIdToken: string;
 }) {
   try {
     const token = await getToken();

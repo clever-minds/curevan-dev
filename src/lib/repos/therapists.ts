@@ -1,4 +1,5 @@
 
+import { oldTherapistSlug } from "@/lib/slug";
 import serverApi from '@/lib/repos/axios.server';
 import type { Therapist, Address, GeoPoint } from '../types';
 import { getToken } from '../auth';
@@ -27,6 +28,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             id: item.id,
             user_id: item.user_id,
             name: item.name,
+            slug: item.slug,
             specialty: item.specialty,
             city: item.city,
             state: item.state,
@@ -49,7 +51,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             serviceTypes: Array.isArray(item.specialty) 
                 ? item.specialty.map((id: number) => categoryMap.get(id) || id?.toString()) 
                 : [],
-            membershipPlan: item.membershipPlan || 'standard',
+            membershipPlan: (item.membershipPlan === 'premium' ? 'premium' : 'standard'),
             isProfilePublic: item.isProfilePublic,
             profileViewCount: item.profileViewCount,
             clinicId: item.clinicId,
@@ -58,7 +60,7 @@ export async function listTherapists(): Promise<Therapist[] | null> {
             referralCommissionRate: item.referralCommissionRate,
             referralActive: item.referralActive,
             availability: item.availability,
-            hourlyRate: item.hourlyRate,
+            hourlyRate: item.hourlyRate ?? item.hourly_rate,
             platformFeePct: item.platformFeePct,
             isHighlighted: item.isHighlighted,
             distance:item.distance_km,
@@ -118,6 +120,7 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       id: item.id,
       user_id: item.user_id,
       name: item.name,
+      slug: item.slug,
       specialty: item.specialty,
       registrationNo: item.registrationNo || item.registration_no || '',
       bankAccountNo: item.bankAccountNo || item.bank_account_number || '',
@@ -147,8 +150,8 @@ export async function getTherapistById(id: number): Promise<Therapist | null> {
       referralCommissionRate: item.referralCommissionRate,
       referralActive: item.referralActive,
       availability: availability,
-      hourlyRate: item.hourlyRate,
-      membershipPlan: item.membershipPlan || 'standard',
+      hourlyRate: item.hourlyRate ?? item.hourly_rate,
+      membershipPlan: (item.membershipPlan === 'premium' ? 'premium' : 'standard'),
       platformFeePct: item.platformFeePct,
       isHighlighted: item.isHighlighted,
       distance:item.distance_km,
@@ -175,14 +178,11 @@ export async function getTherapistBySlug(slug: string): Promise<Therapist | null
   try {
     const therapists = await listTherapists();
     if (!therapists) return null;
-therapists.find(
-        t => t.name.toLowerCase().replace(/ /g, '-') === slug.toLowerCase()
-      ) || null
-const matched = therapists.find(t => t.name.toLowerCase().replace(/ /g, '-') === slug.toLowerCase());
-console.log("matched therapist:", matched);    
-return (
-      matched || null
-    );
+    const wanted = slug.toLowerCase();
+    // the name + city link first; the old name-only link still finds the person (the website redirects it to the new one)
+    return therapists.find((t) => t.slug && t.slug.toLowerCase() === wanted)
+      || therapists.find((t) => oldTherapistSlug(t.name) === wanted)
+      || null;
   } catch (error: any) {
     console.error('GET THERAPIST BY SLUG ERROR:', error?.message);
     return null;
@@ -217,10 +217,11 @@ export async function listTherapistsByLocation(
     const therapists: Therapist[] = (data.data || []).map((item: any) => ({
       id: item.id,
       name: item.name,
+      slug: item.slug,
       user_id: item.user_id,
       specialty: item.specialty,
       phone: item.phone,
-      membershipPlan: item.membership_plan || 'basic',
+      membershipPlan: (item.membership_plan === 'premium' ? 'premium' : 'standard'),
       bank_account_number: item.bank_account_number,
       bank_ifsc_code: item.bank_ifsc_code,
       registration_no: item.registration_no,
@@ -231,7 +232,7 @@ export async function listTherapistsByLocation(
           : [],
       image: item.avatar || item.image || '',
       distance:item.distance_km,
-      hourlyRate: item.hourlyRate,
+      hourlyRate: item.hourlyRate ?? item.hourly_rate,
       lat: item.latitude ? Number(item.latitude) : 0,
       lng: item.longitude ? Number(item.longitude) : 0,
       experience_years: item.experience,
@@ -310,3 +311,39 @@ export async function saveAvailability(availabilityData: any): Promise<boolean> 
     return false;
   }
 }
+
+export async function addTherapistLeave(therapistId: number, start_date: string, end_date: string, reason: string = ''): Promise<boolean> {
+  try {
+    const res = await serverApi.post('/api/therapists/leaves', { start_date, end_date, reason }, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    return res.status === 200;
+  } catch (error) {
+    console.error('ADD LEAVE ERROR:', error);
+    return false;
+  }
+}
+
+export async function removeTherapistLeave(id: number): Promise<boolean> {
+  try {
+    const res = await serverApi.delete(`/api/therapists/leaves/${id}`, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    return res.status === 200;
+  } catch (error) {
+    console.error('REMOVE LEAVE ERROR:', error);
+    return false;
+  }
+}
+
+export async function getTherapistLeaves(therapistId: number): Promise<{ id: number, start_date: string, end_date: string, reason: string }[]> {
+  try {
+    const res = await serverApi.get(`/api/therapists/leaves`, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    return res.data?.data || [];
+  } catch (error) {
+    console.error('GET LEAVES ERROR:', error);
+    return [];
+  }
+}

@@ -28,7 +28,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { AIRichText } from '@/components/ai/ai-rich-text';
 import { listProductCategories } from '@/lib/repos/products';
-import { getTherapyCategoriesWithIds } from '@/lib/repos/categories';
+import { getTherapyCategoriesWithIds, listSubCategories } from '@/lib/repos/categories';
 import { createProducts } from '@/lib/api/products';
 import { updateProduct } from '@/lib/api/products';
 
@@ -45,11 +45,12 @@ const productFormSchema = z.object({
   // Core Info
   productType: z.enum(['Physical', 'Digital', 'Service', 'Bundle'], { required_error: "Product type is required." }),
   title: z.string().min(3, 'Product title must be at least 3 characters.'),
+  slug: z.string().optional(),
   subtitle: z.string().nullable().optional(),
   shortDescription: z.string().min(10, 'Short description must be at least 10 characters.'),
   longDescription: z.string().nullable().optional(),
   brand: z.string().nullable().optional(),
-  sku: z.string().optional(),
+  sku: z.string().min(1, 'SKU is required.'),
   category: z.string().min(1, 'Please select a category.'),
   subCategory: z.string().nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
@@ -59,6 +60,7 @@ const productFormSchema = z.object({
   sellingPrice: z.coerce.number().min(0, 'Selling price must be a positive number.'),
   isTaxInclusive: z.boolean().default(true),
   isCouponExcluded: z.boolean().default(false).describe("Exclude this product from therapist coupon discounts."),
+  nonReturnable: z.boolean().default(false).describe("The customer cannot return this product."),
   hsnCode: z.string().nullable().optional(),
   sacCode: z.string().nullable().optional(),
   gstSlab: z.coerce.number().nullable().optional(),
@@ -126,22 +128,9 @@ images: z
             path: ["sellingPrice"]
         });
     }
-    if (!data.hasVariants && (!data.sku || data.sku.trim() === '')) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "SKU is required when variants are not enabled.",
-            path: ["sku"]
-        });
-    }
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
-
-const createProductAction = async (data: ProductFormValues) => {
-    console.log("Server Action: Creating product...", data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, productId: `PROD-${Math.floor(Math.random() * 9000) + 1000}` };
-}
 
 const allTagsOptions = [
     { value: 'recovery', label: 'Recovery' },
@@ -199,6 +188,7 @@ export function ProductForm({
    const { toast } = useToast();
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [serviceTypes, setServiceTypes] = useState<{id: number, name: string}[]>([]);
+  const [subCategories, setSubCategories] = useState<{id: number, name: string}[]>([]);
   const router = useRouter();
    useEffect(() => {
     const fetchCategories = async () => {
@@ -223,6 +213,7 @@ export function ProductForm({
       sellingPrice: 0,
       isTaxInclusive: true,
       isCouponExcluded: false,
+      nonReturnable: false,
       trackInventory: true,
       stock: 0,
       reorderPoint: 0,
@@ -264,6 +255,7 @@ export function ProductForm({
       sacCode: initialData.sacCode || '',
       hsnCode: initialData.hsnCode || '',
       subtitle: initialData.subtitle || '',
+      slug: (initialData as any).slug || '',
       longDescription: initialData.longDescription || '',
       brand: initialData.brand || '',
       manufacturer: initialData.manufacturer || '',
@@ -285,7 +277,21 @@ export function ProductForm({
 }, [initialData, form]);
 
   const productType = form.watch('productType');
+  const watchedCategory = form.watch('category');
   const [allProducts, setAllProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (watchedCategory) {
+      listSubCategories(watchedCategory).then(data => {
+        setSubCategories(data || []);
+      }).catch(err => {
+        console.error("Failed to fetch subcategories", err);
+        setSubCategories([]);
+      });
+    } else {
+      setSubCategories([]);
+    }
+  }, [watchedCategory]);
 
   useEffect(() => {
     if (productType === 'Bundle') {
@@ -317,16 +323,22 @@ export function ProductForm({
 
       watchedBundleItems.forEach((item: any) => {
         const qty = Number(item.quantity) || 1;
-        const sp = Number(item.sellingPrice) || 0;
+        const sp = Number(item.sellingPrice) || 0; // Assuming this is base price (exclusive of GST)
         const disc = Number(item.discount) || 0;
         const gst = Number(item.gstSlab) || 0;
         
-        const discountedPrice = Math.max(0, sp - disc);
-        const gstAmount = discountedPrice * (gst / 100);
-        const rowFinalAmount = (discountedPrice + gstAmount) * qty;
+        // MRP is Base Price + GST
+        const rowMrp = sp * (1 + (gst / 100));
+        
+        // Apply discount on base price as a percentage
+        const discountAmount = sp * (disc / 100);
+        const discountedBasePrice = Math.max(0, sp - discountAmount);
+        
+        // Final Selling Price adds GST on the discounted base price
+        const rowFinalAmount = discountedBasePrice * (1 + (gst / 100));
 
-        totalMrp += sp * qty; 
-        totalSellingPrice += rowFinalAmount;
+        totalMrp += rowMrp * qty; 
+        totalSellingPrice += rowFinalAmount * qty;
         
         if (gst > maxGst) {
           maxGst = gst;
@@ -405,7 +417,7 @@ export function ProductForm({
   //       });
   //   }
   // }
-  async function onSubmit(data: ProductFormValues) {
+    async function onSubmit(data: ProductFormValues) {
     console.log("imageIds",data);
 
     const imageIds = data.images.map((img: { id: number }) => img.id);
@@ -415,6 +427,7 @@ export function ProductForm({
         const payload = {
             productType: data.productType,
             title: data.title,
+            slug: data.slug?.trim() || undefined,
             subtitle: data.subtitle ?? undefined,
             tags: data.tags ?? undefined,
             shortDescription: data.shortDescription,
@@ -426,6 +439,7 @@ export function ProductForm({
             sellingPrice: data.sellingPrice,
             isTaxInclusive: data.isTaxInclusive,
             isCouponExcluded: data.isCouponExcluded,
+            non_returnable: data.nonReturnable,
             hsnCode: data.hsnCode ?? undefined,
             sacCode: data.sacCode ?? undefined,
             gstSlab: data.gstSlab ?? undefined,
@@ -509,12 +523,13 @@ export function ProductForm({
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                 <FormField control={form.control} name="productType" render={({ field }) => (<FormItem><FormLabel>Product Type <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a product type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Physical">Physical Good</SelectItem><SelectItem value="Digital">Digital Product</SelectItem><SelectItem value="Service">Service</SelectItem><SelectItem value="Bundle">Bundle</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="e.g., Premium Massage Gun" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="slug" render={({ field }) => (<FormItem><FormLabel>Page link (slug)</FormLabel><FormControl><Input placeholder="auto from the title" {...field} value={field.value ?? ''} /></FormControl><p className="text-xs text-muted-foreground">Used in the page link (letters, numbers, hyphens). Leave blank to make it from the name.</p><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="subtitle" render={({ field }) => (<FormItem><FormLabel>Subtitle (Optional)</FormLabel><FormControl><Input placeholder="e.g., Deep Tissue Percussion Massager" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Brand</FormLabel><FormControl><Input placeholder="Brand Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                {!form.watch("hasVariants") && (
-                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
-                )}
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU <span className="text-red-500">*</span></FormLabel><FormControl><Input placeholder="UNIQUE-SKU-123" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category <span className="text-red-500">*</span></FormLabel><Select onValueChange={(val) => { field.onChange(val); form.setValue('subCategory', ''); }} key={field.value} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{productCategories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                
+                <FormField control={form.control} name="subCategory" render={({ field }) => (<FormItem><FormLabel>Sub Category</FormLabel><Select onValueChange={field.onChange} key={field.value} value={field.value || ""} disabled={!watchedCategory || subCategories.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Select a sub category" /></SelectTrigger></FormControl><SelectContent>{subCategories.map(sub => <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 
                 <FormField control={form.control} name="isRecommended" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 mt-1 shadow-sm h-[72px]">
@@ -707,7 +722,7 @@ export function ProductForm({
                              </tbody>
                          </table>
                      </div>
-                     <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ sku: "", mrp: 0, sellingPrice: 0, stock: 0, attributes: {} })}>
+                     <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ sku: "", mrp: form.getValues('mrp') || 0, sellingPrice: form.getValues('sellingPrice') || 0, stock: form.getValues('stock') || 0, attributes: {} })}>
                          <Plus className="h-4 w-4 mr-2" /> Add Variant
                      </Button>
                  </div>
@@ -732,7 +747,7 @@ export function ProductForm({
                                         <th className="p-2 text-left font-medium">Variant SKU (Optional)</th>
                                         <th className="p-2 text-left font-medium">Quantity <span className="text-red-500">*</span></th>
                                         <th className="p-2 text-left font-medium">Selling Price</th>
-                                        <th className="p-2 text-left font-medium">Discount</th>
+                                        <th className="p-2 text-left font-medium">Discount (%)</th>
                                         <th className="p-2 text-left font-medium">GST (%)</th>
                                         <th className="p-2 text-left font-medium">Final Amount</th>
                                         <th className="p-2 text-center font-medium">Actions</th>
@@ -798,13 +813,13 @@ export function ProductForm({
                                                 <FormField control={form.control} name={`bundleItems.${index}.quantity` as any} render={({ field }) => (<FormControl><Input type="number" min="1" {...field} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.sellingPrice` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.discount` as any} render={({ field }) => (<FormControl><Input type="number" min="0" max="100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 w-24">
-                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(Number(e.target.value))} /></FormControl>)} />
+                                                <FormField control={form.control} name={`bundleItems.${index}.gstSlab` as any} render={({ field }) => (<FormControl><Input type="number" min="0" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl>)} />
                                             </td>
                                             <td className="p-2 font-medium">
                                                 {(() => {
@@ -812,7 +827,8 @@ export function ProductForm({
                                                     const sp = Number(form.watch(`bundleItems.${index}.sellingPrice` as any) || 0);
                                                     const disc = Number(form.watch(`bundleItems.${index}.discount` as any) || 0);
                                                     const gst = Number(form.watch(`bundleItems.${index}.gstSlab` as any) || 0);
-                                                    const discountedPrice = Math.max(0, sp - disc);
+                                                    const discountAmount = sp * (disc / 100);
+                                                    const discountedPrice = Math.max(0, sp - discountAmount);
                                                     const gstAmount = discountedPrice * (gst / 100);
                                                     return '₹' + ((discountedPrice + gstAmount) * qty).toFixed(2);
                                                 })()}
@@ -856,6 +872,7 @@ export function ProductForm({
                     <div className="flex gap-6">
                         <FormField control={form.control} name="isTaxInclusive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Price includes taxes</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
                         <FormField control={form.control} name="isCouponExcluded" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Exclude from Coupons</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+                        <FormField control={form.control} name="nonReturnable" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"><div className="space-y-0.5"><FormLabel>Not returnable</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
                     </div>
                 </div>
                 <Separator />

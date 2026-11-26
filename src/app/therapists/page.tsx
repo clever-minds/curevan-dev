@@ -4,6 +4,9 @@ import { ChevronRight, CheckCircle2, Activity, UserPlus, Star, ArrowRight } from
 import { FaWalking, FaBed, FaBrain, FaLungs, FaBaby, FaWheelchair, FaUserNurse, FaComments, FaBriefcaseMedical, FaStethoscope } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
 import { getTherapyCategoriesWithIds } from "@/lib/repos/categories";
+import { categorySlug } from "@/lib/slug";
+import { PAGE_SEO, seoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 import { fetchPublicProducts } from "@/lib/repos/products";
 import { imageUrl } from "@/lib/image";
 import ProductCard from "@/components/product-card";
@@ -22,6 +25,8 @@ function getServiceStyle(name: string) {
   
   return { icon: FaStethoscope, color: "text-[#0d9488]", bg: "bg-[#f0fdfa]", borderTop: "border-t-[#0d9488]/50", borderColor: "border-[#f0fdfa]", shortName: name, desc: "Professional healthcare services" };
 }
+
+export const metadata: Metadata = seoMetadata("/therapists", PAGE_SEO.therapists);
 
 export default async function ServicesDirectoryPage() {
   const [categories, products] = await Promise.all([
@@ -54,7 +59,7 @@ export default async function ServicesDirectoryPage() {
                     return (
                       <Link 
                         key={category.id || category.name} 
-                        href={`/therapists/category/${encodeURIComponent(category.name)}`}
+                        href={`/therapists/category/${categorySlug(category)}`}
                         className="group flex flex-col items-center text-center gap-2 transition-transform duration-200 hover:scale-105"
                       >
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${bg} ${color} group-hover:shadow-md transition-shadow border border-gray-50`}>
@@ -173,7 +178,7 @@ export default async function ServicesDirectoryPage() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button asChild size="lg" className="px-8 py-6 text-lg rounded-xl shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-1">
-                  <Link href="/auth/therapist-signup">
+                  <Link href="/join-as-therapist">
                     <UserPlus className="mr-2 w-5 h-5"/>
                     Register as a Therapist
                   </Link>
@@ -199,7 +204,7 @@ export default async function ServicesDirectoryPage() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Health & Wellness Products</h2>
                 <p className="text-gray-600">Professional-grade medical devices and supplies.</p>
               </div>
-              <Link href="/shop" className="hidden sm:flex items-center text-primary font-semibold hover:underline">
+              <Link href="/ecommerce" className="hidden sm:flex items-center text-primary font-semibold hover:underline">
                 View all products <ArrowRight className="w-4 h-4 ml-1" />
               </Link>
             </div>
@@ -211,7 +216,7 @@ export default async function ServicesDirectoryPage() {
             </div>
 
             <div className="mt-8 text-center sm:hidden">
-              <Link href="/shop" className="inline-flex items-center text-primary font-semibold hover:underline">
+              <Link href="/ecommerce" className="inline-flex items-center text-primary font-semibold hover:underline">
                 View all products <ArrowRight className="w-4 h-4 ml-1" />
               </Link>
             </div>

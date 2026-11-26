@@ -11,6 +11,8 @@ import { FilterBar } from '@/components/admin/FilterBar';
 import type { Appointment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { listAppointmentsForUser } from '@/lib/repos/appointments';
+import { downloadPcrPdf } from '@/lib/repos/pcr';
+import { useToast } from '@/hooks/use-toast';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,21 @@ export default function PatientRecordsPage() {
   const [filters, setFilters] = useState({});
   const [lockedPcrs, setLockedPcrs] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const handleDownload = async (bookingId: number) => {
+    const blob = await downloadPcrPdf(bookingId);
+    if (!blob) {
+      toast({ variant: 'destructive', title: 'Could not download', description: 'The summary is not available right now.' });
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `curevan-care-summary-${bookingId}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     const fetchRecords = async () => {
@@ -73,6 +90,9 @@ export default function PatientRecordsPage() {
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/pcr/${pcr.id}`}><FileText className="mr-2"/>View PCR</Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(pcr.id)}>
+                      <FileDown className="mr-2"/>Download PDF
                     </Button>
                      <Button variant="ghost" size="sm">
                       <MessageSquareWarning className="mr-2"/>Request Correction

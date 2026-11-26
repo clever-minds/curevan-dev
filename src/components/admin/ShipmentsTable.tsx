@@ -63,7 +63,7 @@ const ActionsMenu = ({ shipment, scope, asSheetItems = false }: { shipment: Ship
   const content = (
     <>
       <DropdownMenuItem><Package className="mr-2" />View Details</DropdownMenuItem>
-      <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=INV-${shipment.orderId}`} className="flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link href={`/dashboard/invoices?id=ORD-${shipment.orderId}`} className="flex items-center"><FileText className="mr-2"/>View Invoice</Link></DropdownMenuItem>
       {isAdmin && <DropdownMenuItem><Printer className="mr-2" />Print Label</DropdownMenuItem>}
       <DropdownMenuItem><Truck className="mr-2" />Track on Carrier Site</DropdownMenuItem>
       
@@ -89,7 +89,7 @@ const ActionsMenu = ({ shipment, scope, asSheetItems = false }: { shipment: Ship
           </SheetHeader>
           <div className="py-4 space-y-2">
              <Button variant="outline" className="w-full justify-start"><Package className="mr-2" />View Details</Button>
-             <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=INV-${shipment.orderId}`}><FileText className="mr-2"/>View Invoice</Link></Button>
+             <Button variant="outline" className="w-full justify-start" asChild><Link href={`/dashboard/invoices?id=ORD-${shipment.orderId}`}><FileText className="mr-2"/>View Invoice</Link></Button>
              {isAdmin && <Button variant="outline" className="w-full justify-start"><Printer className="mr-2" />Print Label</Button>}
              <Button variant="outline" className="w-full justify-start"><Truck className="mr-2" />Track on Carrier Site</Button>
              {isAdmin && <Button variant="destructive" className="w-full justify-start"><Ban className="mr-2" />Cancel Shipment</Button>}

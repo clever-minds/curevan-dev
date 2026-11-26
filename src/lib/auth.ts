@@ -9,15 +9,11 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     // ✅ Remove 'await'
     const cookieStore = await cookies() // synchronous
     const token = cookieStore.get('token')?.value
-    console.log('token token:', token)
 
     if (!token) return null
-    console.log(" process.env.JWT_SECRET!", process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string }
     if (!decoded?.id) return null
-    console.log('Decoded user profile:', decoded.id)
     const userProfile = await getUserById(decoded.id)
-    console.log('Decoded user profile:', userProfile)
     return userProfile || null
   } catch (error) {
     console.error('Invalid or expired token:', error)
@@ -31,7 +27,6 @@ export async function getToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies()      // Next.js server-side cookies
     const token = cookieStore.get('token')?.value
-    console.log('Fetching token:', token)
 
     return token || null
   } catch (error) {

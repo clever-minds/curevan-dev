@@ -17,7 +17,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDes
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useState, useTransition } from "react";
-import { curevanAssistant } from "@/ai/flows/chat-assistant";
+import { aiHealthCheck, curevanAssistant } from "@/ai/flows/chat-assistant";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { DashboardCard } from "@/components/ui/dashboard-card";
@@ -52,6 +52,8 @@ const queryLogs = [
 export default function AdminAiPage() {
     const { toast } = useToast();
     const form = useForm();
+    const [health, setHealth] = useState<{ configured: boolean; model: string; ok: boolean; error?: string } | null>(null);
+    const [checking, setChecking] = useState(false);
     const [testQuery, setTestQuery] = useState("");
     const [testResponse, setTestResponse] = useState("");
     const [isTesting, startTestTransition] = useTransition();
@@ -81,7 +83,7 @@ START OF CONTEXT
 
 **Contact Information:**
 - Email: info@curevan.com
-- Phone: +91 95144 46292
+- Phone: +91 951 444 6292
 - Address: Himaya Care Pvt. Ltd., Office 704, Time Square, Vasna - Bhayli Main Rd, Ashwamegh Nagar, Tandalja, Vadodara, Gujarat 390012.
 
 **Earnings & Payments:**
@@ -257,22 +259,39 @@ END OF CONTEXT`;
                 </CardContent>
               </Card>
 
+             <Card className="lg:col-span-2" data-testid="ai-health">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles /> Model health check</CardTitle>
+                    <CardDescription>The assistant uses the model set in AI_MODEL_ID. Change it in the environment, no code change is needed.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                    <Button variant="outline" onClick={async () => { setChecking(true); setHealth(await aiHealthCheck()); setChecking(false); }} disabled={checking}>
+                        {checking ? "Checking..." : "Check the model now"}
+                    </Button>
+                    {health && (
+                        <p className={health.ok ? "text-green-700" : "text-red-700"}>
+                            {health.configured ? `Model ${health.model}: ` : ""}{health.ok ? "answers correctly." : health.error || "no answer."}
+                        </p>
+                    )}
+                </CardContent>
+             </Card>
+
              <Card className="lg:col-span-2">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><BarChart /> Analytics & Reporting</CardTitle>
-                    <CardDescription>Understand how the AI is being used and its performance.</CardDescription>
+                    <CardDescription>Understand how the AI is being used and its performance. Numbers appear here once the AI assistant is live.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid sm:grid-cols-3 gap-4">
                     <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-3xl font-bold">{Math.floor(Math.random() * 500) + 1000}</p>
+                        <p className="text-3xl font-bold">-</p>
                         <p className="text-sm text-muted-foreground">Total Queries (24h)</p>
                     </div>
                      <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-3xl font-bold">{Math.floor(Math.random() * 10) + 88}%</p>
+                        <p className="text-3xl font-bold">-</p>
                         <p className="text-sm text-muted-foreground">Positive Feedback</p>
                     </div>
                      <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-3xl font-bold">{Math.floor(Math.random() * 20)}</p>
+                        <p className="text-3xl font-bold">-</p>
                         <p className="text-sm text-muted-foreground">Flagged Responses</p>
                     </div>
                 </CardContent>

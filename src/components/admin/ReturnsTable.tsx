@@ -23,7 +23,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { listReturns } from '@/lib/repos/returns';
 
-import { approveReturnAction, initiateRefundAction } from '@/lib/actions';
+import { approveReturnAction, initiateRefundAction, returnStepAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -79,6 +79,18 @@ const ActionsMenu = ({ rma, scope, onRefresh, asSheetItems = false }: { rma: Ret
     setIsPending(false);
   };
 
+  const step = async (kind: 'reject' | 'receive' | 'inspect', body: Record<string, unknown>, done: string) => {
+    setIsPending(true);
+    const res = await returnStepAction(rma.id, kind, body);
+    toast(res.success ? { title: done, description: res.message } : { variant: 'destructive', title: 'Not done', description: res.message });
+    if (res.success && onRefresh) onRefresh();
+    setIsPending(false);
+  };
+  const handleReject = () => { const reason = prompt('Why is this return rejected? (the customer sees this)'); if (reason && reason.trim().length >= 3) step('reject', { reason: reason.trim() }, 'Return rejected'); };
+  const handleReceive = () => { if (confirm(`Mark return #${rma.id} as received at the warehouse?`)) step('receive', {}, 'Marked received'); };
+  const handlePass = () => { if (confirm(`Item passed the check? This refunds the customer for return #${rma.id}.`)) step('inspect', { result: 'pass' }, 'Inspection passed'); };
+  const handleFail = () => { const note = prompt('What is wrong with the returned item?'); if (note && note.trim().length >= 3) step('inspect', { result: 'fail', note: note.trim() }, 'Return rejected after inspection'); };
+
   const handleIssueRefund = async () => {
     const amount = prompt(`Enter refund amount for RMA #${rma.id}:`, rma.totalRefundAmount.toString());
     if (!amount) return;
@@ -92,7 +104,7 @@ const ActionsMenu = ({ rma, scope, onRefresh, asSheetItems = false }: { rma: Ret
     });
     
     if (result.success) {
-      toast({ title: 'Refund Initiated', description: `Refund for RMA #${rma.id} has been processed.` });
+      toast({ title: 'Refund Initiated', description: `Refund for RMA #${rma.id} was sent to Razorpay. It shows as processed once Razorpay confirms.` });
       if (onRefresh) onRefresh();
     } else {
       toast({ variant: 'destructive', title: 'Refund Failed', description: result.message });
@@ -111,10 +123,12 @@ const ActionsMenu = ({ rma, scope, onRefresh, asSheetItems = false }: { rma: Ret
         </DropdownMenuItem>
       )}
 
-      <DropdownMenuItem className="cursor-pointer"><X className="mr-2 h-4 w-4" />Reject Request</DropdownMenuItem>
-      <DropdownMenuItem className="cursor-pointer"><Truck className="mr-2 h-4 w-4" />Schedule Pickup</DropdownMenuItem>
-      
-      {rma.status !== 'Refunded' && (
+      {rma.status === 'Requested' && <DropdownMenuItem onClick={handleReject} disabled={isPending} className="cursor-pointer"><X className="mr-2 h-4 w-4" />Reject Request</DropdownMenuItem>}
+      {['Approved', 'Pickup Scheduled', 'In Transit'].includes(rma.status) && <DropdownMenuItem onClick={handleReceive} disabled={isPending} className="cursor-pointer"><Truck className="mr-2 h-4 w-4" />Mark Received</DropdownMenuItem>}
+      {rma.status === 'Received' && <DropdownMenuItem onClick={handlePass} disabled={isPending} className="cursor-pointer"><Check className="mr-2 h-4 w-4" />Inspection: Pass and refund</DropdownMenuItem>}
+      {rma.status === 'Received' && <DropdownMenuItem onClick={handleFail} disabled={isPending} className="cursor-pointer"><X className="mr-2 h-4 w-4" />Inspection: Fail</DropdownMenuItem>}
+
+      {rma.status === 'Inspected' && (
         <DropdownMenuItem 
           onClick={handleIssueRefund} 
           disabled={isPending}
@@ -148,10 +162,12 @@ const ActionsMenu = ({ rma, scope, onRefresh, asSheetItems = false }: { rma: Ret
                </Button>
              )}
              
-             <Button variant="outline" className="w-full justify-start"><X className="mr-2" />Reject Request</Button>
-             <Button variant="outline" className="w-full justify-start"><Truck className="mr-2" />Schedule Pickup</Button>
-             
-             {rma.status !== 'Refunded' && (
+             {rma.status === 'Requested' && <Button variant="outline" onClick={handleReject} disabled={isPending} className="w-full justify-start"><X className="mr-2" />Reject Request</Button>}
+             {['Approved', 'Pickup Scheduled', 'In Transit'].includes(rma.status) && <Button variant="outline" onClick={handleReceive} disabled={isPending} className="w-full justify-start"><Truck className="mr-2" />Mark Received</Button>}
+             {rma.status === 'Received' && <Button variant="outline" onClick={handlePass} disabled={isPending} className="w-full justify-start"><Check className="mr-2" />Inspection: Pass and refund</Button>}
+             {rma.status === 'Received' && <Button variant="outline" onClick={handleFail} disabled={isPending} className="w-full justify-start"><X className="mr-2" />Inspection: Fail</Button>}
+
+             {rma.status === 'Inspected' && (
                <Button variant="destructive" onClick={handleIssueRefund} disabled={isPending} className="w-full justify-start">
                  {isPending ? <Loader2 className="mr-2 animate-spin" /> : <Undo className="mr-2" />}
                  Issue Refund

@@ -13,7 +13,7 @@ export default function SupportPage() {
           Support Center
         </h1>
         <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
-          Need help? Fill out the form below to create a support ticket, or check our <Link href="/faq" className="text-primary hover:underline">FAQ page</Link> for common questions.
+          Need help? Fill out the form below to create a support ticket.
         </p>
       </div>
 

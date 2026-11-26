@@ -1,8 +1,7 @@
-
 'use client';
 
-// Reuses the main admin page but could be filtered in a real app
-import AdminProfileApprovalsPage from "../../admin/profile-approvals/page";
+import { ProfileApprovalsView } from "@/components/admin/ProfileApprovalsView";
+
 export default function TherapyAdminProfileApprovalsPage() {
-    return <AdminProfileApprovalsPage roleFilter="therapist" />;
+    return <ProfileApprovalsView roleFilter="therapist" />;
 }

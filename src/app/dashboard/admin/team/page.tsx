@@ -69,7 +69,7 @@ export default function TeamManagementPage() {
       listUsers(),
       listTherapists()
     ]);
-    const therapistMap = new Map(therapistProfiles.map(t => [t.id, t]));
+    const therapistMap = new Map((therapistProfiles ?? []).map(t => [t.id, t]));
     const combinedUsers = userList.map(user => {
         if (therapistMap.has(user.id)) {
             return { ...user, ...therapistMap.get(user.id) };

@@ -25,6 +25,7 @@ export async function createProducts(payload: {
   productType: string;
   title: string;
   subtitle?: string;
+  slug?: string;
   tags?: string[];
   shortDescription: string;
   longDescription?: string;
@@ -35,6 +36,7 @@ export async function createProducts(payload: {
   sellingPrice: number;
   isTaxInclusive?: boolean;
   isCouponExcluded?: boolean;
+  non_returnable?: boolean;
   hsnCode?: string;
   sacCode?: string;
   gstSlab?: number;
@@ -108,6 +110,7 @@ export async function updateProduct(
    productType: string;
   title: string;
   subtitle?: string;
+  slug?: string;
   tags?: string[];
   shortDescription: string;
   longDescription?: string;
@@ -118,6 +121,7 @@ export async function updateProduct(
   sellingPrice: number;
   isTaxInclusive?: boolean;
   isCouponExcluded?: boolean;
+  non_returnable?: boolean;
   hsnCode?: string;
   sacCode?: string;
   gstSlab?: number;
