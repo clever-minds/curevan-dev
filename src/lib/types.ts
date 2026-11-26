@@ -34,6 +34,7 @@ export interface UserProfile {
   role_name?: string; // For display purposes (e.g., "admin.super" => "Super Admin")
   push_opt_in: boolean;
   email_opt_in: boolean;
+  whatsapp_opt_in?: boolean;
   createdAt?: Date | null;
   addresses?: Address[];
   shipping_address_id?: number;

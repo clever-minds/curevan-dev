@@ -60,6 +60,7 @@ const profileFormSchema = z.object({
   // Preferences
   email_opt_in: z.boolean().default(false),
   push_opt_in: z.boolean().default(false),
+  whatsapp_opt_in: z.boolean().default(false),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -79,6 +80,7 @@ export function ProfileForm() {
       email: '',
       mobile: '',
       email_opt_in: true,
+      whatsapp_opt_in: false,
       line1: '',
       line2: '',
       city: '',
@@ -97,6 +99,7 @@ export function ProfileForm() {
         gender: user.gender || 'male',
         email_opt_in: user.email_opt_in || false, // Assuming these fields exist in your user model
         push_opt_in: user.push_opt_in || false,
+        whatsapp_opt_in: Boolean(user.whatsapp_opt_in),
         mobile: user.phone || '', // User phone from backend or empty
         emergencyContact: user.emergencyContact || '', // User emergency contact or empty
         line1: user?.line1 || '',
@@ -323,6 +326,21 @@ export function ProfileForm() {
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">Push Notifications</FormLabel>
                   <FormDescription>Receive alerts directly on your device.</FormDescription>
+                </div>
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="whatsapp_opt_in"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">WhatsApp Notifications</FormLabel>
+                  <FormDescription>Send me booking and order updates on WhatsApp from Curevan.</FormDescription>
                 </div>
                 <FormControl>
                   <Checkbox checked={field.value} onCheckedChange={field.onChange} />

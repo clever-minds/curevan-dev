@@ -82,6 +82,7 @@ export async function createUserWithEmailAndPassword(
     phone?: string;
     role: string;
     roles?: string[];
+    whatsapp_opt_in?: boolean;
   }
 ) {
   const res = await fetch(`${API}/api/auth/register`, {

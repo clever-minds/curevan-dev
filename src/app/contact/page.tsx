@@ -125,7 +125,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-foreground">Our Address</h3>
                     <p>Himaya Care Pvt. Ltd.</p>
-                    <p>Office 704, Time Square, Vasna - Bhayli Main Rd,</p>
+                    <p>Office 407, Time Square, Vasna - Bhayli Main Rd,</p>
                     <p>Ashwamegh Nagar, Tandalja, Vadodara, Gujarat 390012</p>
                   </div>
                 </div>

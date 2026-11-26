@@ -20,6 +20,7 @@ const createOrderSchema = z.object({
  paymentRef:z.string(),
   paymentGateway:z.string(),
   shippingCharges: z.number().optional(),
+  whatsapp_opt_in: z.boolean().optional(),
 });
 
 type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -54,6 +55,7 @@ export async function createOrder(
         payment_ref: validatedData.paymentRef,
         payment_gateway: validatedData.paymentGateway,
         shipping_charges: validatedData.shippingCharges,
+        whatsapp_opt_in: validatedData.whatsapp_opt_in,
       },
       {
         headers: {

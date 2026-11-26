@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { createUserProfile } from '@/services/firestore-service';
 import Link from 'next/link';
 import { PasswordStrengthInput } from '@/components/auth/password-strength-input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const signupFormSchema = z.object({
   fullName: z.string().min(1, 'Please enter your full name.'),
@@ -36,6 +37,7 @@ const signupFormSchema = z.object({
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character.'),
   confirmPassword: z.string(),
   referralCode: z.string().optional(),
+  whatsapp_opt_in: z.boolean().default(false),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -58,6 +60,7 @@ export function SignupForm() {
       password: '',
       confirmPassword: '',
       referralCode: '',
+      whatsapp_opt_in: false,
     },
   });
 
@@ -65,7 +68,15 @@ export function SignupForm() {
     
     setLoading(true);
     try {
-const userCredential = await createUserWithEmailAndPassword({email: data.email,password: data.password,name: data.fullName,phone: data.mobile,role: 'patient',roles: ['patient']});      const user = userCredential.user;
+      const userCredential = await createUserWithEmailAndPassword({
+        email: data.email,
+        password: data.password,
+        name: data.fullName,
+        phone: data.mobile,
+        role: 'patient',
+        roles: ['patient'],
+        whatsapp_opt_in: data.whatsapp_opt_in,
+      });      const user = userCredential.user;
       
       // await createUserProfile({
       //   uid: user.uid,
@@ -156,6 +167,23 @@ const userCredential = await createUserWithEmailAndPassword({email: data.email,p
           )}
         />
         
+        <FormField
+          control={form.control}
+          name="whatsapp_opt_in"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="text-sm font-normal cursor-pointer">
+                  Send me booking and order updates on WhatsApp from Curevan
+                </FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+
         <FormDescription className="text-xs text-muted-foreground">
           By clicking Sign Up, you agree to our{' '}
           <Link href="/legal/terms-of-use" className="underline hover:text-primary">

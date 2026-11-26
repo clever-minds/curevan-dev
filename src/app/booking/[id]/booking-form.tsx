@@ -439,6 +439,7 @@ const bookingFormSchema = z.object({
   consent_medical: z.boolean().refine(val => val === true, { message: 'You must agree to the Medical Consent Terms.' }),
   consent_privacy: z.boolean().refine(val => val === true, { message: 'You must agree to the Privacy Policy.' }),
   consent_refund: z.boolean().refine(val => val === true, { message: 'You must agree to the Refund, Cancellation & Return Policy.' }),
+  whatsapp_opt_in: z.boolean().default(false),
 }).refine(data => {
   if (data.sessionMode === 'home') return !!data.addressId;
   return true;
@@ -512,6 +513,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
       consent_medical: false,
       consent_privacy: false,
       consent_refund: false,
+      whatsapp_opt_in: false,
       addressId: '',
     },
   });
@@ -684,6 +686,7 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
             addressId: data.sessionMode === 'home' ? Number(data.addressId) : undefined,  // ← yahan
             status: 'Pending',
             verificationStatus: 'Not Verified',
+            whatsapp_opt_in: Boolean(data.whatsapp_opt_in),
           }, { paymentId: paymentResponse.razorpay_payment_id, gateway: 'razorpay' });
 
           if (result.success) {
@@ -939,6 +942,24 @@ export function BookingForm({ therapist }: { therapist: Therapist }) {
               )} />
             ))}
           </div>
+
+          {/* WhatsApp updates consent (P30: optional, not pre-ticked) */}
+          <FormField
+            control={form.control}
+            name="whatsapp_opt_in"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm font-normal cursor-pointer">
+                    Send me booking and order updates on WhatsApp from Curevan
+                  </FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
 
           {/* Price */}
           <div className="p-4 rounded-lg bg-muted/50 text-center">
